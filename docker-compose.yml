@@ -1,0 +1,90 @@
+version: '3.9'
+
+services:
+  # ── MySQL Database ──────────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: ecosurvey-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE:      ${DB_NAME:-ecosurvey_db}
+      MYSQL_USER:          ${DB_USER:-ecosurvey}
+      MYSQL_PASSWORD:      ${DB_PASS:-ecosurveypass}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - ecosurvey-net
+
+  # ── Backend API ─────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ecosurvey-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV:         production
+      PORT:             5000
+      DB_HOST:          db
+      DB_PORT:          3306
+      DB_NAME:          ${DB_NAME:-ecosurvey_db}
+      DB_USER:          ${DB_USER:-ecosurvey}
+      DB_PASS:          ${DB_PASS:-ecosurveypass}
+      JWT_SECRET:       ${JWT_SECRET:-change_me_in_production_very_long_secret}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-another_refresh_secret_change_me}
+      JWT_EXPIRES_IN:   15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      CLIENT_URL:       ${CLIENT_URL:-http://localhost}
+      UPLOAD_PATH:      /app/uploads
+      GEMINI_API_KEY:   ${GEMINI_API_KEY:-}
+      SMTP_HOST:        ${SMTP_HOST:-}
+      SMTP_PORT:        ${SMTP_PORT:-587}
+      SMTP_USER:        ${SMTP_USER:-}
+      SMTP_PASS:        ${SMTP_PASS:-}
+      EMAIL_FROM:       ${EMAIL_FROM:-EcoSurvey <noreply@ecosurvey.edu>}
+    ports:
+      - "5000:5000"
+    volumes:
+      - uploads_data:/app/uploads
+    networks:
+      - ecosurvey-net
+
+  # ── Frontend ────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+    container_name: ecosurvey-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - ecosurvey-net
+
+volumes:
+  db_data:
+    name: ecosurvey_db_data
+  uploads_data:
+    name: ecosurvey_uploads
+
+networks:
+  ecosurvey-net:
+    driver: bridge
+    name: ecosurvey-network
