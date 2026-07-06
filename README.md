@@ -29,7 +29,7 @@ A full-stack web application for managing environmental awareness surveys, track
 | Backend | Node.js + Express.js + Sequelize ORM |
 | Database | MySQL 8.0 |
 | Auth | JWT (Access token 15m + Refresh 7d HttpOnly cookie) |
-| AI | Google Gemini API (`gemini-1.5-flash`) |
+| AI | OpenRouter API (`gemini-2.5-flash`) |
 | Container | Docker + Docker Compose |
 | File Storage | Local volume (dev) / configurable |
 
@@ -181,7 +181,7 @@ environmental-survey-portal/
 | `DB_NAME` | Database name | `ecosurvey_db` |
 | `JWT_SECRET` | JWT signing secret | — |
 | `JWT_REFRESH_SECRET` | Refresh token secret | — |
-| `GEMINI_API_KEY` | Google Gemini API key (optional) | — |
+| `OPENROUTER_API_KEY` | OpenRouter API key (optional) | — |
 | `SMTP_HOST` | Email server host (optional) | — |
 | `CLIENT_URL` | Frontend URL for CORS | `http://localhost:3000` |
 
@@ -226,7 +226,7 @@ environmental-survey-portal/
 
 - **FAQ Chatbot**: Available to all logged-in users via the floating chat widget
 - **Report Summarization**: Admin can generate AI summaries for participation reports
-- **Mock Mode**: When `GEMINI_API_KEY` is not set, the system uses keyword-matching fallback
+- **Mock Mode**: When `OPENROUTER_API_KEY` is not set, the system uses keyword-matching fallback
 
 ---
 
