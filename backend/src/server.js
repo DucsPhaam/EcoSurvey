@@ -74,7 +74,7 @@ const PORT = process.env.PORT || 5000;
     await sequelize.authenticate();
     logger.info('✅ Database connection established');
     // Sync models (alter:true for dev, never in production without migration)
-    await sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
+    await sequelize.sync({ alter: false });
     logger.info('✅ Database synced');
 
     cronService.start();

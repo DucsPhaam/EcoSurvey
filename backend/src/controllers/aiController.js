@@ -6,7 +6,7 @@ const logger = require('../utils/logger');
 exports.askFAQ = async (req, res) => {
   try {
     const { question } = req.body;
-    if (!question || question.trim().length < 3) {
+    if (!question || !question.trim()) {
       return res.status(400).json({ message: 'Please provide a valid question.' });
     }
 

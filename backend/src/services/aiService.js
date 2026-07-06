@@ -1,33 +1,57 @@
 const logger = require('../utils/logger');
 
 /**
- * AI Service — Gemini API integration with graceful mock fallback.
- * When GEMINI_API_KEY is not set, returns intelligent mock responses.
+ * AI Service — OpenRouter API integration with graceful mock fallback.
+ * When OPENROUTER_API_KEY is not set, returns intelligent mock responses.
  */
 
-let genAI = null;
-if (process.env.GEMINI_API_KEY) {
-  try {
-    const { GoogleGenerativeAI } = require('@google/generative-ai');
-    genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    logger.info('✅ Gemini AI initialized');
-  } catch (e) {
-    logger.warn('⚠️  Failed to initialize Gemini AI:', e.message);
-  }
+const apiKey = process.env.OPENROUTER_API_KEY;
+
+if (apiKey) {
+  logger.info('✅ OpenRouter AI initialized');
 } else {
-  logger.warn('⚠️  GEMINI_API_KEY not set. AI features will use mock responses.');
+  logger.warn('⚠️  OPENROUTER_API_KEY not set. AI features will use mock responses.');
+}
+
+async function callOpenRouter(prompt) {
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "HTTP-Referer": process.env.CLIENT_URL || "http://localhost:3000",
+      "X-Title": "EcoSurvey",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      "model": "google/gemini-2.5-flash",
+      "max_tokens": 1000,
+      "messages": [
+        {"role": "user", "content": prompt}
+      ]
+    })
+  });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`${response.status} ${errorText}`);
+  }
+
+  const data = await response.json();
+  if (data && data.choices && data.choices.length > 0) {
+    return data.choices[0].message.content;
+  }
+  throw new Error("Invalid response format from OpenRouter");
 }
 
 /**
  * Answer a user's FAQ question using active FAQs as context.
  */
 exports.answerFAQ = async (userQuestion, faqs) => {
-  if (!genAI) {
+  if (!apiKey) {
     return mockFAQAnswer(userQuestion, faqs);
   }
 
   try {
-    const model  = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     const faqContext = faqs.map((f) => `Q: ${f.question}\nA: ${f.answer}`).join('\n\n');
 
     const prompt = `You are a helpful assistant for EcoSurvey, an environmental awareness survey portal at an educational institution.
@@ -41,14 +65,13 @@ User's question: "${userQuestion}"
 
 Instructions:
 - Answer ONLY based on the FAQ context above.
-- If the question is not covered in the FAQs, respond with: "I don't have information about that. Please contact Admin through the Support page."
+- If the question is not covered in the FAQs, politely explain that you don't have that information and they should contact Admin. Do this in the same language as the user's question.
 - Be concise and friendly.
-- Respond in English.`;
+- Respond in the same language as the user's question.`;
 
-    const result = await model.generateContent(prompt);
-    return result.response.text();
+    return await callOpenRouter(prompt);
   } catch (err) {
-    logger.error('Gemini answerFAQ error:', err.message);
+    logger.error('OpenRouter answerFAQ error:', err.message);
     return mockFAQAnswer(userQuestion, faqs);
   }
 };
@@ -57,12 +80,11 @@ Instructions:
  * Summarize a participation report description.
  */
 exports.summarizeReport = async (description, eventName) => {
-  if (!genAI) {
+  if (!apiKey) {
     return mockSummary(description, eventName);
   }
 
   try {
-    const model  = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     const prompt = `Summarize the following environmental activity report in 2-3 concise sentences. Be objective and professional.
 
 Event: ${eventName}
@@ -70,10 +92,9 @@ Report: ${description}
 
 Provide only the summary, no introduction or extra text.`;
 
-    const result = await model.generateContent(prompt);
-    return result.response.text();
+    return await callOpenRouter(prompt);
   } catch (err) {
-    logger.error('Gemini summarizeReport error:', err.message);
+    logger.error('OpenRouter summarizeReport error:', err.message);
     return mockSummary(description, eventName);
   }
 };
