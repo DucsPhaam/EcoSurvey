@@ -63,8 +63,15 @@ exports.getSurveyDetail = async (req, res) => {
     });
 
     if (!survey) return res.status(404).json({ message: 'Survey not found.' });
-    if (survey.status !== 'Published' && req.user.role !== 'Admin') {
-      return res.status(403).json({ message: 'Survey is not available.' });
+
+    if (req.user.role !== 'Admin') {
+      if (survey.status !== 'Published') {
+        return res.status(403).json({ message: 'Survey is not available.' });
+      }
+      // FIX #6: Kiểm tra nhất quán với getSurveys — nếu đã qua end_date thì không cho xem
+      if (new Date(survey.end_date) < new Date()) {
+        return res.status(403).json({ message: 'Survey has ended.' });
+      }
     }
 
     // Check if already submitted
@@ -91,7 +98,15 @@ exports.submitSurvey = async (req, res) => {
       include: [{ model: Question, as: 'questions' }],
     });
     if (!survey) { await t.rollback(); return res.status(404).json({ message: 'Survey not found.' }); }
-    if (survey.status !== 'Published' || new Date(survey.end_date) < new Date()) {
+
+    const now = new Date();
+
+    // FIX #7: Kiểm tra cả start_date — không cho submit khi survey chưa mở
+    if (
+      survey.status !== 'Published' ||
+      now < new Date(survey.start_date) ||
+      now > new Date(survey.end_date)
+    ) {
       await t.rollback();
       return res.status(400).json({ message: 'Survey is not currently open.' });
     }
@@ -109,6 +124,18 @@ exports.submitSurvey = async (req, res) => {
     if (missing.length > 0) {
       await t.rollback();
       return res.status(400).json({ message: 'Please answer all required questions.', missing_question_ids: missing });
+    }
+
+    // FIX #3: Validate tất cả question_id phải thuộc survey này
+    // Ngăn chặn attacker ghi câu trả lời vào câu hỏi của survey khác
+    const validQuestionIds = new Set(survey.questions.map((q) => q.id));
+    const invalidAnswers = (answers || []).filter((a) => !validQuestionIds.has(a.question_id));
+    if (invalidAnswers.length > 0) {
+      await t.rollback();
+      return res.status(400).json({
+        message: 'Invalid question IDs detected.',
+        invalid_question_ids: invalidAnswers.map((a) => a.question_id),
+      });
     }
 
     // Create response record (UNIQUE constraint handles double-submit)
@@ -130,15 +157,22 @@ exports.submitSurvey = async (req, res) => {
       await SurveyAnswer.bulkCreate(answerRecords, { transaction: t });
     }
 
-    // Award points
-    await PointLog.create({
-      user_id:        userId,
-      action_type:    'Survey_Completion',
-      points:         10,
-      reference_id:   response.id,
-      reference_type: 'survey_responses',
-      note:           `Completed survey: ${survey.title}`,
-    }, { transaction: t });
+    // FIX #2: Application-level guard chống duplicate điểm
+    // DB constraint uq_point_log_action cũng bảo vệ ở tầng DB.
+    const existingPoint = await PointLog.findOne({
+      where: { user_id: userId, action_type: 'Survey_Completion', reference_id: response.id, reference_type: 'survey_responses' },
+      transaction: t,
+    });
+    if (!existingPoint) {
+      await PointLog.create({
+        user_id:        userId,
+        action_type:    'Survey_Completion',
+        points:         10,
+        reference_id:   response.id,
+        reference_type: 'survey_responses',
+        note:           `Completed survey: ${survey.title}`,
+      }, { transaction: t });
+    }
 
     await t.commit();
 
@@ -223,13 +257,64 @@ exports.adminUpdateSurvey = async (req, res) => {
       return res.status(400).json({ message: 'Survey must have at least one question before publishing.' });
     }
 
-    await survey.update(req.body);
+    // FIX #5: Whitelist các fields được phép cập nhật — ngăn chặn mass assignment
+    const { title, description, target_role, start_date, end_date, status } = req.body;
+
+    // Validate date range nếu có thay đổi
+    const newStartDate = start_date || survey.start_date;
+    const newEndDate   = end_date   || survey.end_date;
+    if (new Date(newEndDate) <= new Date(newStartDate)) {
+      return res.status(400).json({ message: 'End date must be after start date.' });
+    }
+
+    // FIX #12: Khi survey được Published, gửi notification cho các user phù hợp target_role
+    const wasPublished = survey.status !== 'Published' && status === 'Published';
+
+    await survey.update({ title, description, target_role, start_date, end_date, status });
+
+    if (wasPublished) {
+      // Gửi notification bất đồng bộ — không block response
+      _notifyUsersForNewSurvey(survey).catch((err) =>
+        logger.error('Failed to send new-survey notifications:', err)
+      );
+    }
+
     res.json({ message: 'Survey updated.', survey });
   } catch (err) {
     logger.error('adminUpdateSurvey error:', err);
     res.status(500).json({ message: 'Failed to update survey.' });
   }
 };
+
+// Helper: Gửi thông báo cho user khi survey mới được publish (Fix #12)
+async function _notifyUsersForNewSurvey(survey) {
+  const roleFilter = survey.target_role === 'All'
+    ? { role: { [Op.in]: ['Student', 'Staff'] } }
+    : { role: survey.target_role };
+
+  const users = await User.findAll({
+    where: { ...roleFilter, status: 'Approved' },
+    attributes: ['id'],
+  });
+
+  if (users.length === 0) return;
+
+  const notifications = users.map((u) => ({
+    user_id:        u.id,
+    title:          'Khảo sát mới dành cho bạn',
+    message:        `Khảo sát "${survey.title}" vừa được mở. Hãy tham gia ngay để nhận điểm thưởng!`,
+    reference_type: 'survey',
+    reference_id:   survey.id,
+  }));
+
+  // Gửi theo batch nhỏ để tránh quá tải DB
+  const BATCH_SIZE = 100;
+  for (let i = 0; i < notifications.length; i += BATCH_SIZE) {
+    await Notification.bulkCreate(notifications.slice(i, i + BATCH_SIZE));
+  }
+
+  logger.info(`[Survey Publish] Sent notifications to ${users.length} users for survey "${survey.title}"`);
+}
 
 // ── ADMIN: DELETE /api/admin/surveys/:id ─────────────────────
 exports.adminDeleteSurvey = async (req, res) => {
@@ -288,9 +373,15 @@ exports.createQuestion = async (req, res) => {
 
 exports.updateQuestion = async (req, res) => {
   try {
-    const question = await Question.findByPk(req.params.id);
-    if (!question) return res.status(404).json({ message: 'Question not found.' });
-    await question.update(req.body);
+    // FIX #4: Verify question thuộc đúng survey (IDOR protection)
+    const question = await Question.findOne({
+      where: { id: req.params.id, survey_id: req.params.surveyId },
+    });
+    if (!question) return res.status(404).json({ message: 'Question not found in this survey.' });
+
+    // FIX #5: Whitelist fields được phép cập nhật
+    const { question_text, question_type, options, order_num, is_required } = req.body;
+    await question.update({ question_text, question_type, options, order_num, is_required });
     res.json({ message: 'Question updated.', question });
   } catch (err) {
     res.status(500).json({ message: 'Failed to update question.' });
@@ -299,8 +390,11 @@ exports.updateQuestion = async (req, res) => {
 
 exports.deleteQuestion = async (req, res) => {
   try {
-    const question = await Question.findByPk(req.params.id);
-    if (!question) return res.status(404).json({ message: 'Question not found.' });
+    // FIX #4: Verify question thuộc đúng survey (IDOR protection)
+    const question = await Question.findOne({
+      where: { id: req.params.id, survey_id: req.params.surveyId },
+    });
+    if (!question) return res.status(404).json({ message: 'Question not found in this survey.' });
     await question.destroy();
     res.json({ message: 'Question deleted.' });
   } catch (err) {
@@ -314,6 +408,7 @@ exports.reorderQuestions = async (req, res) => {
     if (!Array.isArray(order)) return res.status(400).json({ message: 'Order must be an array.' });
 
     await Promise.all(order.map(({ id, order_num }) =>
+      // surveyId constraint đã có sẵn ở đây — đúng
       Question.update({ order_num }, { where: { id, survey_id: req.params.surveyId } })
     ));
     res.json({ message: 'Questions reordered.' });

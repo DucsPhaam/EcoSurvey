@@ -39,7 +39,7 @@ services:
       PORT:             5000
       DB_HOST:          db
       DB_PORT:          3306
-      DB_NAME:          ${DB_NAME:-ecosurvey_db}
+      DB_NAME:          ${DB_NAME:-ecosurvey}
       DB_USER:          ${DB_USER:-ecosurvey}
       DB_PASSWORD:      ${DB_PASSWORD:-ecosurveypass}
       JWT_SECRET:       ${JWT_SECRET:-change_me_in_production_very_long_secret}

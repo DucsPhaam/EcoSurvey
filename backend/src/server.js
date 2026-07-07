@@ -21,6 +21,7 @@ const aiRoutes            = require('./routes/aiRoutes');
 const faqPublicRoutes     = require('./routes/faqPublicRoutes');
 const exportRoutes        = require('./routes/exportRoutes');
 const userRoutes          = require('./routes/userRoutes');
+const fileRoutes          = require('./routes/fileRoutes'); // FIX #16
 
 const app = express();
 
@@ -37,8 +38,13 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// ── Static files for uploads ──────────────────────────────────
-app.use('/uploads', express.static(path.join(__dirname, '..', process.env.UPLOAD_DIR || 'uploads')));
+// FIX #16: Không còn serve /uploads dưới dạng static công khai nữa.
+// Thay bằng /api/files/:filename với authentication.
+// Giữ lại static serve CHỈ trong môi trường development để tiện debug.
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/uploads', express.static(path.join(__dirname, '..', process.env.UPLOAD_DIR || 'uploads')));
+  logger.warn('⚠️  /uploads served as static (dev only). In production, use /api/files/:filename.');
+}
 
 // ── Routes ────────────────────────────────────────────────────
 app.use('/api/auth',           authRoutes);
@@ -52,6 +58,7 @@ app.use('/api/ai',             aiRoutes);
 app.use('/api/faqs',           faqPublicRoutes);
 app.use('/api/export',         exportRoutes);
 app.use('/api/users',          userRoutes);
+app.use('/api/files',          fileRoutes); // FIX #16: Authenticated file serving
 
 // ── Health check ──────────────────────────────────────────────
 app.get('/api/health', (_req, res) => res.json({ status: 'OK', timestamp: new Date().toISOString() }));

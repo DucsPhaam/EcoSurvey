@@ -24,9 +24,10 @@ router.get('/surveys/:id/responses',    ...isAdmin, surveyCtrl.getSurveyResponse
 // ── Questions ─────────────────────────────────────────────────
 router.get('/surveys/:surveyId/questions',     ...isAdmin, surveyCtrl.getQuestions);
 router.post('/surveys/:surveyId/questions',    ...isAdmin, surveyCtrl.createQuestion);
-router.patch('/surveys/:surveyId/questions/reorder', ...isAdmin, surveyCtrl.reorderQuestions);
-router.patch('/questions/:id',                 ...isAdmin, surveyCtrl.updateQuestion);
-router.delete('/questions/:id',                ...isAdmin, surveyCtrl.deleteQuestion);
+router.patch('/surveys/:surveyId/questions/reorder',      ...isAdmin, surveyCtrl.reorderQuestions);
+// FIX #4: Dùng /surveys/:surveyId/questions/:id thay vì /questions/:id để verify ownership (IDOR protection)
+router.patch('/surveys/:surveyId/questions/:id',          ...isAdmin, surveyCtrl.updateQuestion);
+router.delete('/surveys/:surveyId/questions/:id',         ...isAdmin, surveyCtrl.deleteQuestion);
 
 // ── Participations ────────────────────────────────────────────
 router.get('/participations',                  ...isAdmin, participCtrl.adminGetParticipations);

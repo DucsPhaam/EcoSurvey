@@ -78,21 +78,27 @@ exports.updateUserStatus = async (req, res) => {
 };
 
 // ── DELETE /api/admin/users/:id ───────────────────────────────
+// FIX #9: Soft-delete — đặt status = 'Deactivated' thay vì xóa cứng
+// Lý do: Hard delete với ON DELETE CASCADE sẽ xóa toàn bộ lịch sử khảo sát,
+// điểm thưởng, và báo cáo hoạt động — làm sai lệch thống kê dữ liệu.
 exports.deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
     if (parseInt(id) === req.user.id) {
-      return res.status(400).json({ message: 'You cannot delete your own account.' });
+      return res.status(400).json({ message: 'You cannot deactivate your own account.' });
     }
-    const user = await User.findByPk(id);
+    const user = await User.findByPk(id, { attributes: ['id', 'full_name', 'email', 'status', 'role'] });
     if (!user) return res.status(404).json({ message: 'User not found.' });
-    if (user.role === 'Admin') return res.status(403).json({ message: 'Cannot delete admin accounts.' });
+    if (user.role === 'Admin') return res.status(403).json({ message: 'Cannot deactivate admin accounts.' });
+    if (user.status === 'Deactivated') {
+      return res.status(400).json({ message: 'User is already deactivated.' });
+    }
 
-    await user.destroy();
-    res.json({ message: 'User deleted permanently.' });
+    await user.update({ status: 'Deactivated' });
+    res.json({ message: 'User has been deactivated. Their historical data is preserved.' });
   } catch (err) {
     logger.error('deleteUser error:', err);
-    res.status(500).json({ message: 'Failed to delete user.' });
+    res.status(500).json({ message: 'Failed to deactivate user.' });
   }
 };
 
@@ -156,7 +162,11 @@ exports.getPendingParticipations = async (req, res) => {
 // ── CRUD FAQs ─────────────────────────────────────────────────
 exports.getFAQs = async (_req, res) => {
   try {
-    const faqs = await FAQ.findAll({ order: [['created_at', 'DESC']] });
+    // FIX #19: Lọc theo is_active — loại bỏ FAQs đã bị vô hiệu hoá
+    const faqs = await FAQ.findAll({
+      where: { is_active: true },
+      order: [['created_at', 'DESC']],
+    });
     res.json({ faqs });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch FAQs.' });
@@ -178,7 +188,10 @@ exports.updateFAQ = async (req, res) => {
   try {
     const faq = await FAQ.findByPk(req.params.id);
     if (!faq) return res.status(404).json({ message: 'FAQ not found.' });
-    await faq.update(req.body);
+
+    // FIX #5b: Whitelist fields được phép cập nhật
+    const { question, answer, category, is_active } = req.body;
+    await faq.update({ question, answer, category, is_active });
     res.json({ message: 'FAQ updated.', faq });
   } catch (err) {
     res.status(500).json({ message: 'Failed to update FAQ.' });

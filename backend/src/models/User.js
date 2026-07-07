@@ -8,7 +8,8 @@ const User = sequelize.define('users', {
   email:            { type: DataTypes.STRING(191), allowNull: false, unique: true },
   password_hash:    { type: DataTypes.STRING(255), allowNull: false },
   role:             { type: DataTypes.ENUM('Student','Staff','Admin'), defaultValue: 'Student' },
-  status:           { type: DataTypes.ENUM('Pending','Approved','Rejected'), defaultValue: 'Pending' },
+  // FIX #9: Added 'Deactivated' to support soft-delete instead of CASCADE hard delete
+  status:           { type: DataTypes.ENUM('Pending','Approved','Rejected','Deactivated'), defaultValue: 'Pending' },
   student_staff_id: { type: DataTypes.STRING(30),  allowNull: true },
   class_name:       { type: DataTypes.STRING(100), allowNull: true },
   department:       { type: DataTypes.STRING(150), allowNull: true },

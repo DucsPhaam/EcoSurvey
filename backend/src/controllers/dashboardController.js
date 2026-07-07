@@ -1,4 +1,5 @@
 const { Op, literal, fn, col } = require('sequelize');
+const { sequelize } = require('../config/database');
 const { User, Survey, SurveyResponse, Participation, PointLog } = require('../models');
 const logger = require('../utils/logger');
 
@@ -21,7 +22,7 @@ exports.getDashboard = async (req, res) => {
     ] = await Promise.all([
       // Surveys completed vs available
       SurveyResponse.count({ where: { user_id: userId } }),
-      // Participation reports
+      // Participation reports grouped by status
       Participation.findAll({
         where: { user_id: userId },
         attributes: ['status', [fn('COUNT', col('id')), 'count']],
@@ -38,31 +39,43 @@ exports.getDashboard = async (req, res) => {
       }),
     ]);
 
-    // Rank computation
-    const rankResult = await PointLog.findAll({
-      attributes: ['user_id', [fn('SUM', col('points')), 'total_points']],
-      group: ['user_id'],
-      order: [[literal('total_points'), 'DESC']],
-      raw: true,
-    });
-    const rank = rankResult.findIndex((r) => parseInt(r.user_id) === userId) + 1;
+    // FIX #11 & #14: Tính rank bằng SQL subquery — nhất quán với leaderboard (period=all)
+    // và không load toàn bộ bảng point_logs vào bộ nhớ
+    const myPoints = totalPoints || 0;
+    let rank = null;
+    if (myPoints > 0) {
+      const rankResult = await sequelize.query(
+        `SELECT COUNT(*) + 1 AS rank
+         FROM (
+           SELECT pl.user_id, SUM(pl.points) AS total_points
+           FROM point_logs pl
+           INNER JOIN users u ON u.id = pl.user_id AND u.status = 'Approved'
+           GROUP BY pl.user_id
+         ) AS ranked
+         WHERE ranked.total_points > :myPoints`,
+        { replacements: { myPoints }, type: sequelize.QueryTypes.SELECT }
+      );
+      rank = parseInt(rankResult[0]?.rank || 1);
+    }
 
-    // Available surveys count
+    // Available surveys count (chỉ tính đã mở và chưa hết hạn)
+    const now = new Date();
     const availableSurveys = await Survey.count({
       where: {
-        status: 'Published',
-        end_date: { [Op.gte]: new Date() },
+        status:     'Published',
+        start_date: { [Op.lte]: now },
+        end_date:   { [Op.gte]: now },
         [Op.or]: [{ target_role: 'All' }, { target_role: userRole }],
       },
     });
 
     res.json({
       role: userRole,
-      surveys_completed:  surveyStats,
-      surveys_available:  availableSurveys,
+      surveys_completed:   surveyStats,
+      surveys_available:   availableSurveys,
       participation_stats: participationStats,
-      total_points:        totalPoints || 0,
-      rank:                rank > 0 ? rank : null,
+      total_points:        myPoints,
+      rank:                rank,
       recent_activity:     recentActivity,
     });
   } catch (err) {

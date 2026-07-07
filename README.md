@@ -104,14 +104,19 @@ Services:
 
 ---
 
-## 🔑 Default Admin Account
+## 🔑 Default Demo Accounts
 
-| Field | Value |
-|---|---|
-| Username | `admin` |
-| Password | `Admin@123456` |
+> Password cho tất cả tài khoản demo: **`Admin@123`**
 
-> ⚠️ **Change the admin password immediately after first login in production.**
+| Username | Role | Status |
+|---|---|---|
+| `admin` | Admin | Approved |
+| `nva_student` | Student | Approved |
+| `pcb_staff` | Staff | Approved |
+| `ttb_student` | Student | Pending |
+| `lvc_student` | Student | Rejected |
+
+> ⚠️ **Đổi mật khẩu admin ngay sau lần đăng nhập đầu tiên ở môi trường production.**
 
 ---
 
@@ -143,9 +148,9 @@ Services:
 ## 📁 Project Structure
 
 ```
-environmental-survey-portal/
+EcoSurvey/
 ├── database/
-│   └── init.sql              # Schema + seed data
+│   └── init.sql              # Schema + seed data (all-in-one, drop & recreate)
 ├── backend/
 │   ├── src/
 │   │   ├── config/           # Database config
@@ -169,6 +174,17 @@ environmental-survey-portal/
 └── docker-compose.yml
 ```
 
+### 🔄 Reset Database
+
+```bash
+# Local MySQL — xóa và tạo lại toàn bộ DB từ đầu
+mysql -u root -p < database/init.sql
+
+# Docker — xóa volume và khởi động lại
+docker-compose down -v
+docker-compose up -d --build
+```
+
 ---
 
 ## 🔧 Environment Variables
@@ -178,7 +194,7 @@ environmental-survey-portal/
 | Variable | Description | Default |
 |---|---|---|
 | `DB_HOST` | MySQL host | `localhost` |
-| `DB_NAME` | Database name | `ecosurvey_db` |
+| `DB_NAME` | Database name | `ecosurvey` |
 | `JWT_SECRET` | JWT signing secret | — |
 | `JWT_REFRESH_SECRET` | Refresh token secret | — |
 | `OPENROUTER_API_KEY` | OpenRouter API key (optional) | — |
@@ -215,10 +231,18 @@ environmental-survey-portal/
 |---|---|---|
 | GET | `/api/admin/users` | List users with filters |
 | PATCH | `/api/admin/users/:id/status` | Approve/Reject user |
+| DELETE | `/api/admin/users/:id` | Deactivate user (soft-delete) |
 | GET/POST | `/api/admin/surveys` | Manage surveys |
+| PATCH | `/api/admin/surveys/:surveyId/questions/:id` | Update question |
+| DELETE | `/api/admin/surveys/:surveyId/questions/:id` | Delete question |
 | PATCH | `/api/admin/participations/:id/review` | Review report |
-| GET | `/api/export/surveys/:id/excel` | Export survey results |
-| GET | `/api/export/participations/pdf` | Export approved reports |
+| GET | `/api/admin/export/surveys/:id/excel` | Export survey results |
+| GET | `/api/admin/export/participations/pdf` | Export approved reports |
+
+### Files (Authenticated)
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/files/:filename` | Download uploaded file (requires login) |
 
 ---
 
