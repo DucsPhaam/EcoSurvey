@@ -127,12 +127,6 @@ export default function LoginPage() {
             Don't have an account?{' '}
             <Link to="/register" className="text-brand-400 hover:text-brand-300 font-semibold transition-colors">Create one</Link>
           </p>
-
-          <div className="mt-6 p-4 bg-gray-800/60 border border-gray-700 rounded-xl">
-            <p className="text-xs text-gray-400 font-medium mb-1">🔑 Default Admin Credentials</p>
-            <p className="text-xs text-gray-500">Username: <span className="text-gray-300 font-mono">admin</span></p>
-            <p className="text-xs text-gray-500">Password: <span className="text-gray-300 font-mono">Admin@123456</span></p>
-          </div>
         </div>
       </div>
     </div>
