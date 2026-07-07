@@ -1,3 +1,4 @@
+const path = require('path');
 const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
 const { Survey, SurveyResponse, SurveyAnswer, Question, User, Participation, ParticipationFile } = require('../models');
@@ -20,7 +21,7 @@ exports.exportSurveyExcel = async (req, res) => {
       order: [['submitted_at', 'DESC']],
     });
 
-    const workbook  = new ExcelJS.Workbook();
+    const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Survey Results');
 
     // Header row
@@ -74,26 +75,36 @@ exports.exportParticipationsPDF = async (req, res) => {
     });
 
     const doc = new PDFDocument({ margin: 50 });
+
+    // Register Roboto font to support Vietnamese unicode characters
+    const fontRegularPath = path.join(__dirname, '../assets/fonts/Roboto-Regular.ttf');
+    const fontBoldPath = path.join(__dirname, '../assets/fonts/Roboto-Bold.ttf');
+    const fontItalicPath = path.join(__dirname, '../assets/fonts/Roboto-Italic.ttf');
+
+    doc.registerFont('Roboto', fontRegularPath);
+    doc.registerFont('Roboto-Bold', fontBoldPath);
+    doc.registerFont('Roboto-Italic', fontItalicPath);
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="approved_participations.pdf"');
     doc.pipe(res);
 
     // Title
-    doc.fontSize(18).fillColor('#1a7f4b').text('EcoSurvey — Approved Participation Reports', { align: 'center' });
-    doc.fontSize(10).fillColor('#666').text(`Generated: ${new Date().toLocaleString('en-US')}`, { align: 'center' });
+    doc.font('Roboto-Bold').fontSize(18).fillColor('#1a7f4b').text('EcoSurvey — Báo cáo hoạt động đã duyệt', { align: 'center' });
+    doc.font('Roboto').fontSize(10).fillColor('#666').text(`Xuất bản: ${new Date().toLocaleString('vi-VN')}`, { align: 'center' });
     doc.moveDown(1.5);
 
     participations.forEach((p, idx) => {
-      doc.fontSize(12).fillColor('#1a7f4b').text(`${idx + 1}. ${p.event_name}`);
-      doc.fontSize(9).fillColor('#333')
-        .text(`Submitted by: ${p.user?.full_name} (${p.user?.username}) — ${p.user?.role}`)
-        .text(`Location: ${p.location}  |  Participants: ${p.participant_count}`)
-        .text(`Date submitted: ${new Date(p.created_at).toLocaleDateString('en-US')}`)
-        .text(`Reviewed by: ${p.reviewer?.full_name || 'Admin'}  |  Date: ${p.reviewed_at ? new Date(p.reviewed_at).toLocaleDateString('en-US') : '—'}`)
+      doc.font('Roboto-Bold').fontSize(12).fillColor('#1a7f4b').text(`${idx + 1}. ${p.event_name}`);
+      doc.font('Roboto').fontSize(9).fillColor('#333')
+        .text(`Người nộp: ${p.user?.full_name || ''} (${p.user?.username || ''}) — ${p.user?.role || ''}`)
+        .text(`Địa điểm: ${p.location || ''}  |  Số người tham gia: ${p.participant_count || 0}`)
+        .text(`Ngày nộp: ${p.created_at ? new Date(p.created_at).toLocaleDateString('vi-VN') : ''}`)
+        .text(`Người duyệt: ${p.reviewer?.full_name || 'Admin'}  |  Ngày duyệt: ${p.reviewed_at ? new Date(p.reviewed_at).toLocaleDateString('vi-VN') : '—'}`)
         .moveDown(0.5)
-        .text(p.description, { indent: 20 });
+        .text(p.description || '', { indent: 20 });
       if (p.ai_summary) {
-        doc.fillColor('#555').text(`AI Summary: ${p.ai_summary}`, { indent: 20, italics: true });
+        doc.font('Roboto-Italic').fillColor('#555').text(`Tóm tắt AI: ${p.ai_summary}`, { indent: 20 });
       }
       doc.moveDown(1).strokeColor('#ccc').moveTo(50, doc.y).lineTo(545, doc.y).stroke().moveDown(0.5);
     });

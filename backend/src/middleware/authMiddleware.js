@@ -14,6 +14,8 @@ const authenticate = async (req, res, next) => {
       token = authHeader.split(' ')[1];
     } else if (req.cookies && req.cookies.accessToken) {
       token = req.cookies.accessToken;
+    } else if (req.query && req.query.token) {
+      token = req.query.token;
     }
 
     if (!token) {
@@ -35,10 +37,10 @@ const authenticate = async (req, res, next) => {
     }
 
     req.user = {
-      id:        user.id,
+      id: user.id,
       full_name: user.full_name,
-      role:      user.role,
-      ui_theme:  user.ui_theme,
+      role: user.role,
+      ui_theme: user.ui_theme,
       avatar_url: user.avatar_url,
     };
 
