@@ -24,7 +24,7 @@ const userRoutes          = require('./routes/userRoutes');
 const fileRoutes          = require('./routes/fileRoutes'); // FIX #16
 
 const app = express();
-
+app.set('trust proxy', 1);
 // ── Security Middleware ───────────────────────────────────────
 app.use(helmet());
 app.use(cors({
