@@ -4,8 +4,24 @@ import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Cart
 import api from '../../services/axiosInstance'
 import { SpinnerPage } from '../../components/ui/Spinner'
 import { Link } from 'react-router-dom'
+import toast from 'react-hot-toast'
 
 const COLORS = ['#1a7f4b', '#34d399', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']
+
+// Fix: dùng axios (gửi Bearer token) thay vì <a href> — browser navigation không gửi auth header
+const downloadFile = async (url, filename) => {
+  try {
+    const res = await api.get(url, { responseType: 'blob' })
+    const blob = new Blob([res.data], { type: res.headers['content-type'] })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = filename
+    link.click()
+    URL.revokeObjectURL(link.href)
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'Export failed. Please try again.')
+  }
+}
 
 function StatCard({ icon: Icon, label, value, sub, color }) {
   const colors = { green: 'from-brand-500 to-brand-600', amber: 'from-amber-400 to-orange-500', blue: 'from-blue-500 to-cyan-500', purple: 'from-purple-500 to-pink-500' }
@@ -56,8 +72,11 @@ export default function AdminDashboard() {
           <p className="page-subtitle">System overview and analytics.</p>
         </div>
         <div className="flex gap-2">
-          <a href={`${import.meta.env.VITE_API_URL}/export/participations/pdf`} target="_blank" rel="noreferrer"
-            className="btn-secondary text-sm"><Download className="w-4 h-4" /> Export PDF</a>
+          <button
+            onClick={() => downloadFile('/export/participations/pdf', 'participations_report.pdf')}
+            className="btn-secondary text-sm">
+            <Download className="w-4 h-4" /> Export PDF
+          </button>
         </div>
       </div>
 

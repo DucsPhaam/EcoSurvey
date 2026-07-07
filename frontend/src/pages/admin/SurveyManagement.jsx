@@ -1,11 +1,25 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { Plus, Edit3, Trash2, Download, Eye, ClipboardList, Search, Globe } from 'lucide-react'
 import api from '../../services/axiosInstance'
 import { SpinnerPage } from '../../components/ui/Spinner'
 import Pagination from '../../components/ui/Pagination'
 import Modal from '../../components/ui/Modal'
+import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
+
+const downloadFile = async (url, filename) => {
+  try {
+    const res = await api.get(url, { responseType: 'blob' })
+    const blob = new Blob([res.data], { type: res.headers['content-type'] })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = filename
+    link.click()
+    URL.revokeObjectURL(link.href)
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'Export failed.')
+  }
+}
 
 const STATUS_BADGE = { Draft: 'badge-draft', Published: 'badge-published', Closed: 'badge-closed' }
 
@@ -141,10 +155,11 @@ export default function SurveyManagement() {
                             Close
                           </button>
                         )}
-                        <a href={`${import.meta.env.VITE_API_URL}/export/surveys/${s.id}/excel`}
+                        <button
+                          onClick={() => downloadFile(`/export/surveys/${s.id}/excel`, `survey_${s.id}_results.xlsx`)}
                           className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 transition-colors" title="Export Excel">
                           <Download className="w-4 h-4" />
-                        </a>
+                        </button>
                         <button onClick={() => setDeleteModal(s)}
                           className="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-colors" title="Delete">
                           <Trash2 className="w-4 h-4" />

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Leaf, CheckCircle2, BarChart3, Trophy, MessageCircle, ArrowRight, Shield, Zap, Users } from 'lucide-react'
+import LandingChatWidget from '../components/features/LandingChatWidget'
 
 const features = [
   { icon: CheckCircle2, title: 'Online Surveys',    desc: 'Participate in environmental awareness surveys anytime, anywhere.' },
@@ -139,6 +140,9 @@ export default function LandingPage() {
         </div>
         <p>© {new Date().getFullYear()} Environmental Survey Portal. All rights reserved.</p>
       </footer>
+
+      {/* AI Chatbot — hiển thị ngay cả khi chưa đăng nhập */}
+      <LandingChatWidget />
     </div>
   )
 }

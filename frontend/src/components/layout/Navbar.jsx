@@ -1,9 +1,10 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { Leaf, Bell, Moon, Sun, LogOut, Trophy, ClipboardList, LayoutDashboard, FileText, Settings, Menu, X } from 'lucide-react'
+import { Leaf, Bell, Moon, Sun, LogOut, KeyRound, ChevronDown } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useTheme } from '../../contexts/ThemeContext'
 import api from '../../services/axiosInstance'
+import ChangePasswordModal from '../features/ChangePasswordModal'
 
 export default function Navbar() {
   const { user, logout, isAdmin } = useAuth()
@@ -13,7 +14,10 @@ export default function Navbar() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [notifOpen, setNotifOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const notifRef = useRef(null)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [showChangePwd, setShowChangePwd] = useState(false)
+  const notifRef  = useRef(null)
+  const userMenuRef = useRef(null)
 
   useEffect(() => {
     if (!user) return
@@ -29,9 +33,12 @@ export default function Navbar() {
     return () => clearInterval(interval)
   }, [user])
 
-  // Close notification panel on outside click
+  // Close panels on outside click
   useEffect(() => {
-    const handler = (e) => { if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false) }
+    const handler = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false)
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setUserMenuOpen(false)
+    }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
@@ -47,6 +54,7 @@ export default function Navbar() {
     : [{ to: '/dashboard', label: 'Dashboard' }, { to: '/surveys', label: 'Surveys' }, { to: '/participations', label: 'My Reports' }, { to: '/leaderboard', label: 'Leaderboard' }]
 
   return (
+    <>
     <header className="sticky top-0 z-50 glass border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
@@ -126,23 +134,46 @@ export default function Navbar() {
             </div>
 
             {/* User menu */}
-            <div className="flex items-center gap-2 pl-2 border-l dark:border-gray-700">
+            <div className="relative flex items-center gap-2 pl-2 border-l dark:border-gray-700" ref={userMenuRef}>
               <div className="hidden sm:block text-right">
                 <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 leading-none">{user?.full_name}</p>
                 <p className="text-xs text-gray-500 mt-0.5">{user?.role}</p>
               </div>
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-400 to-accent-400 flex items-center justify-center text-white font-bold text-sm shadow-glow-sm">
-                {user?.full_name?.[0]?.toUpperCase()}
-              </div>
-              <button onClick={logout}
-                className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                title="Logout">
-                <LogOut className="w-4 h-4" />
+              <button onClick={() => setUserMenuOpen((o) => !o)}
+                className="flex items-center gap-1 group">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-400 to-accent-400 flex items-center justify-center text-white font-bold text-sm shadow-glow-sm">
+                  {user?.full_name?.[0]?.toUpperCase()}
+                </div>
+                <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`} />
               </button>
+
+              {userMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 w-52 card shadow-card-hover animate-slide-down z-50">
+                  <div className="p-3 border-b dark:border-gray-800">
+                    <p className="text-sm font-semibold text-gray-800 dark:text-white truncate">{user?.full_name}</p>
+                    <p className="text-xs text-gray-500">{user?.role}</p>
+                  </div>
+                  <div className="p-1">
+                    <button
+                      onClick={() => { setUserMenuOpen(false); setShowChangePwd(true) }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                      <KeyRound className="w-4 h-4" /> Change Password
+                    </button>
+                    <button
+                      onClick={() => { setUserMenuOpen(false); logout() }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                      <LogOut className="w-4 h-4" /> Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
     </header>
+
+    {showChangePwd && <ChangePasswordModal onClose={() => setShowChangePwd(false)} />}
+  </>
   )
 }

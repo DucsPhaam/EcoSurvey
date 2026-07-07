@@ -30,9 +30,13 @@ export const AuthProvider = ({ children }) => {
         const res = await api.post('/auth/refresh')
         setAccessToken(res.data.accessToken)
       } catch {
+        // Refresh token invalid or DB was wiped — clear everything
         setUser(null)
         setAccessToken(null)
         localStorage.removeItem('ecosurvey_user')
+        localStorage.removeItem('ecosurvey_token')
+        // Fire-and-forget logout to clear the stale httpOnly cookie (do NOT await — avoid blocking the loading state)
+        api.post('/auth/logout').catch(() => {})
       } finally {
         setLoading(false)
       }

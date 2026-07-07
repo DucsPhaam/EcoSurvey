@@ -1,5 +1,44 @@
+const bcrypt = require('bcrypt');
 const { User } = require('../models');
 const logger = require('../utils/logger');
+
+// PATCH /api/users/me/password
+exports.changePassword = async (req, res) => {
+  try {
+    const { current_password, new_password, confirm_password } = req.body;
+
+    if (!current_password || !new_password || !confirm_password) {
+      return res.status(400).json({ message: 'Please fill in all required fields.' });
+    }
+    if (new_password !== confirm_password) {
+      return res.status(400).json({ message: 'New password and confirmation do not match.' });
+    }
+    if (new_password.length < 8 || !/[A-Z]/.test(new_password) || !/[0-9]/.test(new_password)) {
+      return res.status(400).json({
+        message: 'New password must be at least 8 characters and include an uppercase letter and a number.',
+      });
+    }
+
+    const user = await User.findByPk(req.user.id, { attributes: ['id', 'password_hash'] });
+    if (!user) return res.status(404).json({ message: 'Account not found.' });
+
+    const isMatch = await bcrypt.compare(current_password, user.password_hash);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Current password is incorrect.' });
+    }
+    if (current_password === new_password) {
+      return res.status(400).json({ message: 'New password must be different from the current password.' });
+    }
+
+    const password_hash = await bcrypt.hash(new_password, 10);
+    await user.update({ password_hash });
+
+    res.json({ message: 'Password changed successfully.' });
+  } catch (err) {
+    logger.error('changePassword error:', err);
+    res.status(500).json({ message: 'Server error while changing password.' });
+  }
+};
 
 // PATCH /api/users/me/theme
 exports.updateTheme = async (req, res) => {
