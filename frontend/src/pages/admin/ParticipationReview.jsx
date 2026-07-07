@@ -8,6 +8,21 @@ import toast from 'react-hot-toast'
 
 const STATUS_BADGE = { Pending: 'badge-pending', Approved: 'badge-approved', Rejected: 'badge-rejected' }
 
+// Fix: dùng axios (gửi Bearer token) thay vì <a href> — browser navigation không gửi auth header
+const downloadFile = async (url, filename) => {
+  try {
+    const res = await api.get(url, { responseType: 'blob' })
+    const blob = new Blob([res.data], { type: res.headers['content-type'] })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = filename
+    link.click()
+    URL.revokeObjectURL(link.href)
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'Export failed. Please try again.')
+  }
+}
+
 export default function ParticipationReview() {
   const [items, setItems]       = useState([])
   const [loading, setLoading]   = useState(true)
@@ -70,10 +85,11 @@ export default function ParticipationReview() {
             {s || 'All'}
           </button>
         ))}
-        <a href={`${import.meta.env.VITE_API_URL}/export/participations/pdf`} target="_blank" rel="noreferrer"
+        <button
+          onClick={() => downloadFile('/export/participations/pdf', 'participations_report.pdf')}
           className="btn-secondary text-sm py-2 ml-auto flex items-center gap-2">
           <Download className="w-4 h-4" /> Export PDF
-        </a>
+        </button>
       </div>
 
       {loading ? <SpinnerPage /> : items.length === 0 ? (
