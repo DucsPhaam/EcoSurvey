@@ -6,7 +6,7 @@ const logger = require('../utils/logger');
 // GET /api/dashboard
 exports.getDashboard = async (req, res) => {
   try {
-    const userId   = req.user.id;
+    const userId = req.user.id;
     const userRole = req.user.role;
 
     if (userRole === 'Admin') {
@@ -45,7 +45,7 @@ exports.getDashboard = async (req, res) => {
     let rank = null;
     if (myPoints > 0) {
       const rankResult = await sequelize.query(
-        `SELECT COUNT(*) + 1 AS rank
+        `SELECT COUNT(*) + 1 AS user_rank
          FROM (
            SELECT pl.user_id, SUM(pl.points) AS total_points
            FROM point_logs pl
@@ -55,28 +55,28 @@ exports.getDashboard = async (req, res) => {
          WHERE ranked.total_points > :myPoints`,
         { replacements: { myPoints }, type: sequelize.QueryTypes.SELECT }
       );
-      rank = parseInt(rankResult[0]?.rank || 1);
+      rank = parseInt(rankResult[0]?.user_rank || 1);
     }
 
     // Available surveys count (chỉ tính đã mở và chưa hết hạn)
     const now = new Date();
     const availableSurveys = await Survey.count({
       where: {
-        status:     'Published',
+        status: 'Published',
         start_date: { [Op.lte]: now },
-        end_date:   { [Op.gte]: now },
+        end_date: { [Op.gte]: now },
         [Op.or]: [{ target_role: 'All' }, { target_role: userRole }],
       },
     });
 
     res.json({
       role: userRole,
-      surveys_completed:   surveyStats,
-      surveys_available:   availableSurveys,
+      surveys_completed: surveyStats,
+      surveys_available: availableSurveys,
       participation_stats: participationStats,
-      total_points:        myPoints,
-      rank:                rank,
-      recent_activity:     recentActivity,
+      total_points: myPoints,
+      rank: rank,
+      recent_activity: recentActivity,
     });
   } catch (err) {
     logger.error('getDashboard error:', err);
@@ -128,15 +128,15 @@ exports.getAdminDashboard = async (req, res) => {
     ]);
 
     res.json({
-      role:                   'Admin',
-      total_users:             totalUsers,
-      users_by_role:           usersByRole,
-      users_by_status:         usersByStatus,
-      total_surveys:           totalSurveys,
-      surveys_by_status:       surveysByStatus,
-      recent_responses_7d:     recentResponses,
-      pending_participations:  pendingParticipations,
-      chart_daily_responses:   chartData,
+      role: 'Admin',
+      total_users: totalUsers,
+      users_by_role: usersByRole,
+      users_by_status: usersByStatus,
+      total_surveys: totalSurveys,
+      surveys_by_status: surveysByStatus,
+      recent_responses_7d: recentResponses,
+      pending_participations: pendingParticipations,
+      chart_daily_responses: chartData,
     });
   } catch (err) {
     logger.error('getAdminDashboard error:', err);
