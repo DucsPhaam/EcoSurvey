@@ -40,8 +40,8 @@ exports.getLeaderboard = async (req, res) => {
     const periodCondition = period === 'week'
       ? `AND pl.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)`
       : period === 'month'
-      ? `AND pl.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)`
-      : '';
+        ? `AND pl.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)`
+        : '';
 
     // Lấy điểm của user hiện tại
     const myPointsResult = await sequelize.query(
@@ -54,7 +54,7 @@ exports.getLeaderboard = async (req, res) => {
 
     // Đếm số user có tổng điểm cao hơn user hiện tại (chỉ tính Approved users)
     const rankResult = await sequelize.query(
-      `SELECT COUNT(*) + 1 AS rank
+      `SELECT COUNT(*) + 1 AS user_rank
        FROM (
          SELECT pl.user_id, SUM(pl.points) AS total_points
          FROM point_logs pl
@@ -65,7 +65,7 @@ exports.getLeaderboard = async (req, res) => {
        WHERE ranked.total_points > :myPoints`,
       { replacements: { userId, myPoints }, type: sequelize.QueryTypes.SELECT }
     );
-    const myRank = myPoints > 0 ? parseInt(rankResult[0]?.rank || 1) : null;
+    const myRank = myPoints > 0 ? parseInt(rankResult[0]?.user_rank || 1) : null;
 
     // Tổng số người tham gia (có điểm, đã Approved)
     const totalResult = await sequelize.query(
@@ -78,12 +78,12 @@ exports.getLeaderboard = async (req, res) => {
     const totalParticipants = parseInt(totalResult[0]?.total || 0);
 
     const leaderboard = top10.map((entry, index) => ({
-      rank:         index + 1,
-      user_id:      entry.user_id,
-      full_name:    entry.user?.full_name,
-      username:     entry.user?.username,
-      avatar_url:   entry.user?.avatar_url,
-      role:         entry.user?.role,
+      rank: index + 1,
+      user_id: entry.user_id,
+      full_name: entry.user?.full_name,
+      username: entry.user?.username,
+      avatar_url: entry.user?.avatar_url,
+      role: entry.user?.role,
       total_points: parseInt(entry.get('total_points')),
     }));
 
