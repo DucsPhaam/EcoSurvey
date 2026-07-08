@@ -106,7 +106,7 @@ Services:
 
 ## 🔑 Default Demo Accounts
 
-> Password cho tất cả tài khoản demo: **`Admin@123`**
+> Password for all demo accounts: **`Admin@123456`**
 
 | Username | Role | Status |
 |---|---|---|
@@ -115,8 +115,6 @@ Services:
 | `pcb_staff` | Staff | Approved |
 | `ttb_student` | Student | Pending |
 | `lvc_student` | Student | Rejected |
-
-> ⚠️ **Đổi mật khẩu admin ngay sau lần đăng nhập đầu tiên ở môi trường production.**
 
 ---
 
