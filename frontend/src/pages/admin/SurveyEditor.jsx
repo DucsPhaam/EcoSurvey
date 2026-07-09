@@ -13,45 +13,81 @@ const Q_TYPES = [
 ]
 
 function QuestionCard({ q, index, onEdit, onDelete, onDragStart, onDragOver, onDrop }) {
+  const isOpinion = q.options?.isOpinion === true
+  // options chỉ là array khi là Single_Choice / Multiple_Choice
+  const optionsArray = Array.isArray(q.options) ? q.options : []
+
   return (
-    <div draggable
-      onDragStart={() => onDragStart(index)}
+    <div draggable={!isOpinion}
+      onDragStart={() => !isOpinion && onDragStart(index)}
       onDragOver={(e) => { e.preventDefault(); onDragOver(index) }}
       onDrop={() => onDrop(index)}
-      className="card p-5 group border-2 border-transparent hover:border-brand-200 dark:hover:border-brand-800 transition-all duration-200 cursor-grab active:cursor-grabbing">
+      className={`card p-5 group border-2 transition-all duration-200 ${
+        isOpinion
+          ? 'border-brand-200 dark:border-brand-800 bg-brand-50/30 dark:bg-brand-900/10 cursor-default'
+          : 'border-transparent hover:border-brand-200 dark:hover:border-brand-800 cursor-grab active:cursor-grabbing'
+      }`}>
       <div className="flex items-start gap-3">
         <div className="flex flex-col items-center gap-1 pt-1 text-gray-300 dark:text-gray-600 group-hover:text-brand-400 transition-colors">
-          <GripVertical className="w-4 h-4" />
+          {isOpinion ? <span className="text-lg">💬</span> : <GripVertical className="w-4 h-4" />}
           <span className="text-xs font-bold">{index + 1}</span>
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <span className="text-xs badge-published">{q.question_type.replace('_', ' ')}</span>
+            {isOpinion
+              ? <span className="text-xs px-2 py-0.5 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 font-medium">Ý kiến cá nhân · Auto</span>
+              : <span className="text-xs badge-published">{q.question_type.replace('_', ' ')}</span>
+            }
             {q.is_required && <span className="text-xs text-red-400 font-medium">Required</span>}
           </div>
           <p className="text-sm font-medium text-gray-800 dark:text-gray-200 leading-relaxed">{q.question_text}</p>
-          {q.options && (
+          {optionsArray.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {q.options.map((opt, i) => (
+              {optionsArray.map((opt, i) => (
                 <span key={i} className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full">{opt}</span>
               ))}
             </div>
           )}
+          {isOpinion && (
+            <p className="text-xs text-brand-400 dark:text-brand-500 mt-1">Tự động thêm khi tạo khảo sát · Tối đa 150 ký tự · Không thể xóa</p>
+          )}
         </div>
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={() => onEdit(q)} className="p-1.5 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-900/20 text-gray-400 hover:text-brand-600 transition-colors">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-          </button>
-          <button onClick={() => onDelete(q.id)} className="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-colors">
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
+        {/* Ẩn Edit/Delete với câu hỏi opinion */}
+        {!isOpinion && (
+          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button onClick={() => onEdit(q)} className="p-1.5 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-900/20 text-gray-400 hover:text-brand-600 transition-colors">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+            </button>
+            <button onClick={() => onDelete(q.id)} className="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-colors">
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
 const EMPTY_Q = { question_text: '', question_type: 'Text', options: [], is_required: true }
+
+// Convert UTC ISO string → "YYYY-MM-DDTHH:mm" theo giờ địa phương (cho datetime-local input)
+function toLocalInput(isoStr) {
+  if (!isoStr) return ''
+  const d = new Date(isoStr)
+  if (isNaN(d)) return ''
+  const offset = d.getTimezoneOffset() // phút lệch so với UTC (việt nam = -420)
+  const local  = new Date(d.getTime() - offset * 60000)
+  return local.toISOString().slice(0, 16)
+}
+
+// Convert datetime-local string (giờ địa phương) → UTC ISO trước khi gửi lên server
+// Ví dụ: "2026-07-15T00:00" (UTC+7) → "2026-07-14T17:00:00.000Z" (UTC)
+function localInputToISO(localStr) {
+  if (!localStr) return localStr
+  const d = new Date(localStr) // trình duyệt tự parse theo múi giờ địa phương
+  if (isNaN(d)) return localStr
+  return d.toISOString()
+}
 
 export default function SurveyEditor() {
   const { id } = useParams()
@@ -79,7 +115,7 @@ export default function SurveyEditor() {
       ]).then(([s, qs]) => {
         if (s) {
           setSurvey(s)
-          setSForm({ title: s.title, description: s.description || '', target_role: s.target_role, start_date: s.start_date?.slice(0, 16) || '', end_date: s.end_date?.slice(0, 16) || '', status: s.status })
+          setSForm({ title: s.title, description: s.description || '', target_role: s.target_role, start_date: toLocalInput(s.start_date), end_date: toLocalInput(s.end_date), status: s.status })
         }
         setQuestions(qs || [])
       }).catch(() => navigate('/admin/surveys')).finally(() => setLoading(false))
@@ -90,12 +126,18 @@ export default function SurveyEditor() {
     if (!sForm.title) { toast.error('Title is required.'); return }
     setSaving(true)
     try {
+      // Convert ngày giờ từ giờ địa phương (datetime-local) sang UTC ISO trước khi gửi lên server
+      const payload = {
+        ...sForm,
+        start_date: localInputToISO(sForm.start_date),
+        end_date:   localInputToISO(sForm.end_date),
+      }
       if (isNew) {
-        const res = await api.post('/admin/surveys', sForm)
+        const res = await api.post('/admin/surveys', payload)
         toast.success('Survey created! Now add questions.')
         navigate(`/admin/surveys/${res.data.survey.id}/edit`)
       } else {
-        await api.patch(`/admin/surveys/${id}`, sForm)
+        await api.patch(`/admin/surveys/${id}`, payload)
         toast.success('Survey saved.')
       }
     } catch (err) { toast.error(err.response?.data?.message || 'Save failed.') }
@@ -103,7 +145,14 @@ export default function SurveyEditor() {
   }
 
   const openAddQ = () => { setEditingQ(null); setQForm({ ...EMPTY_Q }); setOptionInput(''); setQModal(true) }
-  const openEditQ = (q) => { setEditingQ(q); setQForm({ question_text: q.question_text, question_type: q.question_type, options: q.options || [], is_required: q.is_required }); setOptionInput(''); setQModal(true) }
+  const openEditQ = (q) => {
+    // Normalize options: chỉ dùng array thật (Single/Multiple choice), bỏ qua object isOpinion
+    const optionsArr = Array.isArray(q.options) ? q.options : []
+    setEditingQ(q)
+    setQForm({ question_text: q.question_text, question_type: q.question_type, options: optionsArr, is_required: q.is_required })
+    setOptionInput('')
+    setQModal(true)
+  }
 
   const addOption = () => {
     const t = optionInput.trim()

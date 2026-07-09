@@ -7,17 +7,44 @@ import toast from 'react-hot-toast'
 
 function QuestionItem({ question, answer, onChange }) {
   const { question_type: type, options, question_text, is_required, order_num } = question
+  const isOpinion = options?.isOpinion === true
+  const maxLen    = options?.maxLength || 150
+  const charCount = typeof answer === 'string' ? answer.length : 0
 
   return (
-    <div className="card p-6 animate-fade-in">
+    <div className={`card p-6 animate-fade-in ${isOpinion ? 'ring-2 ring-brand-400/40 dark:ring-brand-500/30' : ''}`}>
       <p className="font-medium text-gray-900 dark:text-white mb-1 leading-relaxed">
-        <span className="text-brand-500 font-bold mr-2">{order_num}.</span>
+        <span className="text-brand-500 font-bold mr-2">{isOpinion ? '💬' : `${order_num}.`}</span>
         {question_text}
         {is_required && <span className="text-red-400 ml-1">*</span>}
       </p>
-      <p className="text-xs text-gray-400 mb-4 capitalize">{type.replace('_', ' ')}</p>
+      {isOpinion
+        ? <p className="text-xs text-brand-500 dark:text-brand-400 font-medium mb-3">Ý kiến cá nhân · Bắt buộc · Tối đa {maxLen} ký tự</p>
+        : <p className="text-xs text-gray-400 mb-4 capitalize">{type.replace('_', ' ')}</p>
+      }
 
-      {type === 'Text' && (
+      {/* Câu hỏi ý kiến cá nhân — có giới hạn 150 ký tự */}
+      {isOpinion && (
+        <div className="relative">
+          <textarea
+            value={answer || ''}
+            onChange={(e) => onChange(question.id, e.target.value)}
+            placeholder="Nhập ý kiến cá nhân của bạn về bài khảo sát này…"
+            rows={4}
+            maxLength={maxLen}
+            required
+            className="input resize-none pr-14"
+          />
+          <span className={`absolute bottom-3 right-3 text-xs font-mono font-semibold transition-colors ${
+            charCount >= maxLen ? 'text-red-500' : charCount >= maxLen * 0.8 ? 'text-amber-500' : 'text-gray-400'
+          }`}>
+            {charCount}/{maxLen}
+          </span>
+        </div>
+      )}
+
+      {/* Câu hỏi Text thông thường */}
+      {!isOpinion && type === 'Text' && (
         <textarea
           value={answer || ''}
           onChange={(e) => onChange(question.id, e.target.value)}

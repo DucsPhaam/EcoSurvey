@@ -221,12 +221,15 @@ exports.adminGetSurveys = async (req, res) => {
 
 // ── ADMIN: POST /api/admin/surveys ────────────────────────────
 exports.adminCreateSurvey = async (req, res) => {
+  const t = await sequelize.transaction();
   try {
     const { title, description, target_role, start_date, end_date, status } = req.body;
     if (!title || !start_date || !end_date) {
+      await t.rollback();
       return res.status(400).json({ message: 'Title, start date, and end date are required.' });
     }
     if (new Date(end_date) <= new Date(start_date)) {
+      await t.rollback();
       return res.status(400).json({ message: 'End date must be after start date.' });
     }
 
@@ -235,10 +238,22 @@ exports.adminCreateSurvey = async (req, res) => {
       start_date, end_date,
       status: status || 'Draft',
       created_by: req.user.id,
-    });
+    }, { transaction: t });
 
+    // Tự động tạo câu hỏi "Ý kiến cá nhân" — luôn xuất hiện cuối cùng
+    await Question.create({
+      survey_id:     survey.id,
+      question_text: 'Ý kiến cá nhân về bài khảo sát',
+      question_type: 'Text',
+      is_required:   true,
+      options:       { isOpinion: true, maxLength: 150 },
+      order_num:     9999,
+    }, { transaction: t });
+
+    await t.commit();
     res.status(201).json({ message: 'Survey created.', survey });
   } catch (err) {
+    await t.rollback();
     logger.error('adminCreateSurvey error:', err);
     res.status(500).json({ message: 'Failed to create survey.' });
   }
@@ -418,6 +433,7 @@ exports.reorderQuestions = async (req, res) => {
 };
 
 // ── GET /api/admin/surveys/:id/responses ─────────────────────
+// Trả về danh sách bài làm ẩn danh — Admin KHÔNG thấy tên/email người nộp.
 exports.getSurveyResponses = async (req, res) => {
   try {
     const { page = 1, limit = 20 } = req.query;
@@ -426,7 +442,8 @@ exports.getSurveyResponses = async (req, res) => {
     const { count, rows } = await SurveyResponse.findAndCountAll({
       where: { survey_id: req.params.id },
       include: [
-        { model: User, as: 'user', attributes: ['id', 'full_name', 'username', 'role'] },
+        // Chỉ lấy role để hiển thị nhóm (Student/Staff), không lấy tên hay email
+        { model: User, as: 'user', attributes: ['role'] },
         { model: SurveyAnswer, as: 'answers', include: [{ model: Question, as: 'question' }] },
       ],
       order: [['submitted_at', 'DESC']],
@@ -434,8 +451,89 @@ exports.getSurveyResponses = async (req, res) => {
       offset,
     });
 
-    res.json({ responses: rows, total: count, page: parseInt(page), totalPages: Math.ceil(count / parseInt(limit)) });
+    // Gán nhãn ẩn danh theo thứ tự — Admin chỉ thấy "Ẩn danh #1", "Ẩn danh #2"…
+    const anonymousResponses = rows.map((r, idx) => {
+      const json = r.toJSON();
+      return {
+        ...json,
+        user: {
+          displayName: `Ẩn danh #${offset + idx + 1}`,
+          role: json.user?.role || 'Unknown',
+        },
+      };
+    });
+
+    res.json({ responses: anonymousResponses, total: count, page: parseInt(page), totalPages: Math.ceil(count / parseInt(limit)) });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch survey responses.' });
+  }
+};
+
+// ── PUT /api/admin/surveys/responses/:id/score ────────────────
+// Admin chấm điểm ý kiến cá nhân (0–10). Tạo/cập nhật PointLog Bonus tương ứng.
+exports.gradeOpinion = async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const { id } = req.params; // response_id
+    const { opinion_score } = req.body;
+
+    // Validate điểm
+    if (opinion_score === undefined || opinion_score === null) {
+      await t.rollback();
+      return res.status(400).json({ message: 'opinion_score is required.' });
+    }
+    const score = parseInt(opinion_score, 10);
+    if (isNaN(score) || score < 0 || score > 10) {
+      await t.rollback();
+      return res.status(400).json({ message: 'opinion_score must be an integer between 0 and 10.' });
+    }
+
+    const response = await SurveyResponse.findByPk(id, { transaction: t });
+    if (!response) {
+      await t.rollback();
+      return res.status(404).json({ message: 'Survey response not found.' });
+    }
+
+    const previousScore = response.opinion_score; // null nếu chưa chấm
+
+    // Cập nhật điểm trên bản ghi response
+    await response.update({ opinion_score: score }, { transaction: t });
+
+    // Tìm PointLog Bonus hiện có (nếu đã chấm lần trước)
+    const existingLog = await PointLog.findOne({
+      where: {
+        user_id:        response.user_id,
+        action_type:    'Bonus',
+        reference_id:   response.id,
+        reference_type: 'opinion_score',
+      },
+      transaction: t,
+    });
+
+    if (existingLog) {
+      // Cập nhật điểm cũ → điểm mới
+      await existingLog.update({ points: score, note: `Điểm ý kiến cá nhân bài khảo sát (survey_response #${id})` }, { transaction: t });
+    } else {
+      // Tạo mới PointLog
+      await PointLog.create({
+        user_id:        response.user_id,
+        action_type:    'Bonus',
+        points:         score,
+        reference_id:   response.id,
+        reference_type: 'opinion_score',
+        note:           `Điểm ý kiến cá nhân bài khảo sát (survey_response #${id})`,
+      }, { transaction: t });
+    }
+
+    await t.commit();
+    res.json({
+      message: `Đã chấm ${score}/10 điểm cho bài làm #${id}.`,
+      previous_score: previousScore,
+      new_score: score,
+    });
+  } catch (err) {
+    await t.rollback();
+    logger.error('gradeOpinion error:', err);
+    res.status(500).json({ message: 'Failed to grade opinion.' });
   }
 };

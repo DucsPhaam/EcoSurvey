@@ -20,6 +20,7 @@ router.post('/surveys',                 ...isAdmin, surveyCtrl.adminCreateSurvey
 router.patch('/surveys/:id',            ...isAdmin, surveyCtrl.adminUpdateSurvey);
 router.delete('/surveys/:id',           ...isAdmin, surveyCtrl.adminDeleteSurvey);
 router.get('/surveys/:id/responses',    ...isAdmin, surveyCtrl.getSurveyResponses);
+router.put('/surveys/responses/:id/score', ...isAdmin, surveyCtrl.gradeOpinion);
 
 // ── Questions ─────────────────────────────────────────────────
 router.get('/surveys/:surveyId/questions',     ...isAdmin, surveyCtrl.getQuestions);

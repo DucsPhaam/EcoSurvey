@@ -134,8 +134,8 @@ export default function SurveyManagement() {
                     <td className="table-cell text-center text-sm font-medium">{s.question_count || 0}</td>
                     <td className="table-cell text-center text-sm font-medium">{s.response_count || 0}</td>
                     <td className="table-cell text-xs text-gray-400">
-                      <div>{new Date(s.start_date).toLocaleDateString()}</div>
-                      <div>→ {new Date(s.end_date).toLocaleDateString()}</div>
+                      <div>{new Date(s.start_date).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}</div>
+                      <div>→ {new Date(s.end_date).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}</div>
                     </td>
                     <td className="table-cell">
                       <div className="flex items-center gap-1">
@@ -143,6 +143,13 @@ export default function SurveyManagement() {
                           className="p-1.5 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-900/20 text-gray-400 hover:text-brand-600 transition-colors" title="Edit">
                           <Edit3 className="w-4 h-4" />
                         </Link>
+                        {/* Xem kết quả ẩn danh — chỉ hiện khi có response */}
+                        {(s.response_count || 0) > 0 && (
+                          <Link to={`/admin/surveys/${s.id}/responses`}
+                            className="p-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 text-gray-400 hover:text-purple-600 transition-colors" title="Xem kết quả ẩn danh">
+                            <Eye className="w-4 h-4" />
+                          </Link>
+                        )}
                         {s.status === 'Draft' && (
                           <button onClick={() => quickStatus(s.id, 'Published')}
                             className="px-2 py-1 rounded-lg text-xs font-medium bg-green-50 dark:bg-green-900/20 text-green-600 hover:bg-green-100 transition-colors">
