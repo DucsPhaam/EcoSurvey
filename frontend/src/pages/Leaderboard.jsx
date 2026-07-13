@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Trophy, Medal, Star, Crown } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
-import api from '../services/axiosInstance'
+import { leaderboardService } from '../services/leaderboardService'
 import { SpinnerPage } from '../components/ui/Spinner'
 
 const MEDALS = [
@@ -35,7 +35,7 @@ export default function Leaderboard() {
   const fetch = async (p) => {
     setLoading(true)
     try {
-      const res = await api.get('/leaderboard', { params: { period: p } })
+      const res = await leaderboardService.getLeaderboard(p)
       setData(res.data)
     } catch { /* ignore */ } finally { setLoading(false) }
   }

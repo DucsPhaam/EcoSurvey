@@ -1,81 +1,56 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ChevronLeft, ClipboardList, CheckCircle2, Send, AlertCircle, Calendar } from 'lucide-react'
-import api from '../../services/axiosInstance'
+import { ChevronLeft, ClipboardList, CheckCircle2, Send, AlertCircle, Calendar, Leaf, Clock, Trophy } from 'lucide-react'
+import { surveyService } from '../../services/surveyService'
 import { SpinnerPage } from '../../components/ui/Spinner'
 import toast from 'react-hot-toast'
 
 function QuestionItem({ question, answer, onChange }) {
   const { question_type: type, options, question_text, is_required, order_num } = question
-  const isOpinion = options?.isOpinion === true
-  const maxLen    = options?.maxLength || 150
-  const charCount = typeof answer === 'string' ? answer.length : 0
 
   return (
-    <div className={`card p-6 animate-fade-in ${isOpinion ? 'ring-2 ring-brand-400/40 dark:ring-brand-500/30' : ''}`}>
-      <p className="font-medium text-gray-900 dark:text-white mb-1 leading-relaxed">
-        <span className="text-brand-500 font-bold mr-2">{isOpinion ? '💬' : `${order_num}.`}</span>
-        {question_text}
-        {is_required && <span className="text-red-400 ml-1">*</span>}
-      </p>
-      {isOpinion
-        ? <p className="text-xs text-brand-500 dark:text-brand-400 font-medium mb-3">Ý kiến cá nhân · Bắt buộc · Tối đa {maxLen} ký tự</p>
-        : <p className="text-xs text-gray-400 mb-4 capitalize">{type.replace('_', ' ')}</p>
-      }
-
-      {/* Câu hỏi ý kiến cá nhân — có giới hạn 150 ký tự */}
-      {isOpinion && (
-        <div className="relative">
-          <textarea
-            value={answer || ''}
-            onChange={(e) => onChange(question.id, e.target.value)}
-            placeholder="Nhập ý kiến cá nhân của bạn về bài khảo sát này…"
-            rows={4}
-            maxLength={maxLen}
-            required
-            className="input resize-none pr-14"
-          />
-          <span className={`absolute bottom-3 right-3 text-xs font-mono font-semibold transition-colors ${
-            charCount >= maxLen ? 'text-red-500' : charCount >= maxLen * 0.8 ? 'text-amber-500' : 'text-gray-400'
-          }`}>
-            {charCount}/{maxLen}
-          </span>
+    <div className="card p-6 animate-fade-in">
+      <div className="flex items-start gap-3 mb-3">
+        <span className="font-display text-2xl text-earth-forest flex-shrink-0">{String(order_num).padStart(2, '0')}</span>
+        <div className="flex-1">
+          <p className="ui-title leading-snug">
+            {question_text}
+            {is_required && <span className="text-earth-terracotta ml-1">*</span>}
+          </p>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-earth-ink/60 mt-1">/ {type.replace('_', ' ')}</p>
         </div>
-      )}
+      </div>
 
-      {/* Câu hỏi Text thông thường */}
-      {!isOpinion && type === 'Text' && (
+      {type === 'Text' && (
         <textarea
           value={answer || ''}
           onChange={(e) => onChange(question.id, e.target.value)}
           placeholder="Type your answer here…"
           rows={3}
-          className="input resize-none"
+          className="input resize-none mt-2"
         />
       )}
 
       {type === 'Single_Choice' && (
-        <div className="space-y-2">
+        <div className="space-y-0 mt-3">
           {(options || []).map((opt, i) => (
-            <label key={i} className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-              answer === opt
-                ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
-                : 'border-gray-200 dark:border-gray-700 hover:border-brand-300 dark:hover:border-brand-700'
-            }`}>
-              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                answer === opt ? 'border-brand-500 bg-brand-500' : 'border-gray-300 dark:border-gray-600'}`}>
-                {answer === opt && <div className="w-2 h-2 bg-white rounded-full" />}
+            <label key={i} className={`flex items-center gap-3 p-3 border-[3px] border-earth-ink cursor-pointer transition-all ${
+              answer === opt ? 'bg-earth-forest text-earth-paper shadow-brutal-sm' : 'bg-earth-paper hover:bg-earth-cream'
+            } ${i !== 0 ? '-mt-[3px]' : ''}`}>
+              <div className={`w-5 h-5 border-[3px] border-current flex items-center justify-center flex-shrink-0 ${
+                answer === opt ? 'bg-earth-paper' : ''}`}>
+                {answer === opt && <div className="w-2 h-2 bg-earth-forest rounded-full" />}
               </div>
               <input type="radio" className="sr-only" name={`q-${question.id}`}
                 checked={answer === opt} onChange={() => onChange(question.id, opt)} />
-              <span className="text-sm text-gray-700 dark:text-gray-300">{opt}</span>
+              <span className="ui-title text-sm">{opt}</span>
             </label>
           ))}
         </div>
       )}
 
       {type === 'Multiple_Choice' && (
-        <div className="space-y-2">
+        <div className="space-y-0 mt-3">
           {(options || []).map((opt, i) => {
             const selected = Array.isArray(answer) ? answer.includes(opt) : false
             const toggle = () => {
@@ -83,19 +58,29 @@ function QuestionItem({ question, answer, onChange }) {
               onChange(question.id, selected ? cur.filter((x) => x !== opt) : [...cur, opt])
             }
             return (
-              <label key={i} className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                selected ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-brand-300'}`}>
-                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                  selected ? 'border-brand-500 bg-brand-500' : 'border-gray-300 dark:border-gray-600'}`}>
-                  {selected && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+              <label key={i} className={`flex items-center gap-3 p-3 border-[3px] border-earth-ink cursor-pointer transition-all ${
+                selected ? 'bg-earth-forest text-earth-paper shadow-brutal-sm' : 'bg-earth-paper hover:bg-earth-cream'
+              } ${i !== 0 ? '-mt-[3px]' : ''}`}>
+                <div className={`w-5 h-5 border-[3px] border-current flex items-center justify-center flex-shrink-0 ${
+                  selected ? 'bg-earth-paper' : ''}`}>
+                  {selected && <CheckCircle2 className="w-4 h-4 text-earth-forest" />}
                 </div>
                 <input type="checkbox" className="sr-only" checked={selected} onChange={toggle} />
-                <span className="text-sm text-gray-700 dark:text-gray-300">{opt}</span>
+                <span className="ui-title text-sm">{opt}</span>
               </label>
             )
           })}
         </div>
       )}
+    </div>
+  )
+}
+
+function ImpactBlock({ num, label }) {
+  return (
+    <div className="bg-earth-paper border-[3px] border-earth-ink p-4">
+      <p className="impact-num">{num}</p>
+      <p className="font-mono text-[10px] uppercase tracking-widest mt-1">{label}</p>
     </div>
   )
 }
@@ -110,7 +95,7 @@ export default function SurveyDetail() {
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    api.get(`/surveys/${id}`)
+    surveyService.getSurveyDetail(id)
       .then((r) => { setSurvey(r.data.survey); setCompleted(r.data.is_completed) })
       .catch(() => navigate('/surveys'))
       .finally(() => setLoading(false))
@@ -118,8 +103,14 @@ export default function SurveyDetail() {
 
   const setAnswer = (qId, val) => setAnswers((a) => ({ ...a, [qId]: val }))
 
+  // Helper: format an answer value for storage (Multiple_Choice => joined string)
+  const formatAnswer = (q, value) => {
+    if (q.question_type === 'Multiple_Choice' && Array.isArray(value)) return value.join(', ')
+    if (q.question_type === 'Single_Choice') return String(value ?? '')
+    return value ?? ''
+  }
+
   const handleSubmit = async () => {
-    // Validate required questions
     const required = survey.questions.filter((q) => q.is_required)
     for (const q of required) {
       const a = answers[q.id]
@@ -133,10 +124,10 @@ export default function SurveyDetail() {
     try {
       const payload = survey.questions.map((q) => ({
         question_id: q.id,
-        answer_text: answers[q.id] ?? '',
+        answer_text: formatAnswer(q, answers[q.id]),
       }))
-      await api.post(`/surveys/${id}/submit`, { answers: payload })
-      toast.success('Survey submitted! You earned 10 points. 🎉')
+      await surveyService.submitSurvey(id, payload)
+      toast.success('Survey submitted! You earned 10 points.')
       setCompleted(true)
     } catch (err) {
       toast.error(err.response?.data?.message || 'Submission failed.')
@@ -148,67 +139,95 @@ export default function SurveyDetail() {
 
   const daysLeft  = Math.ceil((new Date(survey.end_date) - new Date()) / 86400000)
   const questions = [...(survey.questions || [])].sort((a, b) => a.order_num - b.order_num)
+  const requiredCount = questions.filter((q) => q.is_required).length
+  const answeredCount = questions.filter((q) => {
+    const a = answers[q.id]
+    return a && !(Array.isArray(a) && a.length === 0) && !(typeof a === 'string' && !a.trim())
+  }).length
 
   return (
-    <div className="max-w-3xl mx-auto animate-fade-in">
+    <div className="max-w-4xl mx-auto animate-fade-in space-y-6">
       {/* Back */}
       <button onClick={() => navigate('/surveys')}
-        className="flex items-center gap-2 text-sm text-gray-500 hover:text-brand-600 dark:hover:text-brand-400 mb-6 transition-colors">
-        <ChevronLeft className="w-4 h-4" /> Back to Survey Board
+        className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-widest border-b-[3px] border-earth-ink pb-0.5 hover:text-earth-forest">
+        <ChevronLeft className="w-4 h-4" /> Back to Board
       </button>
 
-      {/* Survey header card */}
-      <div className="card p-8 mb-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-brand-500/10 to-accent-400/10 rounded-bl-full" />
+      {/* Survey header */}
+      <div className="card p-6 md:p-8 relative overflow-hidden">
+        <div className="stamp top-4 right-4 bg-earth-terracotta text-earth-paper">{completed ? 'Done' : 'Active'}</div>
         <div className="flex items-start gap-4 mb-4">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-500 to-accent-400 flex items-center justify-center shadow-glow-sm">
-            <ClipboardList className="w-6 h-6 text-white" />
+          <div className="w-14 h-14 bg-earth-forest border-[3px] border-earth-ink flex items-center justify-center flex-shrink-0">
+            <ClipboardList className="w-6 h-6 text-earth-cream" />
           </div>
           <div className="flex-1">
-            <div className="flex flex-wrap gap-2 mb-2">
+            <div className="flex flex-wrap gap-2 mb-3">
               <span className="badge-published">{survey.target_role}</span>
               {completed && <span className="badge-approved flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Completed</span>}
-              {!completed && daysLeft <= 3 && daysLeft > 0 && <span className="badge-pending">⚠️ {daysLeft}d left</span>}
+              {!completed && daysLeft > 0 && daysLeft <= 3 && <span className="badge-pending">⚠ {daysLeft}d left</span>}
             </div>
-            <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-white">{survey.title}</h1>
+            <h1 className="font-display text-3xl md:text-4xl uppercase leading-tight">{survey.title}</h1>
           </div>
         </div>
-        {survey.description && <p className="text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">{survey.description}</p>}
-        <div className="flex items-center gap-6 text-sm text-gray-400">
-          <span className="flex items-center gap-1.5"><ClipboardList className="w-4 h-4" /> {questions.length} questions</span>
-          <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4" />Ends {new Date(survey.end_date).toLocaleDateString()}</span>
-          <span className="text-brand-500 font-semibold">+10 points</span>
+        {survey.description && <p className="text-earth-ink/80 leading-relaxed">{survey.description}</p>}
+
+        <div className="mt-6 pt-6 border-t-[3px] border-earth-ink grid grid-cols-2 md:grid-cols-4 gap-3">
+          <ImpactBlock num={questions.length} label="Questions" />
+          <ImpactBlock num={requiredCount}    label="Required" />
+          <ImpactBlock num={`+10`}            label="Points" />
+          <ImpactBlock num={daysLeft > 0 ? daysLeft : '0'} label="Days Left" />
         </div>
       </div>
 
       {/* Already completed */}
       {completed ? (
         <div className="card p-10 text-center">
-          <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 className="w-8 h-8 text-green-500" />
+          <div className="w-20 h-20 mx-auto mb-4 bg-earth-moss border-[3px] border-earth-ink flex items-center justify-center shadow-brutal">
+            <CheckCircle2 className="w-10 h-10 text-earth-paper" />
           </div>
-          <h2 className="text-xl font-display font-bold text-gray-900 dark:text-white mb-2">Survey Completed!</h2>
-          <p className="text-gray-500 mb-6">You've already submitted your responses for this survey.</p>
-          <button onClick={() => navigate('/surveys')} className="btn-primary">Back to Surveys</button>
+          <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60">/ status</p>
+          <h2 className="font-display text-3xl uppercase mt-2">Survey Completed</h2>
+          <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60 mt-2">/ you&apos;ve already submitted your responses</p>
+          <button onClick={() => navigate('/surveys')} className="btn-primary mt-6">
+            Back to Board <ClipboardList className="w-4 h-4" />
+          </button>
         </div>
       ) : (
         <>
-          <div className="space-y-4 mb-6">
+          {/* Progress */}
+          <div className="card p-4 flex items-center gap-4">
+            <Leaf className="w-6 h-6 text-earth-forest" />
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-1">
+                <p className="font-mono text-xs uppercase tracking-widest">Progress</p>
+                <p className="font-display text-sm">{answeredCount}/{questions.length}</p>
+              </div>
+              <div className="h-[6px] bg-earth-cream border-[2px] border-earth-ink">
+                <div
+                  className="h-full bg-earth-forest transition-all duration-300"
+                  style={{ width: `${(answeredCount / Math.max(questions.length, 1)) * 100}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
             {questions.map((q) => (
               <QuestionItem key={q.id} question={q} answer={answers[q.id]} onChange={setAnswer} />
             ))}
           </div>
 
-          <div className="card p-5 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <AlertCircle className="w-4 h-4 text-amber-500" />
-              Answer all required questions (<span className="text-red-400">*</span>) before submitting.
+          <div className="card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-earth-cream">
+            <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-widest">
+              <AlertCircle className="w-4 h-4" />
+              Answer required (<span className="text-earth-terracotta">*</span>) before submitting
             </div>
-            <button onClick={handleSubmit} disabled={submitting}
-              className="btn-primary flex-shrink-0">
-              {submitting
-                ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                : <><Send className="w-4 h-4" /> Submit Survey</>}
+            <button onClick={handleSubmit} disabled={submitting} className="btn-primary flex-shrink-0">
+              {submitting ? (
+                <span className="w-4 h-4 border-[3px] border-earth-paper/30 border-t-earth-paper" />
+              ) : (
+                <><Send className="w-4 h-4" /> Submit Survey</>
+              )}
             </button>
           </div>
         </>
@@ -216,3 +235,4 @@ export default function SurveyDetail() {
     </div>
   )
 }
+

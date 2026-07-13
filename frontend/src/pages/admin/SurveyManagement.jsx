@@ -1,21 +1,17 @@
 import { useEffect, useState } from 'react'
 import { Plus, Edit3, Trash2, Download, Eye, ClipboardList, Search, Globe } from 'lucide-react'
-import api from '../../services/axiosInstance'
+import { adminService } from '../../services/adminService'
+import { exportService, downloadBlob } from '../../services/exportService'
 import { SpinnerPage } from '../../components/ui/Spinner'
 import Pagination from '../../components/ui/Pagination'
 import Modal from '../../components/ui/Modal'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 
-const downloadFile = async (url, filename) => {
+const downloadFile = async (fn, filename) => {
   try {
-    const res = await api.get(url, { responseType: 'blob' })
-    const blob = new Blob([res.data], { type: res.headers['content-type'] })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = filename
-    link.click()
-    URL.revokeObjectURL(link.href)
+    const res = await fn()
+    downloadBlob(res.data, filename)
   } catch (err) {
     toast.error(err.response?.data?.message || 'Export failed.')
   }
@@ -39,7 +35,7 @@ export default function SurveyManagement() {
   const fetch = async (p = 1) => {
     setLoading(true)
     try {
-      const res = await api.get('/admin/surveys', { params: { page: p, limit: 10, search: search || undefined, status: statusF || undefined } })
+      const res = await adminService.getSurveys({ page: p, limit: 10, search: search || undefined, status: statusF || undefined })
       setSurveys(res.data.surveys); setTotal(res.data.total); setTotalPages(res.data.totalPages)
     } catch { /* ignore */ } finally { setLoading(false) }
   }
@@ -52,7 +48,7 @@ export default function SurveyManagement() {
     if (!form.title || !form.start_date || !form.end_date) { toast.error('Title, start and end date required.'); return }
     setActionLoading(true)
     try {
-      await api.post('/admin/surveys', form)
+      await adminService.createSurvey(form)
       toast.success('Survey created.')
       setCreateModal(false)
       setForm({ title: '', description: '', target_role: 'All', start_date: '', end_date: '', status: 'Draft' })
@@ -64,7 +60,7 @@ export default function SurveyManagement() {
   const deleteSurvey = async (id) => {
     setActionLoading(true)
     try {
-      await api.delete(`/admin/surveys/${id}`)
+      await adminService.deleteSurvey(id)
       toast.success('Survey deleted.')
       setDeleteModal(null)
       fetch(page)
@@ -74,7 +70,7 @@ export default function SurveyManagement() {
 
   const quickStatus = async (id, status) => {
     try {
-      await api.patch(`/admin/surveys/${id}`, { status })
+      await adminService.updateSurvey(id, { status })
       toast.success(`Survey ${status.toLowerCase()}.`)
       fetch(page)
     } catch (err) { toast.error(err.response?.data?.message || 'Update failed.') }
@@ -134,8 +130,8 @@ export default function SurveyManagement() {
                     <td className="table-cell text-center text-sm font-medium">{s.question_count || 0}</td>
                     <td className="table-cell text-center text-sm font-medium">{s.response_count || 0}</td>
                     <td className="table-cell text-xs text-gray-400">
-                      <div>{new Date(s.start_date).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}</div>
-                      <div>→ {new Date(s.end_date).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}</div>
+                      <div>{new Date(s.start_date).toLocaleDateString()}</div>
+                      <div>→ {new Date(s.end_date).toLocaleDateString()}</div>
                     </td>
                     <td className="table-cell">
                       <div className="flex items-center gap-1">
@@ -143,13 +139,6 @@ export default function SurveyManagement() {
                           className="p-1.5 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-900/20 text-gray-400 hover:text-brand-600 transition-colors" title="Edit">
                           <Edit3 className="w-4 h-4" />
                         </Link>
-                        {/* Xem kết quả ẩn danh — chỉ hiện khi có response */}
-                        {(s.response_count || 0) > 0 && (
-                          <Link to={`/admin/surveys/${s.id}/responses`}
-                            className="p-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 text-gray-400 hover:text-purple-600 transition-colors" title="Xem kết quả ẩn danh">
-                            <Eye className="w-4 h-4" />
-                          </Link>
-                        )}
                         {s.status === 'Draft' && (
                           <button onClick={() => quickStatus(s.id, 'Published')}
                             className="px-2 py-1 rounded-lg text-xs font-medium bg-green-50 dark:bg-green-900/20 text-green-600 hover:bg-green-100 transition-colors">
@@ -163,7 +152,7 @@ export default function SurveyManagement() {
                           </button>
                         )}
                         <button
-                          onClick={() => downloadFile(`/export/surveys/${s.id}/excel`, `survey_${s.id}_results.xlsx`)}
+                          onClick={() => downloadFile(() => exportService.exportSurveyExcel(s.id), `survey_${s.id}_results.xlsx`)}
                           className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 transition-colors" title="Export Excel">
                           <Download className="w-4 h-4" />
                         </button>

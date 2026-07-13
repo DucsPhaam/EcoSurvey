@@ -25,7 +25,6 @@ import SurveyManagement from './pages/admin/SurveyManagement'
 import SurveyEditor from './pages/admin/SurveyEditor'
 import ParticipationReview from './pages/admin/ParticipationReview'
 import FAQManagement from './pages/admin/FAQManagement'
-import SurveyResponses from './pages/admin/SurveyResponses'
 
 import LoadingScreen from './components/ui/LoadingScreen'
 import ProtectedRoute from './components/layout/ProtectedRoute'
@@ -59,10 +58,9 @@ export default function App() {
           <Route path="/admin"                   element={<AdminDashboard />} />
           <Route path="/admin/users"             element={<UserManagement />} />
           <Route path="/admin/surveys"           element={<SurveyManagement />} />
-          <Route path="/admin/surveys/:id/edit"       element={<SurveyEditor />} />
-          <Route path="/admin/surveys/new"             element={<SurveyEditor />} />
-          <Route path="/admin/surveys/:id/responses"  element={<SurveyResponses />} />
-          <Route path="/admin/participations"          element={<ParticipationReview />} />
+          <Route path="/admin/surveys/:id/edit"  element={<SurveyEditor />} />
+          <Route path="/admin/surveys/new"       element={<SurveyEditor />} />
+          <Route path="/admin/participations"    element={<ParticipationReview />} />
           <Route path="/admin/faqs"              element={<FAQManagement />} />
         </Route>
       </Route>

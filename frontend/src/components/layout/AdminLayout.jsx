@@ -1,9 +1,8 @@
 import { Outlet, NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Users, ClipboardList,
-  FileText, HelpCircle, Menu, X, Leaf,
+  FileText, HelpCircle, Leaf,
 } from 'lucide-react'
-import { useState } from 'react'
 import Navbar from './Navbar'
 import FAQChatWidget from '../features/FAQChatWidget'
 
@@ -16,24 +15,20 @@ const navItems = [
 ]
 
 export default function AdminLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(true)
-
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
+    <div className="min-h-screen bg-earth-paper flex flex-col">
       <Navbar />
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1">
         {/* Sidebar */}
-        <aside className={`${sidebarOpen ? 'w-64' : 'w-0 overflow-hidden'} transition-all duration-300 
-          bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 
-          flex-shrink-0 hidden lg:block`}>
+        <aside className="w-64 bg-earth-cream border-r-[3px] border-earth-ink flex-shrink-0 hidden lg:block">
           <div className="p-6">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-accent-400 flex items-center justify-center">
-                <Leaf className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 bg-earth-forest border-[3px] border-earth-ink flex items-center justify-center">
+                <Leaf className="w-4 h-4 text-earth-cream" />
               </div>
-              <span className="font-display font-bold text-brand-700 dark:text-brand-400">Admin Panel</span>
+              <span className="ui-title text-earth-forest">Admin Panel</span>
             </div>
-            <p className="text-xs text-gray-400 mb-6">EcoSurvey Management</p>
+            <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60 mb-6">EcoSurvey Management</p>
             <nav className="space-y-1">
               {navItems.map(({ to, label, icon: Icon, end }) => (
                 <NavLink

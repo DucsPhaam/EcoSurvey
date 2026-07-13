@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { authService } from '../services/authService'
 import api from '../services/axiosInstance'
 import toast from 'react-hot-toast'
 
@@ -11,7 +12,6 @@ export const AuthProvider = ({ children }) => {
   const [accessToken, setAccessToken] = useState(() => localStorage.getItem('ecosurvey_token') || null)
   const [loading, setLoading] = useState(true)
 
-  // Inject token into axios defaults whenever it changes
   useEffect(() => {
     if (accessToken) {
       api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
@@ -22,21 +22,18 @@ export const AuthProvider = ({ children }) => {
     }
   }, [accessToken])
 
-  // Restore session on mount: try refresh token
   useEffect(() => {
     const restoreSession = async () => {
       if (!accessToken) { setLoading(false); return }
       try {
-        const res = await api.post('/auth/refresh')
+        const res = await authService.refresh()
         setAccessToken(res.data.accessToken)
       } catch {
-        // Refresh token invalid or DB was wiped — clear everything
         setUser(null)
         setAccessToken(null)
         localStorage.removeItem('ecosurvey_user')
         localStorage.removeItem('ecosurvey_token')
-        // Fire-and-forget logout to clear the stale httpOnly cookie (do NOT await — avoid blocking the loading state)
-        api.post('/auth/logout').catch(() => {})
+        authService.logout().catch(() => {})
       } finally {
         setLoading(false)
       }
@@ -44,8 +41,8 @@ export const AuthProvider = ({ children }) => {
     restoreSession()
   }, []) // eslint-disable-line
 
-  const login = useCallback(async (login, password) => {
-    const res = await api.post('/auth/login', { login, password })
+  const login = useCallback(async (loginId, password) => {
+    const res = await authService.login(loginId, password)
     setAccessToken(res.data.accessToken)
     setUser(res.data.user)
     localStorage.setItem('ecosurvey_user', JSON.stringify(res.data.user))
@@ -53,7 +50,7 @@ export const AuthProvider = ({ children }) => {
   }, [])
 
   const logout = useCallback(async () => {
-    try { await api.post('/auth/logout') } catch { /* ignore */ }
+    try { await authService.logout() } catch { /* ignore */ }
     setUser(null)
     setAccessToken(null)
     localStorage.removeItem('ecosurvey_user')

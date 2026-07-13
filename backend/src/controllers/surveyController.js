@@ -7,7 +7,7 @@ const logger = require('../utils/logger');
 exports.getSurveys = async (req, res) => {
   try {
     const userRole = req.user.role;
-    const userId   = req.user.id;
+    const userId = req.user.id;
     const { page = 1, limit = 12, search } = req.query;
 
     const where = {
@@ -165,12 +165,12 @@ exports.submitSurvey = async (req, res) => {
     });
     if (!existingPoint) {
       await PointLog.create({
-        user_id:        userId,
-        action_type:    'Survey_Completion',
-        points:         10,
-        reference_id:   response.id,
+        user_id: userId,
+        action_type: 'Survey_Completion',
+        points: 10,
+        reference_id: response.id,
         reference_type: 'survey_responses',
-        note:           `Completed survey: ${survey.title}`,
+        note: `Completed survey: ${survey.title}`,
       }, { transaction: t });
     }
 
@@ -219,6 +219,24 @@ exports.adminGetSurveys = async (req, res) => {
   }
 };
 
+// ── ADMIN: GET /api/admin/surveys/:id ─────────────────────────
+exports.adminGetSurveyById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const survey = await Survey.findByPk(id, {
+      include: [
+        { model: Question, as: 'questions', order: [['order_num', 'ASC']] },
+        { model: User, as: 'creator', attributes: ['full_name'] },
+      ],
+    });
+    if (!survey) return res.status(404).json({ message: 'Survey not found.' });
+    res.json(survey);
+  } catch (err) {
+    logger.error('adminGetSurveyById error:', err);
+    res.status(500).json({ message: 'Failed to fetch survey.' });
+  }
+};
+
 // ── ADMIN: POST /api/admin/surveys ────────────────────────────
 exports.adminCreateSurvey = async (req, res) => {
   const t = await sequelize.transaction();
@@ -242,12 +260,12 @@ exports.adminCreateSurvey = async (req, res) => {
 
     // Tự động tạo câu hỏi "Ý kiến cá nhân" — luôn xuất hiện cuối cùng
     await Question.create({
-      survey_id:     survey.id,
+      survey_id: survey.id,
       question_text: 'Ý kiến cá nhân về bài khảo sát',
       question_type: 'Text',
-      is_required:   true,
-      options:       { isOpinion: true, maxLength: 150 },
-      order_num:     9999,
+      is_required: true,
+      options: { isOpinion: true, maxLength: 150 },
+      order_num: 9999,
     }, { transaction: t });
 
     await t.commit();
@@ -277,7 +295,7 @@ exports.adminUpdateSurvey = async (req, res) => {
 
     // Validate date range nếu có thay đổi
     const newStartDate = start_date || survey.start_date;
-    const newEndDate   = end_date   || survey.end_date;
+    const newEndDate = end_date || survey.end_date;
     if (new Date(newEndDate) <= new Date(newStartDate)) {
       return res.status(400).json({ message: 'End date must be after start date.' });
     }
@@ -315,11 +333,11 @@ async function _notifyUsersForNewSurvey(survey) {
   if (users.length === 0) return;
 
   const notifications = users.map((u) => ({
-    user_id:        u.id,
-    title:          'Khảo sát mới dành cho bạn',
-    message:        `Khảo sát "${survey.title}" vừa được mở. Hãy tham gia ngay để nhận điểm thưởng!`,
+    user_id: u.id,
+    title: 'Khảo sát mới dành cho bạn',
+    message: `Khảo sát "${survey.title}" vừa được mở. Hãy tham gia ngay để nhận điểm thưởng!`,
     reference_type: 'survey',
-    reference_id:   survey.id,
+    reference_id: survey.id,
   }));
 
   // Gửi theo batch nhỏ để tránh quá tải DB
@@ -502,9 +520,9 @@ exports.gradeOpinion = async (req, res) => {
     // Tìm PointLog Bonus hiện có (nếu đã chấm lần trước)
     const existingLog = await PointLog.findOne({
       where: {
-        user_id:        response.user_id,
-        action_type:    'Bonus',
-        reference_id:   response.id,
+        user_id: response.user_id,
+        action_type: 'Bonus',
+        reference_id: response.id,
         reference_type: 'opinion_score',
       },
       transaction: t,
@@ -516,12 +534,12 @@ exports.gradeOpinion = async (req, res) => {
     } else {
       // Tạo mới PointLog
       await PointLog.create({
-        user_id:        response.user_id,
-        action_type:    'Bonus',
-        points:         score,
-        reference_id:   response.id,
+        user_id: response.user_id,
+        action_type: 'Bonus',
+        points: score,
+        reference_id: response.id,
         reference_type: 'opinion_score',
-        note:           `Điểm ý kiến cá nhân bài khảo sát (survey_response #${id})`,
+        note: `Điểm ý kiến cá nhân bài khảo sát (survey_response #${id})`,
       }, { transaction: t });
     }
 

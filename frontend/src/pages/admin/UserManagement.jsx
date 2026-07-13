@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Search, Check, X, Trash2, Filter, Users, ChevronDown } from 'lucide-react'
-import api from '../../services/axiosInstance'
+import { adminService } from '../../services/adminService'
 import { SpinnerPage } from '../../components/ui/Spinner'
 import Pagination from '../../components/ui/Pagination'
 import Modal from '../../components/ui/Modal'
@@ -27,8 +27,8 @@ export default function UserManagement() {
   const fetch = async (p = 1) => {
     setLoading(true)
     try {
-      const res = await api.get('/admin/users', {
-        params: { page: p, limit: 12, search: search || undefined, role: roleFilter || undefined, status: statusFilter || undefined }
+      const res = await adminService.getUsers({
+        page: p, limit: 12, search: search || undefined, role: roleFilter || undefined, status: statusFilter || undefined
       })
       setUsers(res.data.users); setTotal(res.data.total); setTotalPages(res.data.totalPages)
     } catch { /* ignore */ } finally { setLoading(false) }
@@ -41,7 +41,7 @@ export default function UserManagement() {
   const updateStatus = async (userId, status, reason = '') => {
     setActionLoading(true)
     try {
-      await api.patch(`/admin/users/${userId}/status`, { status, reject_reason: reason || undefined })
+      await adminService.updateUserStatus(userId, { status, reject_reason: reason || undefined })
       toast.success(`Account ${status === 'Approved' ? 'approved' : 'rejected'}.`)
       setRejectModal(null); setRejectReason('')
       fetch(page)
@@ -52,7 +52,7 @@ export default function UserManagement() {
   const deleteUser = async (userId) => {
     setActionLoading(true)
     try {
-      await api.delete(`/admin/users/${userId}`)
+      await adminService.deleteUser(userId)
       toast.success('User deleted.')
       setDeleteModal(null)
       fetch(page)

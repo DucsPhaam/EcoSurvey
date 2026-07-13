@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { CheckCircle2, XCircle, Clock, Eye, Download, Sparkles, MapPin, Users, Calendar, FileText, RefreshCw } from 'lucide-react'
-import api from '../../services/axiosInstance'
+import { adminService } from '../../services/adminService'
+import { exportService, downloadBlob } from '../../services/exportService'
 import { SpinnerPage } from '../../components/ui/Spinner'
 import Pagination from '../../components/ui/Pagination'
 import Modal from '../../components/ui/Modal'
@@ -9,15 +10,10 @@ import toast from 'react-hot-toast'
 const STATUS_BADGE = { Pending: 'badge-pending', Approved: 'badge-approved', Rejected: 'badge-rejected' }
 
 // Fix: dùng axios (gửi Bearer token) thay vì <a href> — browser navigation không gửi auth header
-const downloadFile = async (url, filename) => {
+const downloadFile = async (fn, filename) => {
   try {
-    const res = await api.get(url, { responseType: 'blob' })
-    const blob = new Blob([res.data], { type: res.headers['content-type'] })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = filename
-    link.click()
-    URL.revokeObjectURL(link.href)
+    const res = await fn()
+    downloadBlob(res.data, filename)
   } catch (err) {
     toast.error(err.response?.data?.message || 'Export failed. Please try again.')
   }
@@ -39,7 +35,7 @@ export default function ParticipationReview() {
   const fetch = async (p = 1, s = filter) => {
     setLoading(true)
     try {
-      const res = await api.get('/admin/participations', { params: { page: p, limit: 10, status: s || undefined } })
+      const res = await adminService.getParticipations({ page: p, limit: 10, status: s || undefined })
       setItems(res.data.participations); setTotal(res.data.total); setTotalPages(res.data.totalPages)
     } catch { /* ignore */ } finally { setLoading(false) }
   }
@@ -49,7 +45,7 @@ export default function ParticipationReview() {
   const review = async (id, status, reason = '') => {
     setActionLoading(true)
     try {
-      await api.patch(`/admin/participations/${id}/review`, { status, reject_reason: reason || undefined })
+      await adminService.reviewParticipation(id, { status, reject_reason: reason || undefined })
       toast.success(`Report ${status === 'Approved' ? 'approved! +50 pts awarded.' : 'rejected.'}`)
       setRejectModal(null); setRejectReason('')
       setDetail(null)
@@ -61,7 +57,7 @@ export default function ParticipationReview() {
   const summarize = async (partId, force = false) => {
     setSummarizing(true)
     try {
-      const res = await api.post(`/admin/participations/${partId}/summarize`, null, { params: { force: force ? 'true' : undefined } })
+      const res = await adminService.summarizeParticipation(partId, force)
       toast.success(res.data.cached ? 'Summary loaded from cache.' : 'AI summary generated!')
       setDetail((d) => d ? { ...d, ai_summary: res.data.ai_summary } : d)
       setItems((prev) => prev.map((i) => i.id === partId ? { ...i, ai_summary: res.data.ai_summary } : i))
@@ -86,7 +82,7 @@ export default function ParticipationReview() {
           </button>
         ))}
         <button
-          onClick={() => downloadFile('/export/participations/pdf', 'participations_report.pdf')}
+          onClick={() => downloadFile(() => exportService.exportParticipationsPDF(), 'participations_report.pdf')}
           className="btn-secondary text-sm py-2 ml-auto flex items-center gap-2">
           <Download className="w-4 h-4" /> Export PDF
         </button>

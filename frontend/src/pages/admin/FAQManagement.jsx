@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Plus, Edit3, Trash2, HelpCircle, Check, X } from 'lucide-react'
-import api from '../../services/axiosInstance'
+import { adminService } from '../../services/adminService'
 import { SpinnerPage } from '../../components/ui/Spinner'
 import Modal from '../../components/ui/Modal'
 import toast from 'react-hot-toast'
@@ -18,7 +18,7 @@ export default function FAQManagement() {
 
   const fetch = async () => {
     setLoading(true)
-    try { const r = await api.get('/admin/faqs'); setFaqs(r.data.faqs) }
+    try { const r = await adminService.getFAQs(); setFaqs(r.data.faqs) }
     catch { /* ignore */ } finally { setLoading(false) }
   }
 
@@ -31,8 +31,8 @@ export default function FAQManagement() {
     if (!form.question.trim() || !form.answer.trim()) { toast.error('Question and answer are required.'); return }
     setSaving(true)
     try {
-      if (editing) { await api.patch(`/admin/faqs/${editing.id}`, form); toast.success('FAQ updated.') }
-      else          { await api.post('/admin/faqs', form);               toast.success('FAQ created.') }
+      if (editing) { await adminService.updateFAQ(editing.id, form); toast.success('FAQ updated.') }
+      else          { await adminService.createFAQ(form);               toast.success('FAQ created.') }
       setModal(false)
       fetch()
     } catch { toast.error('Failed to save FAQ.') }
@@ -40,13 +40,13 @@ export default function FAQManagement() {
   }
 
   const deleteFAQ = async (id) => {
-    try { await api.delete(`/admin/faqs/${id}`); toast.success('FAQ deleted.'); setDeleting(null); fetch() }
+    try { await adminService.deleteFAQ(id); toast.success('FAQ deleted.'); setDeleting(null); fetch() }
     catch { toast.error('Failed to delete FAQ.') }
   }
 
   const toggleActive = async (faq) => {
     try {
-      await api.patch(`/admin/faqs/${faq.id}`, { is_active: !faq.is_active })
+      await adminService.updateFAQ(faq.id, { is_active: !faq.is_active })
       setFaqs((prev) => prev.map((f) => f.id === faq.id ? { ...f, is_active: !f.is_active } : f))
     } catch { toast.error('Failed to update FAQ.') }
   }

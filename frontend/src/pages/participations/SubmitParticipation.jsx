@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Upload, X, FileText, Image, ChevronLeft, Send, MapPin, Users, Info } from 'lucide-react'
-import api from '../../services/axiosInstance'
+import { participationService } from '../../services/participationService'
 import toast from 'react-hot-toast'
 
 export default function SubmitParticipation() {
@@ -44,7 +44,7 @@ export default function SubmitParticipation() {
       const fd = new FormData()
       Object.entries(form).forEach(([k, v]) => fd.append(k, v))
       files.forEach((f) => fd.append('files', f))
-      await api.post('/participations', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      await participationService.createParticipation(fd)
       toast.success('Report submitted! Awaiting admin review.')
       navigate('/participations')
     } catch (err) {

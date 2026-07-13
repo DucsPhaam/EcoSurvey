@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ChevronLeft, Plus, Trash2, GripVertical, Save, Eye, Globe, CheckSquare, Type, List } from 'lucide-react'
-import api from '../../services/axiosInstance'
+import { adminService } from '../../services/adminService'
 import { SpinnerPage } from '../../components/ui/Spinner'
 import Modal from '../../components/ui/Modal'
 import toast from 'react-hot-toast'
@@ -13,81 +13,45 @@ const Q_TYPES = [
 ]
 
 function QuestionCard({ q, index, onEdit, onDelete, onDragStart, onDragOver, onDrop }) {
-  const isOpinion = q.options?.isOpinion === true
-  // options chỉ là array khi là Single_Choice / Multiple_Choice
-  const optionsArray = Array.isArray(q.options) ? q.options : []
-
   return (
-    <div draggable={!isOpinion}
-      onDragStart={() => !isOpinion && onDragStart(index)}
+    <div draggable
+      onDragStart={() => onDragStart(index)}
       onDragOver={(e) => { e.preventDefault(); onDragOver(index) }}
       onDrop={() => onDrop(index)}
-      className={`card p-5 group border-2 transition-all duration-200 ${
-        isOpinion
-          ? 'border-brand-200 dark:border-brand-800 bg-brand-50/30 dark:bg-brand-900/10 cursor-default'
-          : 'border-transparent hover:border-brand-200 dark:hover:border-brand-800 cursor-grab active:cursor-grabbing'
-      }`}>
+      className="card p-5 group border-2 border-transparent hover:border-brand-200 dark:hover:border-brand-800 transition-all duration-200 cursor-grab active:cursor-grabbing">
       <div className="flex items-start gap-3">
         <div className="flex flex-col items-center gap-1 pt-1 text-gray-300 dark:text-gray-600 group-hover:text-brand-400 transition-colors">
-          {isOpinion ? <span className="text-lg">💬</span> : <GripVertical className="w-4 h-4" />}
+          <GripVertical className="w-4 h-4" />
           <span className="text-xs font-bold">{index + 1}</span>
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            {isOpinion
-              ? <span className="text-xs px-2 py-0.5 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 font-medium">Ý kiến cá nhân · Auto</span>
-              : <span className="text-xs badge-published">{q.question_type.replace('_', ' ')}</span>
-            }
+            <span className="text-xs badge-published">{q.question_type.replace('_', ' ')}</span>
             {q.is_required && <span className="text-xs text-red-400 font-medium">Required</span>}
           </div>
           <p className="text-sm font-medium text-gray-800 dark:text-gray-200 leading-relaxed">{q.question_text}</p>
-          {optionsArray.length > 0 && (
+          {q.options && (
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {optionsArray.map((opt, i) => (
+              {q.options.map((opt, i) => (
                 <span key={i} className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full">{opt}</span>
               ))}
             </div>
           )}
-          {isOpinion && (
-            <p className="text-xs text-brand-400 dark:text-brand-500 mt-1">Tự động thêm khi tạo khảo sát · Tối đa 150 ký tự · Không thể xóa</p>
-          )}
         </div>
-        {/* Ẩn Edit/Delete với câu hỏi opinion */}
-        {!isOpinion && (
-          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button onClick={() => onEdit(q)} className="p-1.5 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-900/20 text-gray-400 hover:text-brand-600 transition-colors">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-            </button>
-            <button onClick={() => onDelete(q.id)} className="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-colors">
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
-        )}
+        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onClick={() => onEdit(q)} className="p-1.5 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-900/20 text-gray-400 hover:text-brand-600 transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+          </button>
+          <button onClick={() => onDelete(q.id)} className="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-colors">
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   )
 }
 
 const EMPTY_Q = { question_text: '', question_type: 'Text', options: [], is_required: true }
-
-// Convert UTC ISO string → "YYYY-MM-DDTHH:mm" theo giờ địa phương (cho datetime-local input)
-function toLocalInput(isoStr) {
-  if (!isoStr) return ''
-  const d = new Date(isoStr)
-  if (isNaN(d)) return ''
-  const offset = d.getTimezoneOffset() // phút lệch so với UTC (việt nam = -420)
-  const local  = new Date(d.getTime() - offset * 60000)
-  return local.toISOString().slice(0, 16)
-}
-
-// Convert datetime-local string (giờ địa phương) → UTC ISO trước khi gửi lên server
-// Ví dụ: "2026-07-15T00:00" (UTC+7) → "2026-07-14T17:00:00.000Z" (UTC)
-function localInputToISO(localStr) {
-  if (!localStr) return localStr
-  const d = new Date(localStr) // trình duyệt tự parse theo múi giờ địa phương
-  if (isNaN(d)) return localStr
-  return d.toISOString()
-}
 
 export default function SurveyEditor() {
   const { id } = useParams()
@@ -107,18 +71,32 @@ export default function SurveyEditor() {
   // Survey form
   const [sForm, setSForm] = useState({ title: '', description: '', target_role: 'All', start_date: '', end_date: '', status: 'Draft' })
 
+  // Convert UTC ISO string → local datetime-local input format (YYYY-MM-DDTHH:mm)
+  const toLocalDatetimeInput = (isoStr) => {
+    if (!isoStr) return ''
+    const d = new Date(isoStr)
+    const pad = (n) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  }
+
   useEffect(() => {
     if (!isNew && id) {
-      Promise.all([
-        api.get(`/admin/surveys`).then((r) => r.data.surveys.find((s) => s.id === parseInt(id))),
-        api.get(`/admin/surveys/${id}/questions`).then((r) => r.data.questions),
-      ]).then(([s, qs]) => {
-        if (s) {
+      adminService.getSurveyById(id)
+        .then((r) => {
+          const s = r.data.survey
           setSurvey(s)
-          setSForm({ title: s.title, description: s.description || '', target_role: s.target_role, start_date: toLocalInput(s.start_date), end_date: toLocalInput(s.end_date), status: s.status })
-        }
-        setQuestions(qs || [])
-      }).catch(() => navigate('/admin/surveys')).finally(() => setLoading(false))
+          setQuestions(s.questions || [])
+          setSForm({
+            title: s.title,
+            description: s.description || '',
+            target_role: s.target_role,
+            start_date: toLocalDatetimeInput(s.start_date),
+            end_date: toLocalDatetimeInput(s.end_date),
+            status: s.status,
+          })
+        })
+        .catch(() => navigate('/admin/surveys'))
+        .finally(() => setLoading(false))
     }
   }, [id])
 
@@ -126,18 +104,12 @@ export default function SurveyEditor() {
     if (!sForm.title) { toast.error('Title is required.'); return }
     setSaving(true)
     try {
-      // Convert ngày giờ từ giờ địa phương (datetime-local) sang UTC ISO trước khi gửi lên server
-      const payload = {
-        ...sForm,
-        start_date: localInputToISO(sForm.start_date),
-        end_date:   localInputToISO(sForm.end_date),
-      }
       if (isNew) {
-        const res = await api.post('/admin/surveys', payload)
+        const res = await adminService.createSurvey(sForm)
         toast.success('Survey created! Now add questions.')
         navigate(`/admin/surveys/${res.data.survey.id}/edit`)
       } else {
-        await api.patch(`/admin/surveys/${id}`, payload)
+        await adminService.updateSurvey(id, sForm)
         toast.success('Survey saved.')
       }
     } catch (err) { toast.error(err.response?.data?.message || 'Save failed.') }
@@ -145,14 +117,7 @@ export default function SurveyEditor() {
   }
 
   const openAddQ = () => { setEditingQ(null); setQForm({ ...EMPTY_Q }); setOptionInput(''); setQModal(true) }
-  const openEditQ = (q) => {
-    // Normalize options: chỉ dùng array thật (Single/Multiple choice), bỏ qua object isOpinion
-    const optionsArr = Array.isArray(q.options) ? q.options : []
-    setEditingQ(q)
-    setQForm({ question_text: q.question_text, question_type: q.question_type, options: optionsArr, is_required: q.is_required })
-    setOptionInput('')
-    setQModal(true)
-  }
+  const openEditQ = (q) => { setEditingQ(q); setQForm({ question_text: q.question_text, question_type: q.question_type, options: q.options || [], is_required: q.is_required }); setOptionInput(''); setQModal(true) }
 
   const addOption = () => {
     const t = optionInput.trim()
@@ -169,14 +134,14 @@ export default function SurveyEditor() {
     }
     try {
       if (editingQ) {
-        await api.patch(`/admin/questions/${editingQ.id}`, { ...qForm, options: qForm.question_type === 'Text' ? null : qForm.options })
+        await adminService.updateQuestion(id, editingQ.id, { ...qForm, options: qForm.question_type === 'Text' ? null : qForm.options })
         toast.success('Question updated.')
       } else {
         const payload = { ...qForm, order_num: questions.length, options: qForm.question_type === 'Text' ? null : qForm.options }
-        await api.post(`/admin/surveys/${id}/questions`, payload)
+        await adminService.createQuestion(id, payload)
         toast.success('Question added.')
       }
-      const qs = await api.get(`/admin/surveys/${id}/questions`)
+      const qs = await adminService.getQuestions(id)
       setQuestions(qs.data.questions)
       setQModal(false)
     } catch (err) { toast.error(err.response?.data?.message || 'Failed to save question.') }
@@ -185,7 +150,7 @@ export default function SurveyEditor() {
   const deleteQuestion = async (qId) => {
     if (!window.confirm('Delete this question?')) return
     try {
-      await api.delete(`/admin/questions/${qId}`)
+      await adminService.deleteQuestion(id, qId)
       setQuestions((qs) => qs.filter((q) => q.id !== qId))
       toast.success('Question deleted.')
     } catch { toast.error('Failed to delete question.') }
@@ -200,9 +165,7 @@ export default function SurveyEditor() {
     setQuestions(reordered)
     setDragFrom(null)
     try {
-      await api.patch(`/admin/surveys/${id}/questions/reorder`, {
-        order: reordered.map((q, i) => ({ id: q.id, order_num: i }))
-      })
+      await adminService.reorderQuestions(id, reordered.map((q, i) => ({ id: q.id, order_num: i })))
     } catch { toast.error('Failed to save order.') }
   }
 

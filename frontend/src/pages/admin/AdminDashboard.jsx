@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Users, ClipboardList, FileText, TrendingUp, AlertCircle, BarChart2, Download } from 'lucide-react'
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
-import api from '../../services/axiosInstance'
+import { dashboardService } from '../../services/dashboardService'
+import { exportService, downloadBlob } from '../../services/exportService'
 import { SpinnerPage } from '../../components/ui/Spinner'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
@@ -9,15 +10,10 @@ import toast from 'react-hot-toast'
 const COLORS = ['#1a7f4b', '#34d399', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']
 
 // Fix: dùng axios (gửi Bearer token) thay vì <a href> — browser navigation không gửi auth header
-const downloadFile = async (url, filename) => {
+const downloadFile = async (fn, filename) => {
   try {
-    const res = await api.get(url, { responseType: 'blob' })
-    const blob = new Blob([res.data], { type: res.headers['content-type'] })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = filename
-    link.click()
-    URL.revokeObjectURL(link.href)
+    const res = await fn()
+    downloadBlob(res.data, filename)
   } catch (err) {
     toast.error(err.response?.data?.message || 'Export failed. Please try again.')
   }
@@ -44,7 +40,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    api.get('/dashboard').then((r) => setData(r.data)).catch(() => {}).finally(() => setLoading(false))
+    dashboardService.getDashboard().then((r) => setData(r.data)).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
   if (loading) return <SpinnerPage />
@@ -73,7 +69,7 @@ export default function AdminDashboard() {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => downloadFile('/export/participations/pdf', 'participations_report.pdf')}
+            onClick={() => downloadFile(() => exportService.exportParticipationsPDF(), 'participations_report.pdf')}
             className="btn-secondary text-sm">
             <Download className="w-4 h-4" /> Export PDF
           </button>

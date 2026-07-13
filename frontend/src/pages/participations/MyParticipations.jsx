@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FileText, Plus, Clock, CheckCircle2, XCircle, Eye, Calendar, MapPin } from 'lucide-react'
-import api from '../../services/axiosInstance'
+import { participationService } from '../../services/participationService'
 import { SpinnerPage } from '../../components/ui/Spinner'
 import Pagination from '../../components/ui/Pagination'
 
@@ -17,13 +17,15 @@ export default function MyParticipations() {
   const [filter, setFilter]     = useState('')
   const [page, setPage]         = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal]       = useState(0)
   const [selected, setSelected] = useState(null)
 
   const fetch = async (p = 1, s = '') => {
     setLoading(true)
     try {
-      const res = await api.get('/participations', { params: { page: p, limit: 8, status: s || undefined } })
+      const res = await participationService.getMyParticipations({ page: p, limit: 8, status: s || undefined })
       setItems(res.data.participations)
+      setTotal(res.data.total ?? 0)
       setTotalPages(res.data.totalPages)
     } catch { /* ignore */ } finally { setLoading(false) }
   }

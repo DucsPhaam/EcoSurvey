@@ -1,15 +1,17 @@
 version: '3.9'
-name: ecosurvey
+name: ecosurvey-release
 
 services:
   # ── MySQL Database ──────────────────────────────────────────────
   db:
     image: mysql:8.0
-    container_name: ecosurvey-db
+    container_name: ecosurvey-db2
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
       MYSQL_DATABASE: ${DB_NAME:-ecosurvey}
+      MYSQL_USER: ${DB_USER:-ecosurvey}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-ecosurveypass}
     ports:
       - "3307:3306"
     volumes:
@@ -29,7 +31,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: ecosurvey-backend
+    container_name: ecosurvey-backend2
     restart: unless-stopped
     depends_on:
       db:
@@ -68,7 +70,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: /api
-    container_name: ecosurvey-frontend
+    container_name: ecosurvey-frontend2
     restart: unless-stopped
     depends_on:
       - backend
@@ -79,11 +81,11 @@ services:
 
 volumes:
   db_data:
-    name: ecosurvey_db_data
+    name: ecosurvey_release_db_data
   uploads_data:
-    name: ecosurvey_uploads
+    name: ecosurvey_release_uploads
 
 networks:
   ecosurvey-net:
     driver: bridge
-    name: ecosurvey-network
+    name: ecosurvey-release-network

@@ -8,7 +8,7 @@ export default function Pagination({ page, totalPages, onPageChange }) {
   return (
     <div className="flex items-center justify-center gap-1 mt-6">
       <button onClick={() => onPageChange(page - 1)} disabled={page === 1}
-        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+        className="p-2 border-[2px] border-earth-ink bg-earth-paper hover:bg-earth-cream disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
         <ChevronLeft className="w-4 h-4" />
       </button>
       {visible.map((p, i) => {
@@ -18,10 +18,10 @@ export default function Pagination({ page, totalPages, onPageChange }) {
           <span key={p} className="flex items-center gap-1">
             {showDots && <span className="px-1 text-gray-400">…</span>}
             <button onClick={() => onPageChange(p)}
-              className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
+              className={`w-9 h-9 border-[2px] border-earth-ink text-sm font-medium transition-all ${
                 p === page
-                  ? 'bg-brand-600 text-white shadow-glow-sm'
-                  : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
+                  ? 'bg-earth-forest text-earth-paper shadow-brutal-sm'
+                  : 'bg-earth-paper text-earth-ink hover:bg-earth-cream'
               }`}>
               {p}
             </button>
@@ -29,7 +29,7 @@ export default function Pagination({ page, totalPages, onPageChange }) {
         )
       })}
       <button onClick={() => onPageChange(page + 1)} disabled={page === totalPages}
-        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+        className="p-2 border-[2px] border-earth-ink bg-earth-paper hover:bg-earth-cream disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
         <ChevronRight className="w-4 h-4" />
       </button>
     </div>

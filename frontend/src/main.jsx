@@ -23,7 +23,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 borderRadius: '12px',
                 padding: '12px 16px',
               },
-              success: { iconTheme: { primary: '#1a7f4b', secondary: '#fff' } },
+              success: { iconTheme: { primary: '#708238', secondary: '#fff' } },
               error:   { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
             }}
           />

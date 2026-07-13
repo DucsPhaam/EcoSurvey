@@ -1,15 +1,13 @@
-import axios from 'axios'
 
+import axios from 'axios'
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
   withCredentials: true, // send cookies (refresh token)
   timeout: 30000,
 })
-
 // Refresh token interceptor
 let isRefreshing = false
 let failedQueue = []
-
 const processQueue = (error, token = null) => {
   failedQueue.forEach((prom) => {
     if (error) prom.reject(error)
@@ -17,12 +15,10 @@ const processQueue = (error, token = null) => {
   })
   failedQueue = []
 }
-
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const originalRequest = error.config
-
     if (error.response?.status === 401 && !originalRequest._retry && error.response?.data?.code === 'TOKEN_EXPIRED') {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -35,7 +31,6 @@ api.interceptors.response.use(
 
       originalRequest._retry = true
       isRefreshing = true
-
       try {
         const res = await api.post('/auth/refresh')
         const newToken = res.data.accessToken
@@ -55,9 +50,10 @@ api.interceptors.response.use(
         isRefreshing = false
       }
     }
-
     return Promise.reject(error)
   }
 )
-
 export default api
+
+
+
