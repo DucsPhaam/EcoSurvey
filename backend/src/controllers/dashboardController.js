@@ -45,7 +45,7 @@ exports.getDashboard = async (req, res) => {
     let rank = null;
     if (myPoints > 0) {
       const rankResult = await sequelize.query(
-        `SELECT COUNT(*) + 1 AS user_rank
+        `SELECT COUNT(*) + 1 AS rank
          FROM (
            SELECT pl.user_id, SUM(pl.points) AS total_points
            FROM point_logs pl
