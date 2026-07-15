@@ -230,7 +230,7 @@ exports.adminGetSurveyById = async (req, res) => {
       ],
     });
     if (!survey) return res.status(404).json({ message: 'Survey not found.' });
-    res.json(survey);
+    res.json({ survey });
   } catch (err) {
     logger.error('adminGetSurveyById error:', err);
     res.status(500).json({ message: 'Failed to fetch survey.' });

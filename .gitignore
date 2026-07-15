@@ -6,3 +6,8 @@ uploads/
 logs/
 .DS_Store
 Thumbs.db
+
+# Understand Anything plugin
+.ua/
+.ua.zip
+review_graph.py

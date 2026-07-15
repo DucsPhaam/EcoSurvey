@@ -6,15 +6,18 @@ export default {
     extend: {
       colors: {
         earth: {
-          sand:    '#D9C9A8',
-          beige:   '#E8DCC0',
-          cream:   '#F2EAD3',
-          clay:    '#B07D52',
-          terracotta: '#A85B3E',
-          moss:    '#7A8B5C',
-          forest:  '#3E5240',
-          ink:     '#1A1A1A',
-          paper:   '#FAF6E9',
+          // All colours now reference CSS custom-properties so that
+          // switching the `.dark` class on <html> automatically
+          // re-themes every component without touching JSX files.
+          sand:       'var(--color-sand)',
+          beige:      'var(--color-beige)',
+          cream:      'var(--color-cream)',
+          clay:       'var(--color-clay)',
+          terracotta: 'var(--color-terracotta)',
+          moss:       'var(--color-moss)',
+          forest:     'var(--color-forest)',
+          ink:        'var(--color-ink)',
+          paper:      'var(--color-paper)',
         },
       },
       fontFamily: {
@@ -35,10 +38,10 @@ export default {
         stamp:    { '0%': { transform: 'scale(1.4) rotate(-8deg)', opacity: 0 }, '100%': { transform: 'scale(1) rotate(-8deg)', opacity: 1 } },
       },
       boxShadow: {
-        'brutal':      '6px 6px 0 0 #1A1A1A',
-        'brutal-sm':   '4px 4px 0 0 #1A1A1A',
-        'brutal-lg':   '8px 8px 0 0 #1A1A1A',
-        'brutal-moss': '6px 6px 0 0 #3E5240',
+        'brutal':      '6px 6px 0 0 var(--color-ink)',
+        'brutal-sm':   '4px 4px 0 0 var(--color-ink)',
+        'brutal-lg':   '8px 8px 0 0 var(--color-ink)',
+        'brutal-moss': '6px 6px 0 0 var(--color-forest)',
       },
     },
   },

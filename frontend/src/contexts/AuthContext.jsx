@@ -43,9 +43,12 @@ export const AuthProvider = ({ children }) => {
 
   const login = useCallback(async (loginId, password) => {
     const res = await authService.login(loginId, password)
-    setAccessToken(res.data.accessToken)
+    const token = res.data.accessToken
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+    setAccessToken(token)
     setUser(res.data.user)
     localStorage.setItem('ecosurvey_user', JSON.stringify(res.data.user))
+    localStorage.setItem('ecosurvey_token', token)
     return res.data.user
   }, [])
 

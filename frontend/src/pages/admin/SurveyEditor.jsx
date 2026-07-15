@@ -30,7 +30,7 @@ function QuestionCard({ q, index, onEdit, onDelete, onDragStart, onDragOver, onD
             {q.is_required && <span className="text-xs text-red-400 font-medium">Required</span>}
           </div>
           <p className="text-sm font-medium text-gray-800 dark:text-gray-200 leading-relaxed">{q.question_text}</p>
-          {q.options && (
+          {Array.isArray(q.options) && (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {q.options.map((opt, i) => (
                 <span key={i} className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full">{opt}</span>
@@ -53,6 +53,14 @@ function QuestionCard({ q, index, onEdit, onDelete, onDragStart, onDragOver, onD
 
 const EMPTY_Q = { question_text: '', question_type: 'Text', options: [], is_required: true }
 
+// Module-level helper — returns current local time as "YYYY-MM-DDTHH:mm".
+// Must be outside the component so it can be called in the useState lazy initializer.
+const localNow = () => {
+  const now = new Date()
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`
+}
+
 export default function SurveyEditor() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -68,16 +76,37 @@ export default function SurveyEditor() {
   const [optionInput, setOptionInput] = useState('')
   const [dragFrom, setDragFrom]     = useState(null)
 
-  // Survey form
-  const [sForm, setSForm] = useState({ title: '', description: '', target_role: 'All', start_date: '', end_date: '', status: 'Draft' })
+  // Survey form — initialise date fields with current local time so the
+  // browser's native "Today" button works (it only changes the date part;
+  // if the time part is empty the full value stays invalid and Today appears
+  // to do nothing).
+  const [sForm, setSForm] = useState(() => ({
+    title: '', description: '', target_role: 'All',
+    start_date: localNow(), end_date: localNow(), status: 'Draft'
+  }))
 
-  // Convert UTC ISO string → local datetime-local input format (YYYY-MM-DDTHH:mm)
+  // Convert UTC ISO string from API → local datetime-local input value (YYYY-MM-DDTHH:mm)
   const toLocalDatetimeInput = (isoStr) => {
     if (!isoStr) return ''
+    // new Date() parses ISO/UTC strings correctly across all browsers
     const d = new Date(isoStr)
+    if (isNaN(d.getTime())) return ''
     const pad = (n) => String(n).padStart(2, '0')
+    // Use local getters so the displayed time matches the user's machine timezone
     return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
   }
+
+  // Convert datetime-local input value → UTC ISO string for the API
+  // datetime-local returns "YYYY-MM-DDTHH:mm" (local time, no tz info)
+  // We interpret it as local time and convert to UTC.
+  const toUTCIso = (localStr) => {
+    if (!localStr) return ''
+    // Treat as local time by constructing a Date from local parts
+    const d = new Date(localStr)   // JS interprets YYYY-MM-DDTHH:mm as LOCAL time
+    if (isNaN(d.getTime())) return ''
+    return d.toISOString()         // Always UTC ISO 8601
+  }
+
 
   useEffect(() => {
     if (!isNew && id) {
@@ -104,12 +133,18 @@ export default function SurveyEditor() {
     if (!sForm.title) { toast.error('Title is required.'); return }
     setSaving(true)
     try {
+      // Convert datetime-local values (local time) → UTC ISO strings for the API
+      const payload = {
+        ...sForm,
+        start_date: toUTCIso(sForm.start_date),
+        end_date:   toUTCIso(sForm.end_date),
+      }
       if (isNew) {
-        const res = await adminService.createSurvey(sForm)
+        const res = await adminService.createSurvey(payload)
         toast.success('Survey created! Now add questions.')
         navigate(`/admin/surveys/${res.data.survey.id}/edit`)
       } else {
-        await adminService.updateSurvey(id, sForm)
+        await adminService.updateSurvey(id, payload)
         toast.success('Survey saved.')
       }
     } catch (err) { toast.error(err.response?.data?.message || 'Save failed.') }
@@ -117,7 +152,7 @@ export default function SurveyEditor() {
   }
 
   const openAddQ = () => { setEditingQ(null); setQForm({ ...EMPTY_Q }); setOptionInput(''); setQModal(true) }
-  const openEditQ = (q) => { setEditingQ(q); setQForm({ question_text: q.question_text, question_type: q.question_type, options: q.options || [], is_required: q.is_required }); setOptionInput(''); setQModal(true) }
+  const openEditQ = (q) => { setEditingQ(q); setQForm({ question_text: q.question_text, question_type: q.question_type, options: Array.isArray(q.options) ? q.options : [], is_required: q.is_required }); setOptionInput(''); setQModal(true) }
 
   const addOption = () => {
     const t = optionInput.trim()
@@ -215,11 +250,15 @@ export default function SurveyEditor() {
             </div>
             <div>
               <label className="label">Start Date</label>
-              <input type="datetime-local" value={sForm.start_date} onChange={(e) => setSForm({ ...sForm, start_date: e.target.value })} className="input" />
+              <input type="datetime-local" value={sForm.start_date}
+                onChange={(e) => setSForm({ ...sForm, start_date: e.target.value })}
+                className="input" />
             </div>
             <div>
               <label className="label">End Date</label>
-              <input type="datetime-local" value={sForm.end_date} onChange={(e) => setSForm({ ...sForm, end_date: e.target.value })} className="input" />
+              <input type="datetime-local" value={sForm.end_date}
+                onChange={(e) => setSForm({ ...sForm, end_date: e.target.value })}
+                className="input" />
             </div>
           </div>
         </div>

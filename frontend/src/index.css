@@ -2,12 +2,52 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   CSS CUSTOM PROPERTIES — Light theme (default)
+   ============================================================ */
+:root {
+  --color-sand:       #D9C9A8;
+  --color-beige:      #E8DCC0;
+  --color-cream:      #F2EAD3;
+  --color-clay:       #B07D52;
+  --color-terracotta: #A85B3E;
+  --color-moss:       #7A8B5C;
+  --color-forest:     #3E5240;
+  --color-ink:        #1A1A1A;
+  --color-paper:      #FAF6E9;
+}
+
+/* ============================================================
+   CSS CUSTOM PROPERTIES — Dark theme overrides
+   Applied when the <html> element has class="dark"
+   ============================================================ */
+.dark {
+  --color-sand:       #3A3020;   /* muted amber-brown */
+  --color-beige:      #2C2518;   /* deep warm brown */
+  --color-cream:      #252018;   /* darkest warm surface */
+  --color-clay:       #C99A6E;   /* lighter clay for contrast */
+  --color-terracotta: #C97A60;   /* lighter terracotta */
+  --color-moss:       #8FAF6A;   /* brighter moss for dark bg */
+  --color-forest:     #6A9E72;   /* lighter forest green */
+  --color-ink:        #E8DEC8;   /* warm off-white (was near-black) */
+  --color-paper:      #1A160E;   /* very dark warm background */
+}
+
+/* ============================================================
+   BASE STYLES
+   ============================================================ */
 @layer base {
   * { @apply border-earth-ink; }
   body {
     @apply font-sans text-earth-ink antialiased bg-earth-paper;
     background-image:
       radial-gradient(circle at 1px 1px, rgba(26, 26, 26, 0.08) 1px, transparent 0);
+    background-size: 24px 24px;
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+  .dark body {
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(232, 222, 200, 0.05) 1px, transparent 0);
     background-size: 24px 24px;
   }
   h1, h2, h3, h4 { @apply font-display tracking-normal; }
@@ -16,6 +56,9 @@
   .ui-title     { @apply font-sans font-bold uppercase tracking-wide; }
 }
 
+/* ============================================================
+   COMPONENT STYLES
+   ============================================================ */
 @layer components {
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 px-6 py-3 bg-earth-forest text-earth-cream
@@ -43,8 +86,12 @@
   }
   .input {
     @apply w-full px-4 py-3 bg-earth-paper border-[3px] border-earth-ink text-earth-ink
-           placeholder:text-earth-ink/40 focus:outline-none focus:bg-earth-cream
+           focus:outline-none focus:bg-earth-cream
            transition-colors duration-100 font-sans;
+  }
+  .input::placeholder {
+    color: var(--color-ink);
+    opacity: 0.4;
   }
   .label {
     @apply block text-xs ui-title tracking-wider text-earth-ink mb-2;
@@ -63,11 +110,16 @@
   }
   .page-header { @apply mb-10; }
   .page-title  { @apply text-4xl md:text-5xl font-display uppercase text-earth-ink; }
-  .page-subtitle { @apply mt-2 text-earth-ink/70 font-mono text-sm uppercase tracking-widest; }
+  .page-subtitle {
+    @apply mt-2 font-mono text-sm uppercase tracking-widest;
+    color: var(--color-ink);
+    opacity: 0.7;
+  }
   .sidebar-link {
-    @apply flex items-center gap-3 px-4 py-3 text-sm ui-title text-earth-ink/70
+    @apply flex items-center gap-3 px-4 py-3 text-sm ui-title
            hover:bg-earth-cream hover:text-earth-ink border-l-[3px] border-transparent
            transition-colors;
+    color: color-mix(in srgb, var(--color-ink) 70%, transparent);
   }
   .sidebar-link-active {
     @apply flex items-center gap-3 px-4 py-3 text-sm ui-title
@@ -80,20 +132,33 @@
     @apply font-display text-5xl md:text-6xl text-earth-forest leading-none;
   }
   /* Body text style — easier to read */
-  .body-text { @apply text-base leading-relaxed text-earth-ink/85; }
+  .body-text {
+    @apply text-base leading-relaxed;
+    color: color-mix(in srgb, var(--color-ink) 85%, transparent);
+  }
   .heading-hero { @apply font-display text-5xl md:text-7xl leading-[1.05]; }
   .heading-section { @apply font-display text-3xl md:text-5xl leading-tight; }
   .heading-card { @apply font-sans font-bold text-lg uppercase tracking-wide leading-snug; }
 }
 
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { @apply bg-earth-paper; }
-::-webkit-scrollbar-thumb { @apply bg-earth-ink; }
+::-webkit-scrollbar-track { background: var(--color-paper); }
+::-webkit-scrollbar-thumb { background: var(--color-ink); }
 
+/* ============================================================
+   MISC UTILITIES
+   ============================================================ */
 .bg-paper-warm {
-  background-color: #FAF6E9;
+  background-color: var(--color-paper);
   background-image:
     repeating-linear-gradient(0deg, transparent, transparent 23px, rgba(26,26,26,0.04) 23px, rgba(26,26,26,0.04) 24px);
+}
+.dark .bg-paper-warm {
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 23px, rgba(232,222,200,0.04) 23px, rgba(232,222,200,0.04) 24px);
 }
 
 .tape {
@@ -102,4 +167,20 @@
 
 .stamp {
   @apply absolute px-3 py-1.5 border-[3px] border-earth-ink ui-title text-xs rotate-[-8deg] animate-stamp;
+}
+
+/* ============================================================
+   SMOOTH THEME TRANSITION
+   Apply a subtle transition to common properties so the
+   theme switch feels polished rather than jarring.
+   ============================================================ */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 200ms;
+  transition-timing-function: ease;
+}
+/* Don't animate transforms and opacity globally — breaks animations */
+.animate-fade-in, .animate-slide-up, .animate-marquee, .animate-stamp,
+.btn-primary, .btn-secondary, .btn-danger, .card-hover {
+  transition-property: all;
 }

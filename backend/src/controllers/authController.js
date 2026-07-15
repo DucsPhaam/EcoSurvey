@@ -114,8 +114,8 @@ exports.login = async (req, res) => {
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production' && !process.env.CLIENT_URL?.includes('localhost'),
+      sameSite: process.env.NODE_ENV === 'production' && !process.env.CLIENT_URL?.includes('localhost') ? 'strict' : 'lax',
       maxAge: REFRESH_DAYS * 86400 * 1000,
     });
 

@@ -5,6 +5,16 @@ const api = axios.create({
   withCredentials: true, // send cookies (refresh token)
   timeout: 30000,
 })
+
+// Request interceptor to ensure token is attached immediately
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('ecosurvey_token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
 // Refresh token interceptor
 let isRefreshing = false
 let failedQueue = []
@@ -19,7 +29,7 @@ api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const originalRequest = error.config
-    if (error.response?.status === 401 && !originalRequest._retry && error.response?.data?.code === 'TOKEN_EXPIRED') {
+    if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject })

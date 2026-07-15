@@ -23,6 +23,7 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 import UserManagement from './pages/admin/UserManagement'
 import SurveyManagement from './pages/admin/SurveyManagement'
 import SurveyEditor from './pages/admin/SurveyEditor'
+import SurveyGrading from './pages/admin/SurveyGrading'
 import ParticipationReview from './pages/admin/ParticipationReview'
 import FAQManagement from './pages/admin/FAQManagement'
 
@@ -55,13 +56,14 @@ export default function App() {
       {/* Admin routes */}
       <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
         <Route element={<AdminLayout />}>
-          <Route path="/admin"                   element={<AdminDashboard />} />
-          <Route path="/admin/users"             element={<UserManagement />} />
-          <Route path="/admin/surveys"           element={<SurveyManagement />} />
-          <Route path="/admin/surveys/:id/edit"  element={<SurveyEditor />} />
-          <Route path="/admin/surveys/new"       element={<SurveyEditor />} />
-          <Route path="/admin/participations"    element={<ParticipationReview />} />
-          <Route path="/admin/faqs"              element={<FAQManagement />} />
+          <Route path="/admin"                       element={<AdminDashboard />} />
+          <Route path="/admin/users"               element={<UserManagement />} />
+          <Route path="/admin/surveys"             element={<SurveyManagement />} />
+          <Route path="/admin/surveys/:id/edit"    element={<SurveyEditor />} />
+          <Route path="/admin/surveys/new"         element={<SurveyEditor />} />
+          <Route path="/admin/surveys/:id/grade"   element={<SurveyGrading />} />
+          <Route path="/admin/participations"      element={<ParticipationReview />} />
+          <Route path="/admin/faqs"                element={<FAQManagement />} />
         </Route>
       </Route>
 
