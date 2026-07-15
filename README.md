@@ -4,20 +4,23 @@ A full-stack web application for managing environmental awareness surveys, track
 
 ---
 
-## ✨ Features
+## ✨ Features (Updated for v2.0)
 
 | Feature | Description |
 |---|---|
-| 🔐 JWT Authentication | Access token + HttpOnly cookie refresh token, RBAC |
-| 📋 Survey System | Create surveys with Text, Single-Choice, Multi-Choice questions |
-| 📁 Participation Reports | Submit activity reports with file evidence (image/PDF) |
-| 🏆 Leaderboard | Real-time rankings by week / month / all-time |
-| 🤖 AI Assistant | Gemini-powered FAQ chatbot (mock fallback when no API key) |
-| 📊 Analytics Dashboard | Recharts-based charts for admin overview |
-| 📤 Export | Excel (.xlsx) for survey results, PDF for participation reports |
-| 🌙 Dark Mode | Full dark/light theme with user preference persistence |
-| 📧 Email Notifications | Account & report status emails (logs to console in dev mode) |
-| 🐳 Docker | Full Docker Compose setup with MySQL + Backend + Frontend |
+| 🔐 **Advanced Security** | JWT Auth, Cloudflare Turnstile CAPTCHA, Redis Rate Limiting, Helmet CSP |
+| ✉️ **Account Recovery** | Forgot Password flow & Email Verification upon registration |
+| 📋 **Survey System** | Create surveys with Text, Single-Choice, Multi-Choice questions |
+| 📊 **Survey Analytics** | Per-question visual analytics & charts using **Recharts** |
+| 📁 **Participation Reports** | Submit activity reports with file evidence (image/PDF) |
+| 🔔 **Realtime Notifications** | Instant alerts via **Socket.io** when reports are graded or surveys published |
+| 🏆 **Leaderboard** | Real-time rankings by week / month / all-time |
+| 🤖 **AI Assistant** | Gemini-powered FAQ chatbot (mock fallback when no API key) |
+| 📤 **Export** | Excel (.xlsx) for survey results, PDF for participation reports |
+| 🌙 **Dark Mode** | Full dark/light theme with user preference persistence |
+| 📧 **Email Notifications** | Account, recovery & report status emails |
+| 🐳 **Docker** | Full Docker Compose setup with MySQL + Redis + Backend + Frontend |
+| 🧪 **Automated Testing** | Comprehensive test coverage using **Jest**, **Supertest**, **Vitest**, & **RTL** |
 
 ---
 
@@ -25,13 +28,15 @@ A full-stack web application for managing environmental awareness surveys, track
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 18 + Vite + Tailwind CSS + Recharts |
-| Backend | Node.js + Express.js + Sequelize ORM |
-| Database | MySQL 8.0 |
-| Auth | JWT (Access token 15m + Refresh 7d HttpOnly cookie) |
-| AI | OpenRouter API (`gemini-2.5-flash`) |
-| Container | Docker + Docker Compose |
-| File Storage | Local volume (dev) / configurable |
+| **Frontend** | React 18 + Vite + Tailwind CSS + Recharts + Socket.io-client |
+| **Backend** | Node.js + Express.js + Sequelize ORM + Socket.io |
+| **Database** | MySQL 8.0 |
+| **Cache/RateLimit** | Redis |
+| **Auth** | JWT (Access token 15m + Refresh 7d HttpOnly cookie) |
+| **Security** | Cloudflare Turnstile, express-rate-limit, Helmet, express-validator |
+| **Testing** | Jest, Supertest (Backend) / Vitest, React Testing Library (Frontend) |
+| **AI** | OpenRouter API (`gemini-2.5-flash`) |
+| **Container** | Docker + Docker Compose |
 
 ---
 
@@ -40,6 +45,7 @@ A full-stack web application for managing environmental awareness surveys, track
 ### Prerequisites
 - Node.js 18+
 - MySQL 8.0 running locally
+- Redis running locally (for Rate Limiting)
 
 ### 1. Database Setup
 
@@ -55,7 +61,6 @@ cd backend
 
 # Copy and edit environment variables
 cp .env.example .env
-# Edit .env with your MySQL credentials
 
 # Install dependencies
 npm install
@@ -71,6 +76,9 @@ Backend runs at: `http://localhost:5000`
 ```bash
 cd frontend
 
+# Copy and edit environment variables
+cp .env.example .env
+
 # Install dependencies
 npm install
 
@@ -85,22 +93,40 @@ Frontend runs at: `http://localhost:3000`
 ## 🐳 Docker (Full Stack)
 
 ```bash
-# Copy environment file
+# Create an environment file at the root level
 cp backend/.env.example .env
 
-# Edit .env (at root level) with your secrets
+# Edit .env (at root level) with your secrets (including Turnstile keys)
+# TURNSTILE_SECRET_KEY=...
+# VITE_TURNSTILE_SITE_KEY=...
 
 # Build and start all services
-docker-compose up --build
-
-# Or in detached mode
-docker-compose up -d --build
+docker-compose up --build -d
 ```
 
 Services:
-- **Frontend**: http://localhost (port 80)
+- **Frontend**: http://localhost:8080 (Mapped to port 80 internally)
 - **Backend API**: http://localhost:5000/api
-- **MySQL**: localhost:3306
+- **MySQL**: localhost:3307
+- **Redis**: internal only
+
+---
+
+## 🧪 Running Tests
+
+### Backend Tests (Jest + Supertest)
+```bash
+cd backend
+npm test
+```
+Tests cover: Authentication flows, Survey submission, Admin actions, Leaderboard, and Rate Limiting.
+
+### Frontend Tests (Vitest + React Testing Library)
+```bash
+cd frontend
+npm test
+```
+Tests cover: AuthContext, ProtectedRoutes, Form rendering, and Interactions.
 
 ---
 
@@ -129,10 +155,11 @@ Services:
 | **Staff** | Same as Student |
 
 ### Registration Flow
-1. User registers → status = **Pending**
-2. Admin reviews and **Approves** or **Rejects**
-3. Approved users receive an email notification
-4. User can log in after approval
+1. User registers & completes Cloudflare Turnstile CAPTCHA.
+2. User receives an Email Verification link and verifies email.
+3. Account status becomes **Pending**.
+4. Admin reviews and **Approves** or **Rejects**.
+5. Approved users receive an email notification and can log in.
 
 ---
 
@@ -141,142 +168,26 @@ Services:
 | Action | Points |
 |---|---|
 | Complete a survey | +10 points |
+| Survey opinion scored by Admin | 0 - 10 Bonus points |
 | Approved participation report | +50 points |
 
 ---
 
-## 📁 Project Structure
+## 🔧 Environment Variables (Root `.env`)
 
-```
-EcoSurvey/
-├── database/
-│   └── init.sql              # Schema + seed data (all-in-one, drop & recreate)
-├── backend/
-│   ├── src/
-│   │   ├── config/           # Database config
-│   │   ├── controllers/      # Route handlers
-│   │   ├── middleware/       # Auth, Role, Upload, RateLimit
-│   │   ├── models/           # Sequelize models
-│   │   ├── routes/           # Express routes
-│   │   ├── services/         # AI, Email, Cron
-│   │   ├── utils/            # Logger
-│   │   └── server.js         # Express app entry
-│   ├── .env.example
-│   └── Dockerfile
-├── frontend/
-│   ├── src/
-│   │   ├── components/       # Layout, UI, Features
-│   │   ├── contexts/         # Auth, Theme contexts
-│   │   ├── pages/            # All page components
-│   │   └── services/         # Axios instance
-│   ├── .env.example
-│   └── Dockerfile
-└── docker-compose.yml
-```
+When using Docker Compose, place the `.env` at the root folder:
 
-### 🔄 Reset Database
-
-```bash
-# Local MySQL — xóa và tạo lại toàn bộ DB từ đầu
-mysql -u root -p < database/init.sql
-
-# Docker — xóa volume và khởi động lại
-docker-compose down -v
-docker-compose up -d --build
-```
-
----
-
-## 🔧 Environment Variables
-
-### Backend (`backend/.env`)
-
-| Variable | Description | Default |
-|---|---|---|
-| `DB_HOST` | MySQL host | `localhost` |
-| `DB_NAME` | Database name | `ecosurvey` |
-| `JWT_SECRET` | JWT signing secret | — |
-| `JWT_REFRESH_SECRET` | Refresh token secret | — |
-| `OPENROUTER_API_KEY` | OpenRouter API key (optional) | — |
-| `SMTP_HOST` | Email server host (optional) | — |
-| `CLIENT_URL` | Frontend URL for CORS | `http://localhost:3000` |
-
-### Frontend (`frontend/.env`)
-
-| Variable | Description | Default |
-|---|---|---|
-| `VITE_API_URL` | Backend API URL | `/api` (proxied via Vite) |
-
----
-
-## 📡 API Reference (Key Endpoints)
-
-### Auth
-| Method | Path | Description |
-|---|---|---|
-| POST | `/api/auth/register` | Register new account |
-| POST | `/api/auth/login` | Login, returns access token + cookie |
-| POST | `/api/auth/refresh` | Refresh access token |
-| POST | `/api/auth/logout` | Clear refresh cookie |
-
-### Surveys
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/surveys` | List published surveys |
-| GET | `/api/surveys/:id` | Survey detail with questions |
-| POST | `/api/surveys/:id/submit` | Submit answers |
-
-### Admin
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/admin/users` | List users with filters |
-| PATCH | `/api/admin/users/:id/status` | Approve/Reject user |
-| DELETE | `/api/admin/users/:id` | Deactivate user (soft-delete) |
-| GET/POST | `/api/admin/surveys` | Manage surveys |
-| PATCH | `/api/admin/surveys/:surveyId/questions/:id` | Update question |
-| DELETE | `/api/admin/surveys/:surveyId/questions/:id` | Delete question |
-| PATCH | `/api/admin/participations/:id/review` | Review report |
-| GET | `/api/admin/export/surveys/:id/excel` | Export survey results |
-| GET | `/api/admin/export/participations/pdf` | Export approved reports |
-
-### Files (Authenticated)
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/files/:filename` | Download uploaded file (requires login) |
-
----
-
-## 🤖 AI Features
-
-- **FAQ Chatbot**: Available to all logged-in users via the floating chat widget
-- **Report Summarization**: Admin can generate AI summaries for participation reports
-- **Mock Mode**: When `OPENROUTER_API_KEY` is not set, the system uses keyword-matching fallback
-
----
-
-## 📧 Email Notifications
-
-Emails are sent for:
-- New account registration (to user)
-- Account approval/rejection (to user)
-- Participation report approval/rejection (to user)
-
-> In development (no SMTP configured), emails are logged to the console.
-
----
-
-## 🧑‍💻 Development Commands
-
-```bash
-# Backend
-npm run dev        # Start with nodemon hot-reload
-npm start          # Production start
-
-# Frontend
-npm run dev        # Vite dev server (port 3000)
-npm run build      # Build for production
-npm run preview    # Preview production build
-```
+| Variable | Description |
+|---|---|
+| `DB_HOST` | MySQL host (use `db` in Docker) |
+| `DB_NAME` | Database name |
+| `MYSQL_ROOT_PASSWORD` | Root password for MySQL |
+| `JWT_SECRET` | JWT signing secret |
+| `JWT_REFRESH_SECRET` | Refresh token secret |
+| `OPENROUTER_API_KEY` | OpenRouter API key (optional) |
+| `SMTP_HOST` | Email server host (for real emails) |
+| `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile Backend Secret Key |
+| `VITE_TURNSTILE_SITE_KEY` | Cloudflare Turnstile Frontend Site Key |
 
 ---
 
@@ -284,4 +195,4 @@ npm run preview    # Preview production build
 
 This project is developed for educational purposes as part of an eProject assignment.
 
-## đây là PE chính 
+## đây là PE chính
