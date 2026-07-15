@@ -1,5 +1,5 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { Leaf, Bell, Moon, Sun, LogOut, KeyRound, ChevronDown } from 'lucide-react'
+import { Leaf, Bell, Moon, Sun, LogOut, User as UserIcon, ChevronDown } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useTheme } from '../../contexts/ThemeContext'
@@ -181,11 +181,12 @@ export default function Navbar() {
                       <p className="text-xs font-mono uppercase tracking-widest text-earth-ink/60">{user?.role}</p>
                     </div>
                     <div className="p-1">
-                      <button
-                        onClick={() => { setUserMenuOpen(false); setShowChangePwd(true) }}
+                      <Link
+                        to="/profile"
+                        onClick={() => setUserMenuOpen(false)}
                         className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-earth-ink hover:bg-earth-cream transition-colors">
-                        <KeyRound className="w-4 h-4" /> Change Password
-                      </button>
+                        <UserIcon className="w-4 h-4" /> My Profile
+                      </Link>
                       <button
                         onClick={() => { setUserMenuOpen(false); logout() }}
                         className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-earth-terracotta hover:bg-earth-cream transition-colors">

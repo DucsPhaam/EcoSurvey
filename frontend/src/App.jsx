@@ -19,6 +19,7 @@ import SurveyBoard from './pages/surveys/SurveyBoard'
 import SurveyDetail from './pages/surveys/SurveyDetail'
 import MyParticipations from './pages/participations/MyParticipations'
 import SubmitParticipation from './pages/participations/SubmitParticipation'
+import Profile from './pages/student/Profile'
 import Leaderboard from './pages/Leaderboard'
 
 // Admin pages
@@ -57,6 +58,7 @@ export default function App() {
           <Route path="/participations"         element={<MyParticipations />} />
           <Route path="/participations/submit"  element={<SubmitParticipation />} />
           <Route path="/leaderboard"            element={<Leaderboard />} />
+          <Route path="/profile"                element={<Profile />} />
         </Route>
       </Route>
 

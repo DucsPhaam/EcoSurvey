@@ -67,3 +67,19 @@ exports.getMe = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch user profile.' });
   }
 };
+
+// GET /api/users/me/points
+exports.getPointHistory = async (req, res) => {
+  try {
+    const { PointLog } = require('../models');
+    const logs = await PointLog.findAll({
+      where: { user_id: req.user.id },
+      order: [['created_at', 'DESC']],
+      limit: 50
+    });
+    res.json({ logs });
+  } catch (err) {
+    logger.error('getPointHistory error:', err);
+    res.status(500).json({ message: 'Failed to fetch point history.' });
+  }
+};

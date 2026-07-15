@@ -3,6 +3,7 @@ const { authenticate } = require('../middleware/authMiddleware');
 const userCtrl = require('../controllers/userController');
 
 router.get('/me',              authenticate, userCtrl.getMe);
+router.get('/me/points',       authenticate, userCtrl.getPointHistory);
 router.patch('/me/theme',      authenticate, userCtrl.updateTheme);
 router.patch('/me/password',   authenticate, userCtrl.changePassword);
 
