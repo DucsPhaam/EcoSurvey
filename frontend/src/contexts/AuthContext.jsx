@@ -41,8 +41,8 @@ export const AuthProvider = ({ children }) => {
     restoreSession()
   }, []) // eslint-disable-line
 
-  const login = useCallback(async (loginId, password) => {
-    const res = await authService.login(loginId, password)
+  const login = useCallback(async (loginId, password, captchaToken) => {
+    const res = await authService.login(loginId, password, captchaToken)
     const token = res.data.accessToken
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`
     setAccessToken(token)

@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast'
 import App from './App'
 import { AuthProvider } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
+import { SocketProvider } from './contexts/SocketContext'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -12,7 +13,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
-          <App />
+          <SocketProvider>
+            <App />
+          </SocketProvider>
           <Toaster
             position="top-right"
             toastOptions={{

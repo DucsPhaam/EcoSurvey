@@ -5,6 +5,8 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useTheme } from '../../contexts/ThemeContext'
 import { notificationService } from '../../services/notificationService'
 import ChangePasswordModal from '../features/ChangePasswordModal'
+import { useSocket } from '../../contexts/SocketContext'
+import { toast } from 'react-hot-toast'
 
 export default function Navbar() {
   const { user, logout, isAdmin } = useAuth()
@@ -31,6 +33,33 @@ export default function Navbar() {
     const interval = setInterval(fetchNotifs, 60000)
     return () => clearInterval(interval)
   }, [user])
+
+  const { socket } = useSocket()
+
+  useEffect(() => {
+    if (!socket) return
+
+    const handleNewNotif = (notif) => {
+      // Add new notification to the list, increment unread count
+      setNotifications((prev) => [notif, ...prev].slice(0, 8))
+      setUnreadCount((prev) => prev + 1)
+      toast.success(notif.title, {
+        icon: '🔔',
+        style: {
+          border: '2px solid #202020',
+          boxShadow: '4px 4px 0px #202020',
+          borderRadius: '0',
+          padding: '16px',
+        },
+      })
+    }
+
+    socket.on('new_notification', handleNewNotif)
+
+    return () => {
+      socket.off('new_notification', handleNewNotif)
+    }
+  }, [socket])
 
   useEffect(() => {
     const handler = (e) => {

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Leaf, Eye, EyeOff, Check, X, ChevronRight, ChevronLeft, User, Mail, Lock, Briefcase, Calendar, ArrowRight, ArrowUpRight } from 'lucide-react'
 import { authService } from '../../services/authService'
 import toast from 'react-hot-toast'
+import { Turnstile } from '@marsidev/react-turnstile'
 
 const STEPS = ['Account', 'Personal', 'Review']
 
@@ -57,6 +58,7 @@ export default function RegisterPage() {
   const [showPass, setShowPass] = useState(false)
   const [checking, setChecking] = useState({ username: false, email: false })
   const [availability, setAvailability] = useState({ username: null, email: null })
+  const [captchaToken, setCaptchaToken] = useState('')
 
   const [form, setForm] = useState({
     full_name: '', username: '', email: '', password: '', confirm_password: '',
@@ -96,9 +98,10 @@ export default function RegisterPage() {
   const back = () => setStep((s) => Math.max(s - 1, 0))
 
   const handleSubmit = async () => {
+    if (!captchaToken && import.meta.env.VITE_TURNSTILE_SITE_KEY) { toast.error('Please complete the CAPTCHA.'); return }
     setLoading(true)
     try {
-      await authService.register(form)
+      await authService.register(form, captchaToken)
       toast.success('Registered! Awaiting admin approval.')
       navigate('/login')
     } catch (err) {
@@ -265,6 +268,15 @@ export default function RegisterPage() {
               <div className="mt-4 bg-earth-sand border-[3px] border-earth-ink p-4">
                 <p className="font-mono text-xs uppercase tracking-widest">⚠ Note: After submitting, your account will be pending admin approval.</p>
               </div>
+
+              {import.meta.env.VITE_TURNSTILE_SITE_KEY && (
+                <div className="flex justify-center mt-4">
+                  <Turnstile 
+                    siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY} 
+                    onSuccess={(token) => setCaptchaToken(token)} 
+                  />
+                </div>
+              )}
             </div>
           )}
 
@@ -279,7 +291,7 @@ export default function RegisterPage() {
                 Continue <ChevronRight className="w-4 h-4" />
               </button>
             ) : (
-              <button onClick={handleSubmit} disabled={loading} className="btn-primary flex-1">
+              <button onClick={handleSubmit} disabled={loading || (!captchaToken && !!import.meta.env.VITE_TURNSTILE_SITE_KEY)} className="btn-primary flex-1">
                 {loading ? (
                   <span className="w-5 h-5 border-[3px] border-earth-paper/30 border-t-earth-paper" />
                 ) : (

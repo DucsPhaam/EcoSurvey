@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Edit3, Trash2, Download, Eye, ClipboardList, Search, Globe, Star } from 'lucide-react'
+import { Plus, Edit3, Trash2, Download, Eye, ClipboardList, Search, Globe, Star, BarChart2 } from 'lucide-react'
 import { adminService } from '../../services/adminService'
 import { exportService, downloadBlob } from '../../services/exportService'
 import { SpinnerPage } from '../../components/ui/Spinner'
@@ -138,6 +138,10 @@ export default function SurveyManagement() {
                         <Link to={`/admin/surveys/${s.id}/edit`}
                           className="p-1.5 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-900/20 text-gray-400 hover:text-brand-600 transition-colors" title="Edit">
                           <Edit3 className="w-4 h-4" />
+                        </Link>
+                        <Link to={`/admin/surveys/${s.id}/analytics`}
+                          className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-400 hover:text-blue-600 transition-colors" title="Analytics">
+                          <BarChart2 className="w-4 h-4" />
                         </Link>
                         {/* Chấm điểm — chỉ hiện khi survey có bài làm */}
                         {(s.response_count > 0) && (

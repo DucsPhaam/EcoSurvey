@@ -17,6 +17,13 @@ const User = sequelize.define('users', {
   ui_theme:         { type: DataTypes.ENUM('light','dark'), defaultValue: 'light' },
   avatar_url:       { type: DataTypes.STRING(500), allowNull: true },
   reject_reason:    { type: DataTypes.TEXT,        allowNull: true },
+  // Email verification
+  email_verified:           { type: DataTypes.BOOLEAN,     defaultValue: false },
+  email_verify_token:       { type: DataTypes.STRING(255), allowNull: true },
+  // Password reset
+  reset_password_token:     { type: DataTypes.STRING(255), allowNull: true },
+  reset_password_expires:   { type: DataTypes.DATE,        allowNull: true },
+
 }, {
   indexes: [{ fields: ['role'] }, { fields: ['status'] }],
 });

@@ -9,6 +9,9 @@ import AdminLayout from './components/layout/AdminLayout'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/auth/LoginPage'
 import RegisterPage from './pages/auth/RegisterPage'
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
+import ResetPasswordPage from './pages/auth/ResetPasswordPage'
+import EmailVerificationPage from './pages/auth/EmailVerificationPage'
 
 // Shared / Student+Staff
 import MyDashboard from './pages/dashboard/MyDashboard'
@@ -26,6 +29,7 @@ import SurveyEditor from './pages/admin/SurveyEditor'
 import SurveyGrading from './pages/admin/SurveyGrading'
 import ParticipationReview from './pages/admin/ParticipationReview'
 import FAQManagement from './pages/admin/FAQManagement'
+import SurveyAnalytics from './pages/admin/SurveyAnalytics'
 
 import LoadingScreen from './components/ui/LoadingScreen'
 import ProtectedRoute from './components/layout/ProtectedRoute'
@@ -37,9 +41,12 @@ export default function App() {
   return (
     <Routes>
       {/* Public routes */}
-      <Route path="/"         element={<LandingPage />} />
-      <Route path="/login"    element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/"                  element={<LandingPage />} />
+      <Route path="/login"             element={<LoginPage />} />
+      <Route path="/register"          element={<RegisterPage />} />
+      <Route path="/forgot-password"   element={<ForgotPasswordPage />} />
+      <Route path="/reset-password"    element={<ResetPasswordPage />} />
+      <Route path="/verify-email"      element={<EmailVerificationPage />} />
 
       {/* Student / Staff routes */}
       <Route element={<ProtectedRoute allowedRoles={['Student', 'Staff', 'Admin']} />}>
@@ -62,6 +69,7 @@ export default function App() {
           <Route path="/admin/surveys/:id/edit"    element={<SurveyEditor />} />
           <Route path="/admin/surveys/new"         element={<SurveyEditor />} />
           <Route path="/admin/surveys/:id/grade"   element={<SurveyGrading />} />
+          <Route path="/admin/surveys/:id/analytics" element={<SurveyAnalytics />} />
           <Route path="/admin/participations"      element={<ParticipationReview />} />
           <Route path="/admin/faqs"                element={<FAQManagement />} />
         </Route>

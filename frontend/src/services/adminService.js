@@ -14,6 +14,7 @@ export const adminService = {
   updateSurvey: (id, data) => api.patch(`/admin/surveys/${id}`, data),
   deleteSurvey: (id) => api.delete(`/admin/surveys/${id}`),
   getSurveyResponses: (id, params) => api.get(`/admin/surveys/${id}/responses`, { params }),
+  getSurveyAnalytics: (id) => api.get(`/admin/surveys/${id}/analytics`),
   gradeOpinion: (responseId, score) =>
     api.put(`/admin/surveys/responses/${responseId}/score`, { opinion_score: score }),
 

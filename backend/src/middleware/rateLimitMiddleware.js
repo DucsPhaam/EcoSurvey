@@ -34,4 +34,16 @@ const generalLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-module.exports = { loginLimiter, aiLimiter, generalLimiter };
+/**
+ * Survey submit limiter — anti-spam
+ */
+const surveySubmitLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: parseInt(process.env.SURVEY_SUBMIT_RATE_LIMIT_MAX || '5', 10),
+  message: { message: 'Bạn nộp bài quá nhanh. Vui lòng đợi 1 phút.' },
+  keyGenerator: (req) => req.user?.id?.toString() || req.ip, // per-user
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+module.exports = { loginLimiter, aiLimiter, generalLimiter, surveySubmitLimiter };

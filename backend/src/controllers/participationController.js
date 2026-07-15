@@ -210,7 +210,7 @@ exports.reviewParticipation = async (req, res) => {
     }
 
     // In-app notification (trong transaction để nhất quán)
-    await Notification.create({
+    const notification = await Notification.create({
       user_id:        part.user_id,
       title:          status === 'Approved' ? 'Report Approved' : 'Report Rejected',
       message:        status === 'Approved'
@@ -219,6 +219,10 @@ exports.reviewParticipation = async (req, res) => {
       reference_type: 'participation',
       reference_id:   part.id,
     }, { transaction: t });
+
+    // Emit real-time notification
+    const socketService = require('../services/socketService');
+    socketService.emitToUser(part.user_id, 'new_notification', notification);
 
     await t.commit();
 

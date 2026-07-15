@@ -237,6 +237,87 @@ exports.adminGetSurveyById = async (req, res) => {
   }
 };
 
+// ── ADMIN: GET /api/admin/surveys/:id/analytics ───────────────
+exports.adminGetAnalytics = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const survey = await Survey.findByPk(id, {
+      attributes: ['id', 'title', 'status', 'start_date', 'end_date'],
+      include: [
+        { model: Question, as: 'questions', order: [['order_num', 'ASC']] },
+        { model: SurveyResponse, as: 'responses', attributes: ['id'] },
+      ],
+    });
+
+    if (!survey) return res.status(404).json({ message: 'Survey not found.' });
+
+    const totalResponses = survey.responses.length;
+    const responseIds = survey.responses.map(r => r.id);
+
+    // Fetch all answers for these responses
+    let allAnswers = [];
+    if (responseIds.length > 0) {
+      allAnswers = await SurveyAnswer.findAll({
+        where: { response_id: { [Op.in]: responseIds } },
+        attributes: ['question_id', 'answer_text'],
+      });
+    }
+
+    // Process analytics per question
+    const questionsData = survey.questions.map(q => {
+      const qAnswers = allAnswers.filter(a => a.question_id === q.id && a.answer_text);
+      const answeredCount = qAnswers.length;
+      const responseRate = totalResponses > 0 ? Math.round((answeredCount / totalResponses) * 100) : 0;
+
+      let processedAnswers = null;
+
+      if (q.question_type === 'Single_Choice') {
+        const counts = {};
+        qAnswers.forEach(a => {
+          counts[a.answer_text] = (counts[a.answer_text] || 0) + 1;
+        });
+        processedAnswers = counts;
+      } else if (q.question_type === 'Multiple_Choice') {
+        const counts = {};
+        qAnswers.forEach(a => {
+          const parts = a.answer_text.split('|||');
+          parts.forEach(p => {
+            counts[p] = (counts[p] || 0) + 1;
+          });
+        });
+        processedAnswers = counts;
+      } else {
+        // Text responses
+        processedAnswers = qAnswers.map(a => a.answer_text);
+      }
+
+      return {
+        id: q.id,
+        question_text: q.question_text,
+        question_type: q.question_type,
+        options: q.options,
+        answers: processedAnswers,
+        response_rate: responseRate,
+      };
+    });
+
+    res.json({
+      survey: {
+        id: survey.id,
+        title: survey.title,
+        status: survey.status,
+      },
+      total_responses: totalResponses,
+      questions: questionsData,
+    });
+
+  } catch (err) {
+    logger.error('adminGetAnalytics error:', err);
+    res.status(500).json({ message: 'Failed to fetch survey analytics.' });
+  }
+};
+
 // ── ADMIN: POST /api/admin/surveys ────────────────────────────
 exports.adminCreateSurvey = async (req, res) => {
   const t = await sequelize.transaction();
@@ -343,7 +424,14 @@ async function _notifyUsersForNewSurvey(survey) {
   // Gửi theo batch nhỏ để tránh quá tải DB
   const BATCH_SIZE = 100;
   for (let i = 0; i < notifications.length; i += BATCH_SIZE) {
-    await Notification.bulkCreate(notifications.slice(i, i + BATCH_SIZE));
+    const batch = notifications.slice(i, i + BATCH_SIZE);
+    const createdNotes = await Notification.bulkCreate(batch);
+    
+    // Emit real-time notification to connected users
+    const socketService = require('../services/socketService');
+    createdNotes.forEach(note => {
+      socketService.emitToUser(note.user_id, 'new_notification', note);
+    });
   }
 
   logger.info(`[Survey Publish] Sent notifications to ${users.length} users for survey "${survey.title}"`);

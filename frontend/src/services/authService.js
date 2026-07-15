@@ -1,8 +1,8 @@
 import api from './axiosInstance'
 
 export const authService = {
-  login: (login, password) => api.post('/auth/login', { login, password }),
-  register: (data) => api.post('/auth/register', data),
+  login: (login, password, captchaToken) => api.post('/auth/login', { login, password, 'cf-turnstile-response': captchaToken }),
+  register: (data, captchaToken) => api.post('/auth/register', { ...data, 'cf-turnstile-response': captchaToken }),
   logout: () => api.post('/auth/logout'),
   refresh: () => api.post('/auth/refresh'),
   checkUsername: (username) => api.get('/auth/check-username', { params: { username } }),

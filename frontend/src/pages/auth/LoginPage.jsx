@@ -4,6 +4,7 @@ import { Leaf, Eye, EyeOff, ArrowRight, ArrowUpRight, Lock, User } from 'lucide-
 import { useAuth } from '../../contexts/AuthContext'
 import { useTheme } from '../../contexts/ThemeContext'
 import toast from 'react-hot-toast'
+import { Turnstile } from '@marsidev/react-turnstile'
 
 export default function LoginPage() {
   const { login, user } = useAuth()
@@ -15,6 +16,7 @@ export default function LoginPage() {
   const [form, setForm] = useState({ login: '', password: '' })
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState('')
 
   useEffect(() => {
     if (user) {
@@ -25,9 +27,10 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.login || !form.password) { toast.error('Please fill in all fields.'); return }
+    if (!captchaToken && import.meta.env.VITE_TURNSTILE_SITE_KEY) { toast.error('Please complete the CAPTCHA.'); return }
     setLoading(true)
     try {
-      const loggedUser = await login(form.login, form.password)
+      const loggedUser = await login(form.login, form.password, captchaToken)
       applyTheme(loggedUser.ui_theme)
       toast.success(`Welcome back, ${loggedUser.full_name}!`)
       const dest = from || (loggedUser.role === 'Admin' ? '/admin' : '/dashboard')
@@ -134,9 +137,23 @@ export default function LoginPage() {
                     {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <div className="flex justify-end mt-1.5">
+                  <Link to="/forgot-password" className="text-xs text-earth-ink/50 hover:text-earth-forest transition-colors">
+                    Quên mật khẩu?
+                  </Link>
+                </div>
               </div>
 
-              <button type="submit" disabled={loading} className="btn-primary w-full">
+              {import.meta.env.VITE_TURNSTILE_SITE_KEY && (
+                <div className="flex justify-center">
+                  <Turnstile 
+                    siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY} 
+                    onSuccess={(token) => setCaptchaToken(token)} 
+                  />
+                </div>
+              )}
+
+              <button type="submit" disabled={loading || (!captchaToken && !!import.meta.env.VITE_TURNSTILE_SITE_KEY)} className="btn-primary w-full">
                 {loading ? (
                   <span className="w-5 h-5 border-[3px] border-earth-paper/30 border-t-earth-paper" />
                 ) : (

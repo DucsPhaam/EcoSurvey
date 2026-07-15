@@ -4,6 +4,7 @@ import { ChevronLeft, ClipboardList, CheckCircle2, Send, AlertCircle, Calendar, 
 import { surveyService } from '../../services/surveyService'
 import { SpinnerPage } from '../../components/ui/Spinner'
 import toast from 'react-hot-toast'
+import { Turnstile } from '@marsidev/react-turnstile'
 
 function QuestionItem({ question, answer, onChange }) {
   const { question_type: type, options, question_text, is_required, order_num } = question
@@ -93,6 +94,7 @@ export default function SurveyDetail() {
   const [loading, setLoading]     = useState(true)
   const [answers, setAnswers]     = useState({})
   const [submitting, setSubmitting] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState('')
 
   useEffect(() => {
     surveyService.getSurveyDetail(id)
@@ -120,13 +122,18 @@ export default function SurveyDetail() {
       }
     }
 
+    if (!captchaToken && import.meta.env.VITE_TURNSTILE_SITE_KEY) {
+      toast.error('Please complete the CAPTCHA.')
+      return
+    }
+
     setSubmitting(true)
     try {
       const payload = survey.questions.map((q) => ({
         question_id: q.id,
         answer_text: formatAnswer(q, answers[q.id]),
       }))
-      await surveyService.submitSurvey(id, payload)
+      await surveyService.submitSurvey(id, payload, captchaToken)
       toast.success('Survey submitted! You earned 10 points.')
       setCompleted(true)
     } catch (err) {
@@ -218,11 +225,21 @@ export default function SurveyDetail() {
           </div>
 
           <div className="card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-earth-cream">
-            <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-widest">
-              <AlertCircle className="w-4 h-4" />
-              Answer required (<span className="text-earth-terracotta">*</span>) before submitting
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-widest">
+                <AlertCircle className="w-4 h-4" />
+                Answer required (<span className="text-earth-terracotta">*</span>) before submitting
+              </div>
+              {import.meta.env.VITE_TURNSTILE_SITE_KEY && (
+                <div className="flex">
+                  <Turnstile 
+                    siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY} 
+                    onSuccess={(token) => setCaptchaToken(token)} 
+                  />
+                </div>
+              )}
             </div>
-            <button onClick={handleSubmit} disabled={submitting} className="btn-primary flex-shrink-0">
+            <button onClick={handleSubmit} disabled={submitting || (!captchaToken && !!import.meta.env.VITE_TURNSTILE_SITE_KEY)} className="btn-primary flex-shrink-0">
               {submitting ? (
                 <span className="w-4 h-4 border-[3px] border-earth-paper/30 border-t-earth-paper" />
               ) : (
