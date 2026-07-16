@@ -7,7 +7,7 @@ const SocketContext = createContext()
 export const useSocket = () => useContext(SocketContext)
 
 export const SocketProvider = ({ children }) => {
-  const { user } = useAuth()
+  const { user, accessToken } = useAuth()
   const [socket, setSocket] = useState(null)
 
   useEffect(() => {
@@ -20,8 +20,8 @@ export const SocketProvider = ({ children }) => {
       return
     }
 
-    // Get token from localStorage (set by AuthContext)
-    const token = localStorage.getItem('token')
+    // Get token from auth context or localStorage
+    const token = accessToken || localStorage.getItem('ecosurvey_token')
     
     // Fallback to absolute URL if VITE_API_URL is just '/api'
     const serverUrl = import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('http') 
@@ -46,7 +46,7 @@ export const SocketProvider = ({ children }) => {
     return () => {
       socketInstance.disconnect()
     }
-  }, [user])
+  }, [user, accessToken])
 
   return (
     <SocketContext.Provider value={{ socket }}>
