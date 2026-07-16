@@ -25,9 +25,17 @@ const start = () => {
     } catch (err) {
       logger.error('[Cron] Failed to auto-close surveys:', err.message);
     }
+  cron.schedule('0 * * * *', async () => {
+    try {
+      const badgeService = require('./badgeService');
+      await badgeService.checkTop10Badge();
+      logger.info(`[Cron] Top 10 badge check completed.`);
+    } catch (err) {
+      logger.error('[Cron] Failed to check Top 10 badges:', err.message);
+    }
   });
 
-  logger.info('✅ Cron jobs started (survey auto-close: every hour)');
+  logger.info('✅ Cron jobs started (survey auto-close: every hour, top 10 badges: every hour)');
 };
 
 module.exports = { start };

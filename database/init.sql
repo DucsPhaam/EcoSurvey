@@ -301,11 +301,51 @@ CREATE TABLE `notifications` (
 ) ENGINE=InnoDB AUTO_INCREMENT=7
   DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ─────────────────────────────────────────────────────────────
+-- TABLE: badges
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE `badges` (
+  `id`              INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name`            VARCHAR(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `icon_emoji`      VARCHAR(20)  COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description`     VARCHAR(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `condition_type`  ENUM('SURVEY_COUNT', 'PARTICIPATION_COUNT', 'TOTAL_POINTS', 'LEADERBOARD_RANK', 'ECO_SURVEY_COUNT', 'HIGH_RATING_COUNT') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `condition_value` INT NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ─────────────────────────────────────────────────────────────
+-- TABLE: user_badges
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE `user_badges` (
+  `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id`    INT UNSIGNED NOT NULL,
+  `badge_id`   INT UNSIGNED NOT NULL,
+  `earned_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_user_badge` (`user_id`, `badge_id`),
+  CONSTRAINT `user_badges_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `user_badges_badge_fk` FOREIGN KEY (`badge_id`) REFERENCES `badges` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- =====================================================================
 -- SEED DATA
 -- =====================================================================
+
+-- ─────────────────────────────────────────────────────────────
+-- badges
+-- ─────────────────────────────────────────────────────────────
+INSERT INTO `badges` (`id`, `name`, `icon_emoji`, `description`, `condition_type`, `condition_value`) VALUES
+(1, 'Bước đầu tiên', '🎯', 'Nộp survey đầu tiên', 'SURVEY_COUNT', 1),
+(2, 'Nhiệt huyết', '🔥', 'Hoàn thành 5 surveys', 'SURVEY_COUNT', 5),
+(3, 'Cống hiến', '🌟', 'Hoàn thành 10 surveys', 'SURVEY_COUNT', 10),
+(4, 'Hoạt động viên', '📝', 'Tạo participation đầu tiên', 'PARTICIPATION_COUNT', 1),
+(5, 'Top 10', '🏆', 'Vào top 10 leaderboard', 'LEADERBOARD_RANK', 10),
+(6, 'Thế kỷ', '💯', 'Đạt 100 điểm', 'TOTAL_POINTS', 100),
+(7, 'Eco Warrior', '🌿', 'Hoàn thành 1 survey môi trường (quy đổi 15 điểm)', 'TOTAL_POINTS', 15),
+(8, 'Nhà phê bình', '⭐', 'Hoàn thành 2 participation', 'PARTICIPATION_COUNT', 2);
 
 -- ─────────────────────────────────────────────────────────────
 -- users (password cho tất cả tài khoản demo: Admin@123)

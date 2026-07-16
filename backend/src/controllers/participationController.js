@@ -230,6 +230,13 @@ exports.reviewParticipation = async (req, res) => {
 
     await t.commit();
 
+    if (status === 'Approved') {
+      const badgeService = require('../services/badgeService');
+      badgeService.checkAndAwardBadges(part.user_id).catch(err => {
+        logger.error(`Error checking badges for user ${part.user_id} after participation approval:`, err);
+      });
+    }
+
     // Email là non-critical — gửi sau khi commit
     emailService.sendParticipationReviewEmail(
       part.user.email, part.user.full_name, part.event_name, status, reject_reason

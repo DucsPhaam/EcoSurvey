@@ -100,3 +100,37 @@ exports.uploadAvatar = async (req, res) => {
     res.status(500).json({ message: 'Failed to upload avatar.' });
   }
 };
+
+// GET /api/users/me/badges
+exports.getBadges = async (req, res) => {
+  try {
+    const { Badge, UserBadge } = require('../models');
+    
+    // Get all available badges
+    const allBadges = await Badge.findAll({ order: [['id', 'ASC']] });
+    
+    // Get badges earned by user
+    const earnedBadges = await UserBadge.findAll({
+      where: { user_id: req.user.id }
+    });
+    const earnedBadgeIds = new Set(earnedBadges.map(ub => ub.badge_id));
+
+    // Map to include earned status and earned_at date
+    const badgesWithStatus = allBadges.map(b => {
+      const earned = earnedBadges.find(ub => ub.badge_id === b.id);
+      return {
+        id: b.id,
+        name: b.name,
+        icon_emoji: b.icon_emoji,
+        description: b.description,
+        is_earned: !!earned,
+        earned_at: earned ? earned.earned_at : null
+      };
+    });
+
+    res.json({ badges: badgesWithStatus });
+  } catch (err) {
+    logger.error('getBadges error:', err);
+    res.status(500).json({ message: 'Failed to fetch badges.' });
+  }
+};

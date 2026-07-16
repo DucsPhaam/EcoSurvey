@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { io } from 'socket.io-client'
 import { useAuth } from './AuthContext'
+import toast from 'react-hot-toast'
 
 const SocketContext = createContext()
 
@@ -40,6 +41,18 @@ export const SocketProvider = ({ children }) => {
     socketInstance.on('connect_error', (err) => {
       console.error('🔌 Socket connection error:', err.message)
     })
+
+    socketInstance.on('new_badge', (data) => {
+      if (data && data.badge) {
+        toast.success(
+          <div className="flex flex-col">
+            <span className="font-bold">Huy hiệu mới: {data.badge.name} {data.badge.icon_emoji}</span>
+            <span className="text-sm">{data.badge.description}</span>
+          </div>,
+          { duration: 5000 }
+        );
+      }
+    });
 
     setSocket(socketInstance)
 

@@ -97,6 +97,9 @@ app.use((_req, res) => res.status(404).json({ message: 'Route not found' }));
 // ── Global error handler ──────────────────────────────────────
 app.use((err, _req, res, _next) => {
   logger.error(err.stack || err.message);
+  if (err.oauthError) {
+    logger.error('OAuth Inner Error:', err.oauthError);
+  }
   const status = err.status || 500;
   res.status(status).json({ message: err.message || 'Internal server error' });
 });

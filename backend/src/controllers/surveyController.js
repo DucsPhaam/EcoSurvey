@@ -2,6 +2,7 @@ const { Op, literal } = require('sequelize');
 const { sequelize } = require('../config/database');
 const { Survey, Question, SurveyResponse, SurveyAnswer, PointLog, Notification, User } = require('../models');
 const logger = require('../utils/logger');
+const badgeService = require('../services/badgeService');
 
 // ── GET /api/surveys — for students/staff ────────────────────
 exports.getSurveys = async (req, res) => {
@@ -175,6 +176,11 @@ exports.submitSurvey = async (req, res) => {
     }
 
     await t.commit();
+
+    // Tích hợp kiểm tra Badges (Gamification Phase 5)
+    badgeService.checkAndAwardBadges(userId).catch(err => {
+      logger.error(`Error checking badges for user ${userId} after survey submission:`, err);
+    });
 
     res.status(201).json({ message: 'Survey submitted successfully! You earned 10 points.', response_id: response.id });
   } catch (err) {

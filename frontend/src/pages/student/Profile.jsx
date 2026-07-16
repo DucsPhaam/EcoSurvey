@@ -10,11 +10,35 @@ import ChangePasswordModal from '../../components/features/ChangePasswordModal'
 export default function Profile() {
   const { user } = useAuth()
   const [logs, setLogs] = useState([])
+  const [badges, setBadges] = useState([])
+  const [points, setPoints] = useState(0)
   const [loading, setLoading] = useState(true)
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const { updateUser } = useAuth()
   const fileInputRef = useRef(null)
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const fetchData = async () => {
+    try {
+      setLoading(true)
+      const [pointsRes, badgesRes] = await Promise.all([
+        userService.getPointHistory(),
+        userService.getBadges().catch(() => ({ badges: [] }))
+      ])
+      setLogs(pointsRes.data.logs || [])
+      setPoints(pointsRes.data.total || 0)
+      setBadges(badgesRes.badges || [])
+    } catch (err) {
+      console.error('Failed to fetch profile data', err)
+      toast.error('Could not load profile data')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleAvatarUpload = async (e) => {
     const file = e.target.files?.[0]
@@ -189,6 +213,42 @@ export default function Profile() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Badges Section */}
+        <div className="col-span-1 md:col-span-3">
+          <div className="card p-6">
+            <h3 className="ui-title text-xl flex items-center gap-2 mb-6">
+              <Award className="w-5 h-5 text-earth-sun" /> Danh Hiệu Của Tôi
+            </h3>
+            
+            {loading ? (
+              <div className="flex justify-center p-8">
+                <div className="w-8 h-8 border-[3px] border-earth-ink border-t-earth-forest rounded-full animate-spin"></div>
+              </div>
+            ) : badges.length === 0 ? (
+              <p className="text-center text-earth-ink/50 py-4 font-mono">Hệ thống đang cập nhật danh hiệu.</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {badges.map(badge => (
+                  <div key={badge.id} className={`border-[2px] border-earth-ink p-4 flex flex-col items-center text-center shadow-brutal-sm transition-all duration-300 ${badge.is_earned ? 'bg-white transform hover:-translate-y-1' : 'bg-earth-sand/30 grayscale opacity-60'}`}>
+                    <div className="text-4xl mb-3">{badge.icon_emoji}</div>
+                    <h4 className={`font-bold mb-1 ${badge.is_earned ? 'text-earth-terracotta' : 'text-earth-ink'}`}>{badge.name}</h4>
+                    <p className="text-xs text-earth-ink/70 mb-3">{badge.description}</p>
+                    {badge.is_earned ? (
+                      <span className="text-[10px] font-mono font-bold text-earth-forest uppercase bg-earth-cream px-2 py-1 border-[1px] border-earth-forest mt-auto">
+                        Đạt lúc: {new Date(badge.earned_at).toLocaleDateString()}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-mono text-earth-ink/50 uppercase mt-auto border-[1px] border-earth-ink/20 px-2 py-1 bg-white/50">
+                        Chưa đạt
+                      </span>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
           </div>
