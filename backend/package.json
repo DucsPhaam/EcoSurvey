@@ -4,8 +4,8 @@
   "description": "EcoSurvey Backend API - Node.js + Express + Sequelize + MySQL",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
+    "start": "node --dns-result-order=ipv4first src/server.js",
+    "dev": "nodemon --exec 'node --dns-result-order=ipv4first' src/server.js",
     "lint": "eslint src/**/*.js",
     "test": "jest --forceExit",
     "test:watch": "jest --watch --forceExit",

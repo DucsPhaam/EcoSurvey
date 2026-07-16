@@ -25,6 +25,8 @@ const start = () => {
     } catch (err) {
       logger.error('[Cron] Failed to auto-close surveys:', err.message);
     }
+  });
+
   cron.schedule('0 * * * *', async () => {
     try {
       const badgeService = require('./badgeService');
