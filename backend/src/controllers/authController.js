@@ -31,6 +31,7 @@ exports.register = async (req, res) => {
     const {
       full_name, username, email, password, confirm_password,
       role, student_staff_id, class_name, department, joined_date,
+      google_id
     } = req.body;
 
     if (!full_name || !username || !email || !password || !confirm_password || !role) {
@@ -62,6 +63,8 @@ exports.register = async (req, res) => {
       student_staff_id, class_name, department,
       joined_date: joined_date || null,
       status: 'Pending',
+      google_id: google_id || null,
+      auth_provider: google_id ? 'google' : 'local'
     });
 
     emailService.sendRegistrationEmail(email, full_name).catch(logger.error);
@@ -285,6 +288,52 @@ exports.verifyEmail = async (req, res) => {
   } catch (err) {
     logger.error('verifyEmail error:', err);
     res.status(500).json({ message: 'Lỗi máy chủ.' });
+  }
+};
+
+// GET /api/auth/google/callback
+exports.googleCallback = async (req, res) => {
+  try {
+    const user = req.user;
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:8080';
+
+    if (user.isNewGoogleUser) {
+      // Redirect to registration page with pre-filled details
+      const params = new URLSearchParams({
+        email: user.email || '',
+        name: user.full_name || '',
+        google_id: user.google_id || ''
+      });
+      return res.redirect(`${clientUrl}/register?${params.toString()}`);
+    }
+
+    // Account exists, check status
+    if (user.status === 'Pending') {
+      return res.redirect(`${clientUrl}/login?error=pending`);
+    }
+    if (user.status === 'Rejected') {
+      return res.redirect(`${clientUrl}/login?error=rejected`);
+    }
+    if (user.status === 'Deactivated') {
+      return res.redirect(`${clientUrl}/login?error=deactivated`);
+    }
+
+    // Generate tokens
+    const accessToken = signAccessToken(user);
+    const refreshToken = await createRefreshToken(user.id);
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: REFRESH_DAYS * 86400 * 1000,
+    });
+
+    // Redirect to frontend callback to process access token
+    res.redirect(`${clientUrl}/oauth/callback?accessToken=${accessToken}`);
+  } catch (err) {
+    logger.error('googleCallback error:', err);
+    res.redirect(`${process.env.CLIENT_URL || 'http://localhost:8080'}/login?error=server_error`);
   }
 };
 

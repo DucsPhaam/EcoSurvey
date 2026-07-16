@@ -62,6 +62,9 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+const passport = require('./config/passport');
+app.use(passport.initialize());
+
 // FIX #16: Không còn serve /uploads dưới dạng static công khai nữa.
 // Thay bằng /api/files/:filename với authentication.
 // Giữ lại static serve CHỈ trong môi trường development để tiện debug.

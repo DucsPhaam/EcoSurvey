@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useLocation, Link, useNavigate } from 'react-router-dom'
 import { Leaf, Eye, EyeOff, Check, X, ChevronRight, ChevronLeft, User, Mail, Lock, Briefcase, Calendar, ArrowRight, ArrowUpRight } from 'lucide-react'
 import { authService } from '../../services/authService'
 import toast from 'react-hot-toast'
 import { Turnstile } from '@marsidev/react-turnstile'
+import { useEffect } from 'react'
 
 const STEPS = ['Account', 'Personal', 'Review']
 
@@ -53,6 +54,7 @@ function PasswordStrength({ password }) {
 
 export default function RegisterPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [showPass, setShowPass] = useState(false)
@@ -63,7 +65,23 @@ export default function RegisterPage() {
   const [form, setForm] = useState({
     full_name: '', username: '', email: '', password: '', confirm_password: '',
     role: 'Student', student_staff_id: '', class_name: '', department: '', joined_date: '',
+    google_id: '',
   })
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const email = params.get('email')
+    const name = params.get('name')
+    const googleId = params.get('google_id')
+    if (email || name || googleId) {
+      setForm(f => ({
+        ...f,
+        email: email || f.email,
+        full_name: name || f.full_name,
+        google_id: googleId || f.google_id
+      }))
+    }
+  }, [location.search])
 
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }))
 

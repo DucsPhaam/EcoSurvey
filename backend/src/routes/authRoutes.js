@@ -38,5 +38,10 @@ router.post('/reset-password',    authCtrl.resetPassword);
 router.post('/send-verification', authenticate, authCtrl.sendVerificationEmail);
 router.get('/verify-email',       authCtrl.verifyEmail);
 
+// Google OAuth
+const passport = require('passport');
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get('/google/callback', passport.authenticate('google', { session: false, failureRedirect: '/login' }), authCtrl.googleCallback);
+
 module.exports = router;
 

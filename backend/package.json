@@ -28,6 +28,8 @@
     "mysql2": "^3.11.3",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.15",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
     "pdfkit": "^0.15.0",
     "sequelize": "^6.37.3",
     "socket.io": "^4.8.3",

@@ -12,6 +12,7 @@ import RegisterPage from './pages/auth/RegisterPage'
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
 import ResetPasswordPage from './pages/auth/ResetPasswordPage'
 import EmailVerificationPage from './pages/auth/EmailVerificationPage'
+import OAuthCallback from './pages/auth/OAuthCallback'
 
 // Shared / Student+Staff
 import MyDashboard from './pages/dashboard/MyDashboard'
@@ -48,6 +49,7 @@ export default function App() {
       <Route path="/forgot-password"   element={<ForgotPasswordPage />} />
       <Route path="/reset-password"    element={<ResetPasswordPage />} />
       <Route path="/verify-email"      element={<EmailVerificationPage />} />
+      <Route path="/oauth/callback"    element={<OAuthCallback />} />
 
       {/* Student / Staff routes */}
       <Route element={<ProtectedRoute allowedRoles={['Student', 'Staff', 'Admin']} />}>
