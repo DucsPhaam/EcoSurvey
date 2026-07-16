@@ -1,5 +1,5 @@
 const { Badge, UserBadge, SurveyResponse, Participation, PointLog, User, Notification } = require('../models');
-const { getIO } = require('../utils/socket');
+const { getIo } = require('./socketService');
 const { Op } = require('sequelize');
 const logger = require('../utils/logger');
 
@@ -67,7 +67,7 @@ exports.checkAndAwardBadges = async (userId) => {
       });
 
       // Emit socket event
-      const io = getIO();
+      const io = getIo();
       if (io) {
         io.to(`user_${userId}`).emit('new_badge', {
           badge: badge
@@ -116,7 +116,7 @@ exports.checkTop10Badge = async () => {
           is_read: false
         });
 
-        const io = getIO();
+        const io = getIo();
         if (io) {
           io.to(`user_${userId}`).emit('new_badge', { badge: top10Badge });
           io.to(`user_${userId}`).emit('new_notification');

@@ -1,0 +1,91 @@
+========================================================================
+TỔNG QUAN HỆ THỐNG ECOSURVEY - ĐÁNH GIÁ CHỨC NĂNG VÀ LUỒNG HOẠT ĐỘNG
+========================================================================
+
+1. TỔNG QUAN KIẾN TRÚC
+- Backend: Node.js, Express, Sequelize (MySQL), Socket.io, Cron Jobs.
+- Frontend: React (Vite), Tailwind CSS, React Router, Axios.
+- Phân quyền (Roles): System Administrator (Admin), Staff, Student.
+
+========================================================================
+2. CÁC CHỨC NĂNG CHÍNH VÀ LUỒNG ĐI (USER FLOW)
+========================================================================
+
+A. Authentication & Account Management (Xác thực và Quản lý tài khoản)
+- Chức năng:
+  + Đăng ký tài khoản (Local).
+  + Đăng nhập (Local bằng Username/Password hoặc qua Google OAuth).
+  + JWT Token (Access Token lưu trong memory/localStorage, Refresh Token lưu trong HTTP-only cookie).
+- Luồng đi:
+  1. Người dùng mới đăng ký hoặc đăng nhập Google lần đầu -> Tài khoản ở trạng thái 'Pending'.
+  2. Admin vào "User Management" xem danh sách tài khoản chờ duyệt -> Approve (hoặc Reject).
+  3. Sau khi được duyệt, người dùng có thể đăng nhập. Hệ thống sẽ điều hướng người dùng tới Dashboard tương ứng với Role (Admin Dashboard hoặc Student Dashboard).
+
+B. User Profile & Settings (Hồ sơ người dùng)
+- Chức năng:
+  + Cập nhật thông tin cá nhân, ảnh đại diện (Cloudinary).
+  + Đổi mật khẩu.
+  + Đổi giao diện UI (Light/Dark theme).
+  + Xem lịch sử điểm số và danh hiệu (Badges).
+- Luồng đi:
+  1. Sinh viên vào trang Profile.
+  2. Tại đây có thể cập nhật avatar, xem mình đã đạt được bao nhiêu điểm, lịch sử biến động điểm, và các huy hiệu (Badge) đã mở khoá.
+
+C. Gamification & Leaderboard (Thi đua & Bảng xếp hạng)
+- Chức năng:
+  + Tích lũy điểm từ việc làm khảo sát và báo cáo hoạt động.
+  + Hệ thống huy hiệu (Badges) tự động cấp phát khi đạt điều kiện (VD: hoàn thành 1 khảo sát, đạt 100 điểm...).
+  + Bảng xếp hạng (Leaderboard).
+- Luồng đi:
+  1. Khi người dùng hoàn thành khảo sát hoặc được duyệt báo cáo, Backend cộng điểm.
+  2. Backend kiểm tra điều kiện Badge. Nếu đạt, cấp Badge và phát sự kiện Socket.io (real-time popup chúc mừng).
+  3. Cron Job tự động cập nhật Badge Top 10 hàng ngày.
+  4. Người dùng vào trang "Leaderboard" để xem xếp hạng top điểm của toàn trường.
+
+D. Survey System (Hệ thống Khảo sát)
+- Chức năng:
+  + Quản lý Khảo sát (Admin): Tạo, sửa, xóa, đóng/mở khảo sát. Có tích hợp AI (OpenRouter) để tự động sinh câu hỏi.
+  + Tham gia Khảo sát (Student): Xem danh sách khảo sát đang mở, trả lời câu hỏi (Trắc nghiệm, Text, Rating).
+  + Chấm điểm Khảo sát (Admin): Xem các câu trả lời tự luận và chấm điểm thủ công (hoặc auto).
+  + Thống kê Khảo sát (Admin): Xem biểu đồ phân tích dữ liệu (SurveyAnalytics).
+- Luồng đi:
+  1. Admin vào "Survey Management" -> Tạo khảo sát mới (thủ công hoặc bằng AI) -> Publish.
+  2. Sinh viên vào "Survey Board" -> Nhấn tham gia khảo sát -> Trả lời & Submit.
+  3. Sinh viên nhận điểm thưởng cố định (hoặc chờ Admin chấm điểm câu tự luận).
+  4. Admin vào "Survey Analytics" để xem biểu đồ thống kê kết quả, hoặc "Survey Grading" để chấm điểm tự luận và export Excel.
+
+E. Extracurricular Participation (Báo cáo hoạt động ngoại khoá)
+- Chức năng:
+  + Nộp minh chứng tham gia sự kiện.
+  + Xét duyệt minh chứng.
+- Luồng đi:
+  1. Sinh viên tham gia một hoạt động thực tế, sau đó vào "My Participations" -> "Submit Participation".
+  2. Sinh viên điền form và đính kèm ảnh/file minh chứng (Cloudinary) -> Submit. Trạng thái 'Pending'.
+  3. Admin vào "Participation Review", xem thông tin và file đính kèm.
+  4. Admin nhấn 'Approve' (kèm số điểm thưởng) hoặc 'Reject' (kèm lý do). Điểm được cộng cho sinh viên.
+
+F. Dashboard & System Management (Bảng điều khiển Admin)
+- Chức năng:
+  + Admin Dashboard: Xem thống kê tổng quan (số user, số bài khảo sát, số báo cáo, hoạt động gần đây).
+  + FAQ Management: Quản lý bộ câu hỏi thường gặp (CRUD).
+  + User Management: Quản lý và kiểm duyệt tài khoản, khoá tài khoản.
+- Luồng đi:
+  1. Admin đăng nhập vào sẽ thấy ngay Dashboard thống kê.
+  2. Admin điều hướng qua các tab bên trái để duyệt user, quản lý FAQ hoặc theo dõi Logs.
+
+G. Public Landing Page (Trang chủ công khai)
+- Chức năng:
+  + Hiển thị thông tin dự án EcoSurvey.
+  + Thống kê public real-time (tổng số người dùng, tổng số khảo sát).
+  + FAQs công khai.
+- Luồng đi:
+  1. Khách vãng lai truy cập web -> Thấy trang Landing Page.
+  2. Đọc FAQs, xem số liệu thực tế. Nhấn "Bắt đầu ngay" sẽ được chuyển hướng tới trang Đăng nhập/Đăng ký.
+
+========================================================================
+3. ĐÁNH GIÁ CHẤT LƯỢNG VÀ KIẾN TRÚC HIỆN TẠI
+========================================================================
+- Tính hoàn thiện: Dự án đã có một core featureset rất đầy đủ, từ Authentication bảo mật (JWT + HTTP-only cookies) tới các tính năng nghiệp vụ sâu như Khảo sát có AI, Upload file Cloudinary, và Gamification với Real-time Socket.io.
+- Bảo mật: Có Helmet, CORS chặt chẽ, rate limiting, captcha bảo vệ endpoints quan trọng, phân quyền Middleware tốt.
+- Hiệu suất: Có sử dụng Cron jobs để dọn dẹp và cấp badge ngầm, caching ở Nginx.
+- Điểm sáng: Gamification được tích hợp rất tốt vào luồng trải nghiệm, logic AI sinh câu hỏi hiện đại, quy trình duyệt sinh viên chặt chẽ.

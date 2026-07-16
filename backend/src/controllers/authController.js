@@ -145,7 +145,8 @@ exports.login = async (req, res) => {
 exports.refresh = async (req, res) => {
   try {
     const raw = req.cookies?.refreshToken;
-    if (!raw) return res.status(401).json({ message: 'No refresh token found.' });
+    logger.info(`[Auth Refresh] Received cookies:`, req.cookies);
+    if (!raw) return res.status(401).json({ message: 'Refresh token missing.' });
 
     const hash = crypto.createHash('sha256').update(raw).digest('hex');
     const stored = await RefreshToken.findOne({ where: { token_hash: hash } });
@@ -324,8 +325,8 @@ exports.googleCallback = async (req, res) => {
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production' && !process.env.CLIENT_URL?.includes('localhost'),
+      sameSite: process.env.NODE_ENV === 'production' && !process.env.CLIENT_URL?.includes('localhost') ? 'strict' : 'lax',
       maxAge: REFRESH_DAYS * 86400 * 1000,
     });
 
