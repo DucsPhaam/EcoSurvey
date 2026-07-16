@@ -1,11 +1,9 @@
-FROM node:20-alpine
+FROM node:20-slim
 
 WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
-# Install build tools for native dependencies (like bcrypt)
-RUN apk add --no-cache python3 make g++
 RUN npm ci --only=production
 
 # Copy source
