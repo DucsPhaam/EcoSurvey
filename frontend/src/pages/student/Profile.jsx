@@ -68,22 +68,7 @@ export default function Profile() {
     }
   }
 
-  useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        const res = await userService.getPointHistory()
-        setLogs(res.data.logs)
-      } catch (err) {
-        console.error('Failed to fetch point history', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchHistory()
-  }, [])
-
   // Calculate rank based on points
-  const points = user?.points || 0
   let rank = { name: 'Bronze', color: 'text-[#cd7f32]', bg: 'bg-[#cd7f32]/10', border: 'border-[#cd7f32]' }
   if (points >= 1000) rank = { name: 'Platinum', color: 'text-slate-400', bg: 'bg-slate-400/10', border: 'border-slate-400' }
   else if (points >= 500) rank = { name: 'Gold', color: 'text-yellow-500', bg: 'bg-yellow-500/10', border: 'border-yellow-500' }
