@@ -21,7 +21,7 @@ export default function Profile() {
     if (!file) return
 
     if (file.size > 5 * 1024 * 1024) {
-      return toast.error('Avatar must be less than 5MB')
+      return toast.error('Your image size is too large. Maximum size allowed is 5MB.')
     }
 
     const formData = new FormData()
@@ -33,7 +33,11 @@ export default function Profile() {
       updateUser({ avatar_url: res.data.avatar_url })
       toast.success('Avatar updated successfully')
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to update avatar')
+      if (err.response?.status === 413) {
+        toast.error('Your image size is too large. Maximum size allowed is 5MB.')
+      } else {
+        toast.error(err.response?.data?.message || 'Failed to update avatar')
+      }
     } finally {
       setUploadingAvatar(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -77,30 +81,35 @@ export default function Profile() {
         {/* Profile Card */}
         <div className="col-span-1">
           <div className="card p-6 flex flex-col items-center text-center space-y-4">
-            <div 
-              className="w-24 h-24 rounded-full bg-earth-forest border-[3px] border-earth-ink flex items-center justify-center text-4xl text-earth-cream font-bold uppercase shadow-brutal-sm relative group cursor-pointer overflow-hidden"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {user?.avatar_url ? (
-                <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-              ) : (
-                user?.full_name?.[0]
-              )}
-              
-              <div className="absolute inset-0 bg-earth-ink/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                {uploadingAvatar ? (
-                  <div className="w-6 h-6 border-[2px] border-earth-cream border-t-transparent rounded-full animate-spin"></div>
+            <div className="flex flex-col items-center gap-2">
+              <div 
+                className="w-24 h-24 rounded-full bg-earth-forest border-[3px] border-earth-ink flex items-center justify-center text-4xl text-earth-cream font-bold uppercase shadow-brutal-sm relative group cursor-pointer overflow-hidden"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {user?.avatar_url ? (
+                  <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
-                  <Camera className="w-6 h-6 text-earth-cream" />
+                  user?.full_name?.[0]
                 )}
+                
+                <div className="absolute inset-0 bg-earth-ink/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  {uploadingAvatar ? (
+                    <div className="w-6 h-6 border-[2px] border-earth-cream border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <Camera className="w-6 h-6 text-earth-cream" />
+                  )}
+                </div>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleAvatarUpload} 
+                  accept="image/jpeg, image/png, image/webp" 
+                  className="hidden" 
+                />
               </div>
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleAvatarUpload} 
-                accept="image/jpeg, image/png, image/webp" 
-                className="hidden" 
-              />
+              <p className="text-xs text-earth-ink/60 font-mono mt-1 text-center max-w-[160px]">
+                Max size: 5MB.<br/>Allowed: JPG, PNG, WEBP.
+              </p>
             </div>
             
             <div>
