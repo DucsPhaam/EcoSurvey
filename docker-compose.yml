@@ -49,7 +49,6 @@ services:
       JWT_EXPIRES_IN: 15m
       JWT_REFRESH_EXPIRES_IN: 7d
       CLIENT_URL: ${CLIENT_URL:-http://localhost}
-      UPLOAD_PATH: /app/uploads
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
@@ -59,8 +58,6 @@ services:
       TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
     ports:
       - "5000:5000"
-    volumes:
-      - uploads_data:/app/uploads
     networks:
       - ecosurvey-net
 
@@ -84,8 +81,6 @@ services:
 volumes:
   db_data:
     name: ecosurvey_release_db_data
-  uploads_data:
-    name: ecosurvey_release_uploads
 
 networks:
   ecosurvey-net:

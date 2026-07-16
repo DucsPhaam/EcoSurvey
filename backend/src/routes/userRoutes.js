@@ -7,4 +7,7 @@ router.get('/me/points',       authenticate, userCtrl.getPointHistory);
 router.patch('/me/theme',      authenticate, userCtrl.updateTheme);
 router.patch('/me/password',   authenticate, userCtrl.changePassword);
 
+const { upload } = require('../middleware/uploadMiddleware');
+router.post('/me/avatar',      authenticate, upload.single('avatar'), userCtrl.uploadAvatar);
+
 module.exports = router;

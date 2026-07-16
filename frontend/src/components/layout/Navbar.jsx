@@ -176,8 +176,12 @@ export default function Navbar() {
                   aria-label="User menu"
                   aria-expanded={userMenuOpen}
                   aria-haspopup="true">
-                  <div className="w-9 h-9 bg-earth-forest border-[3px] border-earth-ink flex items-center justify-center text-earth-cream font-bold text-sm">
-                    {user?.full_name?.[0]?.toUpperCase()}
+                  <div className="w-9 h-9 bg-earth-forest border-[3px] border-earth-ink flex items-center justify-center text-earth-cream font-bold text-sm overflow-hidden">
+                    {user?.avatar_url ? (
+                      <img src={user.avatar_url} alt="User Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      user?.full_name?.[0]?.toUpperCase()
+                    )}
                   </div>
                   <ChevronDown className={`w-3.5 h-3.5 text-earth-ink transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
                 </button>

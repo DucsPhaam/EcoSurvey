@@ -73,9 +73,13 @@ exports.createParticipation = async (req, res) => {
 
     // Handle uploaded files
     if (req.files && req.files.length > 0) {
-      const fileRecords = req.files.map((f) => ({
+      const storageService = require('../services/storageService');
+      const uploadPromises = req.files.map(f => storageService.uploadBuffer(f.buffer, 'participations'));
+      const uploadResults = await Promise.all(uploadPromises);
+
+      const fileRecords = req.files.map((f, i) => ({
         participation_id: participation.id,
-        file_url:  `/uploads/${f.filename}`,
+        file_url:  uploadResults[i].secure_url,
         file_name: f.originalname,
         file_type: f.mimetype,
         file_size: f.size,

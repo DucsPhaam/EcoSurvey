@@ -6,4 +6,7 @@ export const userService = {
   changePassword: (current_password, new_password, confirm_password) =>
     api.patch('/users/me/password', { current_password, new_password, confirm_password }),
   getPointHistory: () => api.get('/users/me/points'),
+  uploadAvatar: (formData) => api.post('/users/me/avatar', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
 }

@@ -83,3 +83,20 @@ exports.getPointHistory = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch point history.' });
   }
 };
+
+// POST /api/users/me/avatar
+exports.uploadAvatar = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded.' });
+    }
+    const storageService = require('../services/storageService');
+    const result = await storageService.uploadBuffer(req.file.buffer, 'avatars');
+    
+    await User.update({ avatar_url: result.secure_url }, { where: { id: req.user.id } });
+    res.json({ message: 'Avatar updated successfully.', avatar_url: result.secure_url });
+  } catch (err) {
+    logger.error('uploadAvatar error:', err);
+    res.status(500).json({ message: 'Failed to upload avatar.' });
+  }
+};
