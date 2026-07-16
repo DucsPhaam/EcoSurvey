@@ -6,15 +6,17 @@ import toast from 'react-hot-toast'
 export default function OAuthCallback() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { fetchUser } = useAuth()
+  const { fetchUser, setAccessToken } = useAuth()
 
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     const accessToken = params.get('accessToken')
 
     if (accessToken) {
-      localStorage.setItem('accessToken', accessToken)
-      fetchUser().then(user => {
+      setAccessToken(accessToken)
+      import('../../services/axiosInstance').then(({ default: api }) => {
+        api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
+        fetchUser().then(user => {
         if (user) {
           toast.success(`Welcome back, ${user.full_name}!`)
           navigate(user.role === 'Admin' ? '/admin' : '/dashboard', { replace: true })
@@ -22,6 +24,7 @@ export default function OAuthCallback() {
           toast.error('Failed to load user profile.')
           navigate('/login', { replace: true })
         }
+      })
       })
     } else {
       toast.error('Authentication failed.')

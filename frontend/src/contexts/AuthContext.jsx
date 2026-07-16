@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { authService } from '../services/authService'
+import { userService } from '../services/userService'
 import api from '../services/axiosInstance'
 import toast from 'react-hot-toast'
 
@@ -69,8 +70,21 @@ export const AuthProvider = ({ children }) => {
     })
   }, [])
 
+  const fetchUser = useCallback(async () => {
+    try {
+      const res = await userService.getMe()
+      const fetchedUser = res.data.user
+      setUser(fetchedUser)
+      localStorage.setItem('ecosurvey_user', JSON.stringify(fetchedUser))
+      return fetchedUser
+    } catch (err) {
+      console.error('Failed to fetch user:', err)
+      return null
+    }
+  }, [])
+
   return (
-    <AuthContext.Provider value={{ user, accessToken, setAccessToken, login, logout, updateUser, loading, isAdmin: user?.role === 'Admin' }}>
+    <AuthContext.Provider value={{ user, accessToken, setAccessToken, login, logout, updateUser, fetchUser, loading, isAdmin: user?.role === 'Admin' }}>
       {children}
     </AuthContext.Provider>
   )
