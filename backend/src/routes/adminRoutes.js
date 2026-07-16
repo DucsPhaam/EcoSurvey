@@ -5,11 +5,14 @@ const adminCtrl = require('../controllers/adminController');
 const surveyCtrl = require('../controllers/surveyController');
 const participCtrl = require('../controllers/participationController');
 const exportCtrl = require('../controllers/exportController');
+const multer = require('multer');
 
 const isAdmin = [authenticate, authorize('Admin')];
+const upload = multer({ storage: multer.memoryStorage() });
 
 // ── Users ─────────────────────────────────────────────────────
 router.get('/users', ...isAdmin, adminCtrl.getUsers);
+router.post('/users/import', ...isAdmin, upload.single('file'), adminCtrl.importUsers);
 router.patch('/users/:id/status', ...isAdmin, adminCtrl.updateUserStatus);
 router.delete('/users/:id', ...isAdmin, adminCtrl.deleteUser);
 router.get('/stats', ...isAdmin, adminCtrl.getStats);

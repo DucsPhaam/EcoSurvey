@@ -3,6 +3,9 @@ import api from './axiosInstance'
 export const adminService = {
   // Users
   getUsers: (params) => api.get('/admin/users', { params }),
+  importUsers: (formData) => api.post('/admin/users/import', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
   updateUserStatus: (id, data) => api.patch(`/admin/users/${id}/status`, data),
   deleteUser: (id) => api.delete(`/admin/users/${id}`),
   getStats: () => api.get('/admin/stats'),

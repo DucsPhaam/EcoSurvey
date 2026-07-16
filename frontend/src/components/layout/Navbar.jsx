@@ -82,13 +82,14 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-earth-paper border-b-[3px] border-earth-ink">
+      <a href="#main-content" className="skip-link">Skip to main content</a>
+      <header className="sticky top-0 z-50 bg-earth-paper border-b-[3px] border-earth-ink" role="banner">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center gap-2.5 group">
               <div className="w-9 h-9 bg-earth-forest border-[3px] border-earth-ink flex items-center justify-center group-hover:translate-x-[1px] group-hover:translate-y-[1px] transition-transform">
-                <Leaf className="w-5 h-5 text-earth-cream" />
+                <Leaf className="w-5 h-5 text-earth-cream" aria-hidden="true" />
               </div>
               <div>
                 <span className="font-display text-lg uppercase text-earth-ink">EcoSurvey</span>
@@ -97,7 +98,7 @@ export default function Navbar() {
             </Link>
 
             {/* Desktop Nav */}
-            <nav className="hidden md:flex items-center gap-1">
+            <nav className="hidden md:flex items-center gap-1" aria-label="Main navigation">
               {navLinks.map(({ to, label }) => (
                 <NavLink key={to} to={to}
                   className={({ isActive }) =>
@@ -117,15 +118,19 @@ export default function Navbar() {
             <div className="flex items-center gap-2">
               <button onClick={toggleTheme}
                 className="p-2 border-[2px] border-transparent text-earth-ink hover:border-earth-ink hover:bg-earth-cream transition-colors"
+                aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
                 title="Toggle theme">
-                {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                {theme === 'dark' ? <Sun className="w-5 h-5" aria-hidden="true" /> : <Moon className="w-5 h-5" aria-hidden="true" />}
               </button>
 
               {/* Notifications */}
               <div className="relative" ref={notifRef}>
                 <button onClick={() => setNotifOpen((o) => !o)}
-                  className="relative p-2 border-[2px] border-transparent text-earth-ink hover:border-earth-ink hover:bg-earth-cream transition-colors">
-                  <Bell className="w-5 h-5" />
+                  className="relative p-2 border-[2px] border-transparent text-earth-ink hover:border-earth-ink hover:bg-earth-cream transition-colors"
+                  aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
+                  aria-expanded={notifOpen}
+                  aria-haspopup="true">
+                  <Bell className="w-5 h-5" aria-hidden="true" />
                   {unreadCount > 0 && (
                     <span className="absolute top-0 right-0 w-4 h-4 bg-earth-terracotta text-earth-paper text-[10px] font-bold border border-earth-ink flex items-center justify-center">
                       {unreadCount > 9 ? '9+' : unreadCount}
@@ -167,15 +172,19 @@ export default function Navbar() {
                   <p className="text-xs font-mono uppercase tracking-widest text-earth-ink/60 mt-0.5">{user?.role}</p>
                 </div>
                 <button onClick={() => setUserMenuOpen((o) => !o)}
-                  className="flex items-center gap-1 group">
+                  className="flex items-center gap-1 group"
+                  aria-label="User menu"
+                  aria-expanded={userMenuOpen}
+                  aria-haspopup="true">
                   <div className="w-9 h-9 bg-earth-forest border-[3px] border-earth-ink flex items-center justify-center text-earth-cream font-bold text-sm">
                     {user?.full_name?.[0]?.toUpperCase()}
                   </div>
-                  <ChevronDown className={`w-3.5 h-3.5 text-earth-ink transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-3.5 h-3.5 text-earth-ink transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
                 </button>
 
                 {userMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-52 card shadow-brutal animate-slide-up z-50">
+                  /* eslint-disable-next-line jsx-a11y/no-static-element-interactions */
+                  <div className="absolute right-0 top-full mt-2 w-52 card shadow-brutal animate-slide-up z-50" role="menu" aria-label="User menu">
                     <div className="p-3 border-b-[2px] border-earth-ink/20">
                       <p className="text-sm font-semibold text-earth-ink truncate">{user?.full_name}</p>
                       <p className="text-xs font-mono uppercase tracking-widest text-earth-ink/60">{user?.role}</p>

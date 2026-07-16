@@ -20,22 +20,22 @@ export default function AdminLayout() {
       <Navbar />
       <div className="flex flex-1">
         {/* Sidebar */}
-        <aside className="w-64 bg-earth-cream border-r-[3px] border-earth-ink flex-shrink-0 hidden lg:block">
+        <aside className="w-64 bg-earth-cream border-r-[3px] border-earth-ink flex-shrink-0 hidden lg:block" role="complementary" aria-label="Admin sidebar">
           <div className="p-6">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 bg-earth-forest border-[3px] border-earth-ink flex items-center justify-center">
-                <Leaf className="w-4 h-4 text-earth-cream" />
+                <Leaf className="w-4 h-4 text-earth-cream" aria-hidden="true" />
               </div>
               <span className="ui-title text-earth-forest">Admin Panel</span>
             </div>
             <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60 mb-6">EcoSurvey Management</p>
-            <nav className="space-y-1">
+            <nav className="space-y-1" aria-label="Admin navigation">
               {navItems.map(({ to, label, icon: Icon, end }) => (
                 <NavLink
                   key={to} to={to} end={end}
                   className={({ isActive }) => isActive ? 'sidebar-link-active' : 'sidebar-link'}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-4 h-4" aria-hidden="true" />
                   {label}
                 </NavLink>
               ))}
@@ -44,7 +44,7 @@ export default function AdminLayout() {
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 overflow-auto">
+        <main id="main-content" className="flex-1 overflow-auto">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <Outlet />
           </div>

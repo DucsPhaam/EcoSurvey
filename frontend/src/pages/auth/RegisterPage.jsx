@@ -14,7 +14,7 @@ const ROLES = [
 
 function StepIndicator({ current }) {
   return (
-    <div className="flex items-center gap-2 mb-8">
+    <div className="flex items-center gap-2 mb-8" role="group" aria-label="Registration progress">
       {STEPS.map((label, i) => (
         <div key={label} className="flex items-center gap-2 flex-1">
           <div className={`flex items-center gap-2 ${i <= current ? 'text-earth-ink' : 'text-earth-ink/30'}`}>
@@ -23,9 +23,9 @@ function StepIndicator({ current }) {
               i === current ? 'bg-earth-paper text-earth-ink' :
                               'bg-earth-paper text-earth-ink/30'
             }`}>
-              {i < current ? <Check className="w-4 h-4" /> : i + 1}
+              {i < current ? <Check className="w-4 h-4" aria-hidden="true" /> : i + 1}
             </div>
-            <span className="hidden sm:inline ui-title text-xs">{label}</span>
+            <span className="hidden sm:inline ui-title text-xs" aria-current={i === current ? 'step' : undefined}>{label}</span>
           </div>
           {i < STEPS.length - 1 && <div className={`flex-1 h-[3px] ${i < current ? 'bg-earth-forest' : 'bg-earth-ink/20'}`} />}
         </div>
@@ -129,24 +129,24 @@ export default function RegisterPage() {
           {step === 0 && (
             <div className="space-y-5 animate-fade-in">
               <div>
-                <label className="label">Username</label>
+                <label htmlFor="reg-username" className="label">Username</label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-ink/60" />
-                  <input type="text" placeholder="e.g. nguyenvan_a" value={form.username}
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-ink/60" aria-hidden="true" />
+                  <input id="reg-username" type="text" placeholder="e.g. nguyenvan_a" value={form.username}
                     onChange={(e) => { set('username', e.target.value); setAvailability((a) => ({...a, username: null})) }}
                     onBlur={(e) => checkField('username', e.target.value)}
                     className={`input pl-10 ${availability.username === false ? 'border-earth-terracotta' : availability.username === true ? 'border-earth-forest' : ''}`} />
                   {availability.username === true  && <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-forest" />}
                   {availability.username === false && <X    className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-terracotta" />}
                 </div>
-                {availability.username === false && <p className="text-earth-terracotta font-mono text-xs uppercase tracking-wider mt-1">/ username taken</p>}
+                {availability.username === false && <p className="text-earth-terracotta font-mono text-xs uppercase tracking-wider mt-1" role="alert">/ username taken</p>}
               </div>
 
               <div>
-                <label className="label">Email</label>
+                <label htmlFor="reg-email" className="label">Email</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-ink/60" />
-                  <input type="email" placeholder="you@example.com" value={form.email}
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-ink/60" aria-hidden="true" />
+                  <input id="reg-email" type="email" placeholder="you@example.com" value={form.email}
                     onChange={(e) => { set('email', e.target.value); setAvailability((a) => ({...a, email: null})) }}
                     onBlur={(e) => checkField('email', e.target.value)}
                     className={`input pl-10 ${availability.email === false ? 'border-earth-terracotta' : availability.email === true ? 'border-earth-forest' : ''}`} />
@@ -156,24 +156,25 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <label className="label">Password</label>
+                <label htmlFor="reg-password" className="label">Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-ink/60" />
-                  <input type={showPass ? 'text' : 'password'} placeholder="••••••••" value={form.password}
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-ink/60" aria-hidden="true" />
+                  <input id="reg-password" type={showPass ? 'text' : 'password'} placeholder="••••••••" value={form.password}
                     onChange={(e) => set('password', e.target.value)} className="input pl-10 pr-12" />
                   <button type="button" onClick={() => setShowPass(!showPass)}
+                    aria-label={showPass ? 'Hide password' : 'Show password'}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-earth-ink/60 hover:text-earth-ink">
-                    {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPass ? <EyeOff className="w-4 h-4" aria-hidden="true" /> : <Eye className="w-4 h-4" aria-hidden="true" />}
                   </button>
                 </div>
                 {form.password && <PasswordStrength password={form.password} />}
               </div>
 
               <div>
-                <label className="label">Confirm Password</label>
+                <label htmlFor="reg-confirm" className="label">Confirm Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-ink/60" />
-                  <input type={showPass ? 'text' : 'password'} placeholder="••••••••" value={form.confirm_password}
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-ink/60" aria-hidden="true" />
+                  <input id="reg-confirm" type={showPass ? 'text' : 'password'} placeholder="••••••••" value={form.confirm_password}
                     onChange={(e) => set('confirm_password', e.target.value)}
                     className={`input pl-10 ${form.confirm_password && form.password !== form.confirm_password ? 'border-earth-terracotta' : ''}`} />
                 </div>
@@ -187,10 +188,10 @@ export default function RegisterPage() {
           {step === 1 && (
             <div className="space-y-5 animate-fade-in">
               <div>
-                <label className="label">Full Name</label>
+                <label htmlFor="reg-fullname" className="label">Full Name</label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-ink/60" />
-                  <input type="text" placeholder="Nguyen Van A" value={form.full_name}
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-ink/60" aria-hidden="true" />
+                  <input id="reg-fullname" type="text" placeholder="Nguyen Van A" value={form.full_name}
                     onChange={(e) => set('full_name', e.target.value)} className="input pl-10" />
                 </div>
               </div>

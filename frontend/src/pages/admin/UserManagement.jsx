@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Search, Check, X, Trash2, Filter, Users, ChevronDown } from 'lucide-react'
+import { Search, Check, X, Trash2, Filter, Users, ChevronDown, Upload } from 'lucide-react'
 import { adminService } from '../../services/adminService'
 import { SpinnerPage } from '../../components/ui/Spinner'
 import Pagination from '../../components/ui/Pagination'
@@ -22,6 +22,9 @@ export default function UserManagement() {
   const [rejectModal, setRejectModal] = useState(null) // { user }
   const [rejectReason, setRejectReason] = useState('')
   const [deleteModal, setDeleteModal]   = useState(null)
+  const [importModalOpen, setImportModalOpen] = useState(false)
+  const [importFile, setImportFile] = useState(null)
+  const [importErrors, setImportErrors] = useState([])
   const [actionLoading, setActionLoading] = useState(false)
 
   const fetch = async (p = 1) => {
@@ -60,6 +63,32 @@ export default function UserManagement() {
     finally { setActionLoading(false) }
   }
 
+  const handleImport = async (e) => {
+    e.preventDefault()
+    if (!importFile) return toast.error('Please select an Excel file.')
+    
+    setActionLoading(true)
+    setImportErrors([])
+    const formData = new FormData()
+    formData.append('file', importFile)
+
+    try {
+      const res = await adminService.importUsers(formData)
+      toast.success(res.data.message)
+      if (res.data.errors && res.data.errors.length > 0) {
+        setImportErrors(res.data.errors)
+      } else {
+        setImportModalOpen(false)
+        setImportFile(null)
+      }
+      fetch(page)
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Import failed.')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   return (
     <div className="animate-fade-in">
       <div className="page-header">
@@ -86,6 +115,9 @@ export default function UserManagement() {
           <option value="">All Statuses</option>
           <option>Pending</option><option>Approved</option><option>Rejected</option>
         </select>
+        <button onClick={() => setImportModalOpen(true)} className="btn-secondary py-2 px-4 text-sm flex items-center gap-2">
+          <Upload className="w-4 h-4" /> Import Excel
+        </button>
       </div>
 
       {/* Table */}
@@ -191,6 +223,38 @@ export default function UserManagement() {
             {actionLoading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Trash2 className="w-4 h-4" />}
             Delete Permanently
           </button>
+        </div>
+      </Modal>
+
+      {/* Import Modal */}
+      <Modal isOpen={importModalOpen} onClose={() => { setImportModalOpen(false); setImportFile(null); setImportErrors([]) }} title="Bulk Import Users">
+        <div className="space-y-4">
+          <p className="text-sm text-earth-ink/70">
+            Upload an Excel (.xlsx) file with the following columns in order (from row 2):<br/>
+            <strong>1: Full Name, 2: Username, 3: Email, 4: Password, 5: Role (Student/Staff/Admin), 6: ID, 7: Class, 8: Dept.</strong>
+          </p>
+          <input
+            type="file"
+            accept=".xlsx"
+            onChange={(e) => setImportFile(e.target.files[0])}
+            className="w-full text-sm text-earth-ink file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-earth-sand file:text-earth-ink hover:file:bg-earth-sand/80"
+          />
+          {importErrors.length > 0 && (
+            <div className="bg-red-50 text-red-600 p-3 rounded-md text-xs max-h-32 overflow-y-auto">
+              <p className="font-bold mb-1">Import Errors:</p>
+              <ul className="list-disc pl-4 space-y-1">
+                {importErrors.map((err, idx) => <li key={idx}>{err}</li>)}
+              </ul>
+            </div>
+          )}
+          <div className="flex gap-3 pt-2">
+            <button onClick={() => { setImportModalOpen(false); setImportFile(null); setImportErrors([]) }} className="btn-secondary flex-1">Cancel</button>
+            <button onClick={handleImport} disabled={actionLoading || !importFile}
+              className="btn-primary flex-1 flex items-center justify-center gap-2">
+              {actionLoading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Upload className="w-4 h-4" />}
+              Start Import
+            </button>
+          </div>
         </div>
       </Modal>
     </div>

@@ -106,10 +106,11 @@ export default function LoginPage() {
 
             <form onSubmit={handleSubmit} className="mt-8 space-y-5">
               <div>
-                <label className="label">Username or Email</label>
+                <label htmlFor="login-field" className="label">Username or Email</label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-ink/60" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-ink/60" aria-hidden="true" />
                   <input
+                    id="login-field"
                     type="text"
                     value={form.login}
                     onChange={(e) => setForm({ ...form, login: e.target.value })}
@@ -121,10 +122,11 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label className="label">Password</label>
+                <label htmlFor="password-field" className="label">Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-ink/60" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-ink/60" aria-hidden="true" />
                   <input
+                    id="password-field"
                     type={showPass ? 'text' : 'password'}
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
@@ -133,8 +135,9 @@ export default function LoginPage() {
                     autoComplete="current-password"
                   />
                   <button type="button" onClick={() => setShowPass(!showPass)}
+                    aria-label={showPass ? 'Hide password' : 'Show password'}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-earth-ink/60 hover:text-earth-ink">
-                    {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPass ? <EyeOff className="w-4 h-4" aria-hidden="true" /> : <Eye className="w-4 h-4" aria-hidden="true" />}
                   </button>
                 </div>
                 <div className="flex justify-end mt-1.5">
