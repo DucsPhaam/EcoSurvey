@@ -296,7 +296,7 @@ exports.verifyEmail = async (req, res) => {
 exports.googleCallback = async (req, res) => {
   try {
     const user = req.user;
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:8080';
+    const clientUrl = (process.env.CLIENT_URL || 'http://localhost:8080').replace(/\/$/, '');
 
     if (user.isNewGoogleUser) {
       // Redirect to registration page with pre-filled details
