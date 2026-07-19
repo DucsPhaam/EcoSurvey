@@ -3,18 +3,21 @@ import {
   LayoutDashboard, Users, ClipboardList,
   FileText, HelpCircle, Leaf,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import Navbar from './Navbar'
 import FAQChatWidget from '../features/FAQChatWidget'
 
-const navItems = [
-  { to: '/admin',              label: 'Dashboard',     icon: LayoutDashboard, end: true },
-  { to: '/admin/users',        label: 'Users',         icon: Users },
-  { to: '/admin/surveys',      label: 'Surveys',       icon: ClipboardList },
-  { to: '/admin/participations', label: 'Reports',     icon: FileText },
-  { to: '/admin/faqs',         label: 'FAQs',          icon: HelpCircle },
-]
-
 export default function AdminLayout() {
+  const { t } = useTranslation('nav')
+
+  const navItems = [
+    { to: '/admin',              label: t('dashboard'),     icon: LayoutDashboard, end: true },
+    { to: '/admin/users',        label: t('users'),         icon: Users },
+    { to: '/admin/surveys',      label: t('surveys'),       icon: ClipboardList },
+    { to: '/admin/participations', label: t('participations'),     icon: FileText },
+    { to: '/admin/faqs',         label: t('faqs'),          icon: HelpCircle },
+  ]
+
   return (
     <div className="min-h-screen bg-earth-paper flex flex-col">
       <Navbar />
@@ -26,9 +29,9 @@ export default function AdminLayout() {
               <div className="w-8 h-8 bg-earth-forest border-[3px] border-earth-ink flex items-center justify-center">
                 <Leaf className="w-4 h-4 text-earth-cream" aria-hidden="true" />
               </div>
-              <span className="ui-title text-earth-forest">Admin Panel</span>
+              <span className="ui-title text-earth-forest">{t('adminPanel')}</span>
             </div>
-            <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60 mb-6">EcoSurvey Management</p>
+            <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60 mb-6">{t('management')}</p>
             <nav className="space-y-1" aria-label="Admin navigation">
               {navItems.map(({ to, label, icon: Icon, end }) => (
                 <NavLink

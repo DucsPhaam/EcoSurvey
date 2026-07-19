@@ -5,6 +5,7 @@ import {
   MessageCircle, Shield, Zap, Sparkles, ChevronDown, Mail, Loader2, CheckCheck,
   Users, Clock, GraduationCap, Briefcase,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import LandingChatWidget from '../components/features/LandingChatWidget'
 import { homepageService } from '../services/homepageService'
 import { faqService } from '../services/faqService'
@@ -84,6 +85,7 @@ function FaqItem({ q, a, defaultOpen = false }) {
 }
 
 export default function LandingPage() {
+  const { t } = useTranslation('landing')
   const [stats, setStats]             = useState(null)
   const [topSurveys, setTopSurveys]   = useState([])
   const [faqs, setFaqs]               = useState([])
@@ -114,10 +116,10 @@ export default function LandingPage() {
 
   // Live impact numbers — driven by stats, with fallback
   const liveStats = stats ? [
-    { value: formatStat(stats.responses_collected), label: 'Responses collected' },
-    { value: formatStat(stats.users_active),        label: 'Active volunteers' },
-    { value: formatStat(stats.surveys_published),   label: 'Surveys live' },
-    { value: formatStat(stats.institutions),        label: 'Departments joined' },
+    { value: formatStat(stats.responses_collected), label: t('liveStats.responsesCollected') },
+    { value: formatStat(stats.users_active),        label: t('liveStats.activeVolunteers') },
+    { value: formatStat(stats.surveys_published),   label: t('liveStats.surveysLive') },
+    { value: formatStat(stats.institutions),        label: t('liveStats.departmentsJoined') },
   ] : null
 
   const handleSubscribe = async (e) => {
@@ -143,12 +145,12 @@ export default function LandingPage() {
         <div className="flex whitespace-nowrap py-2 animate-marquee ui-title text-sm">
           {[...Array(2)].map((_, i) => (
             <div key={i} className="flex items-center gap-8 px-4">
-              <span>★ Survey for a Greener Future</span>
-              <span>★ Sustainability Tracking</span>
-              <span>★ Campus Impact Reporting</span>
-              <span>★ Verified by Admin</span>
-              <span>★ Earn Points for Impact</span>
-              <span>★ Join the Movement</span>
+              <span>{t('marquee.item1')}</span>
+              <span>{t('marquee.item2')}</span>
+              <span>{t('marquee.item3')}</span>
+              <span>{t('marquee.item4')}</span>
+              <span>{t('marquee.item5')}</span>
+              <span>{t('marquee.item6')}</span>
             </div>
           ))}
         </div>
@@ -163,15 +165,15 @@ export default function LandingPage() {
             </div>
             <div>
               <p className="font-display text-xl uppercase leading-none">EcoSurvey</p>
-              <p className="font-mono text-[10px] uppercase tracking-widest mt-0.5">/ environmental portal</p>
+              <p className="font-mono text-[10px] uppercase tracking-widest mt-0.5">/ {t('header.subtitle')}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <Link to="/login" className="hidden sm:inline-block ui-title text-sm px-4 py-2 hover:bg-earth-cream transition-colors">
-              Sign In
+              {t('header.signIn')}
             </Link>
             <Link to="/register" className="btn-primary text-sm py-2 px-5">
-              Get Started <ArrowRight className="w-4 h-4" />
+              {t('header.getStarted')} <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
@@ -181,31 +183,30 @@ export default function LandingPage() {
       <section className="border-b-[3px] border-earth-ink">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 py-20 grid lg:grid-cols-12 gap-8">
           <div className="lg:col-span-8 relative">
-            <div className="tape -top-2 left-0 z-10">Environmental Awareness Portal</div>
+            <div className="tape -top-2 left-0 z-10">{t('hero.tag')}</div>
             <h1 className="font-display text-6xl sm:text-8xl leading-[0.9] uppercase tracking-tight">
-              Survey<br />
-              For A<br />
-              <span className="inline-block bg-earth-forest text-earth-cream px-3 py-1 mt-2">Greener</span>{' '}
-              Future.
+              {t('hero.title1')}<br />
+              {t('hero.title2')}<br />
+              <span className="inline-block bg-earth-forest text-earth-cream px-3 py-1 mt-2">{t('hero.title3')}</span>{' '}
+              {t('hero.title4')}
             </h1>
             <p className="mt-8 max-w-xl text-lg leading-relaxed">
-              Join your institution&apos;s environmental program. Take surveys, report green
-              activities, earn points, and track your impact on the sustainability scoreboard.
+              {t('hero.desc')}
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
               <Link to="/register" className="btn-primary">
-                Start Surveying <ArrowRight className="w-5 h-5" />
+                {t('hero.startSurveying')} <ArrowRight className="w-5 h-5" />
               </Link>
               <Link to="/login" className="btn-secondary">
-                I Have An Account <ArrowUpRight className="w-5 h-5" />
+                {t('hero.haveAccount')} <ArrowUpRight className="w-5 h-5" />
               </Link>
             </div>
           </div>
 
           <aside className="lg:col-span-4 relative">
             <div className="bg-earth-cream border-[3px] border-earth-ink shadow-brutal-lg p-6 relative">
-              <div className="stamp -top-3 -right-3 bg-earth-terracotta text-earth-paper">Live</div>
-              <p className="font-mono text-xs uppercase tracking-widest mb-3">// Impact tracker</p>
+              <div className="stamp -top-3 -right-3 bg-earth-terracotta text-earth-paper">{t('liveStats.live')}</div>
+              <p className="font-mono text-xs uppercase tracking-widest mb-3">// {t('liveStats.impactTracker')}</p>
               <div className="space-y-4">
                 {liveStats ? (
                   liveStats.map(({ value, label }) => (
@@ -231,9 +232,9 @@ export default function LandingPage() {
             </div>
             <div className="mt-4 bg-earth-forest text-earth-paper border-[3px] border-earth-ink p-4 shadow-brutal-sm">
               <p className="ui-title text-sm flex items-center gap-2">
-                <Sparkles className="w-4 h-4" /> AI Assistant
+                <Sparkles className="w-4 h-4" /> {t('liveStats.aiAssistant')}
               </p>
-              <p className="font-mono text-xs mt-1">Ask anything. Powered by your FAQ database.</p>
+              <p className="font-mono text-xs mt-1">{t('liveStats.aiDesc')}</p>
             </div>
           </aside>
         </div>
@@ -265,11 +266,11 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-8 py-20">
           <div className="flex items-end justify-between mb-12 flex-wrap gap-4">
             <div>
-              <p className="font-mono text-xs uppercase tracking-widest mb-2">// Live participation</p>
-              <h2 className="font-display text-5xl md:text-6xl uppercase">Who Just Spoke Up</h2>
+              <p className="font-mono text-xs uppercase tracking-widest mb-2">// {t('liveFeed.tag')}</p>
+              <h2 className="font-display text-5xl md:text-6xl uppercase">{t('liveFeed.title')}</h2>
             </div>
             <p className="max-w-md text-earth-ink/70">
-              Real people, real responses. See who across campus is making their voice count right now.
+              {t('liveFeed.desc')}
             </p>
           </div>
 
@@ -285,7 +286,7 @@ export default function LandingPage() {
                     <Users className="w-6 h-6" />
                   </div>
                   <p className="font-mono text-sm text-earth-ink/60">
-                    // No responses yet. Be the first to take a survey.
+                    // {t('liveFeed.noResponses')}
                   </p>
                 </>
               )}
@@ -319,10 +320,10 @@ export default function LandingPage() {
                         </span>
                       </div>
                       <p className="text-sm text-earth-ink/80 leading-snug line-clamp-2">
-                        completed <span className="font-semibold">{r.survey_title}</span>
+                        {t('liveFeed.completed')} <span className="font-semibold">{r.survey_title}</span>
                       </p>
                       <div className="mt-2 flex items-center justify-between gap-2 font-mono text-[10px] uppercase tracking-widest text-earth-ink/50">
-                        <span className="truncate">{r.department || 'Campus wide'}</span>
+                        <span className="truncate">{r.department || t('liveFeed.campusWide')}</span>
                         <span className="inline-flex items-center gap-1 shrink-0">
                           <Clock className="w-3 h-3" /> {timeAgo(r.submitted_at)}
                         </span>
@@ -341,11 +342,11 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-8 py-20">
           <div className="flex items-end justify-between mb-12 flex-wrap gap-4">
             <div>
-              <p className="font-mono text-xs uppercase tracking-widest mb-2">// Featured Surveys</p>
-              <h2 className="font-display text-5xl md:text-6xl uppercase">Trending Now</h2>
+              <p className="font-mono text-xs uppercase tracking-widest mb-2">// {t('trending.tag')}</p>
+              <h2 className="font-display text-5xl md:text-6xl uppercase">{t('trending.title')}</h2>
             </div>
             <p className="max-w-md text-earth-ink/70">
-              The most popular surveys on campus right now. Jump in to make your voice count.
+              {t('trending.desc')}
             </p>
           </div>
 
@@ -377,15 +378,15 @@ export default function LandingPage() {
                     {s.title}
                   </h3>
                   <p className="text-sm text-earth-ink/70 leading-relaxed line-clamp-3 flex-1">
-                    {s.description || 'No description provided yet.'}
+                    {s.description || t('trending.noDesc')}
                   </p>
                   <div className="mt-6 flex items-center justify-between border-t-[2px] border-earth-ink/20 pt-4">
                     <div className="font-mono text-[10px] uppercase tracking-widest text-earth-ink/60">
-                      By {s.creator_name}
-                      {s.end_date && <> · Closes {formatDate(s.end_date)}</>}
+                      {t('trending.by')} {s.creator_name}
+                      {s.end_date && <> · {t('trending.closes')} {formatDate(s.end_date)}</>}
                     </div>
                     <Link to="/login" className="ui-title text-xs flex items-center gap-1 group-hover:text-earth-forest transition-colors">
-                      Take it <ArrowUpRight className="w-3.5 h-3.5" />
+                      {t('trending.takeIt')} <ArrowUpRight className="w-3.5 h-3.5" />
                     </Link>
                   </div>
                 </article>
@@ -395,7 +396,7 @@ export default function LandingPage() {
 
           {stats && (
             <p className="mt-8 font-mono text-xs uppercase tracking-widest text-earth-ink/50 text-center">
-              // Last updated {new Date(stats.updated_at).toLocaleString()}
+              // {t('trending.lastUpdated')} {new Date(stats.updated_at).toLocaleString()}
             </p>
           )}
         </div>
@@ -406,11 +407,11 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-8 py-20">
           <div className="flex items-end justify-between mb-12 flex-wrap gap-4">
             <div>
-              <p className="font-mono text-xs uppercase tracking-widest mb-2">// Features</p>
-              <h2 className="font-display text-5xl md:text-6xl uppercase">Everything To<br/>Make An Impact</h2>
+              <p className="font-mono text-xs uppercase tracking-widest mb-2">// {t('features.tag')}</p>
+              <h2 className="font-display text-5xl md:text-6xl uppercase whitespace-pre-line">{t('features.title')}</h2>
             </div>
             <p className="max-w-md text-earth-ink/70">
-              A complete platform for students, staff, and administrators to engage with environmental initiatives on campus.
+              {t('features.desc')}
             </p>
           </div>
 
@@ -423,8 +424,8 @@ export default function LandingPage() {
                   </div>
                   <span className="font-mono text-2xl text-earth-ink/40">/{num}</span>
                 </div>
-                <h3 className="font-display text-xl uppercase mb-2">{title}</h3>
-                <p className="text-sm text-earth-ink/70 leading-relaxed">{desc}</p>
+                <h3 className="font-display text-xl uppercase mb-2">{t(`features.f${num.replace(/^0+/, '')}`)}</h3>
+                <p className="text-sm text-earth-ink/70 leading-relaxed">{t(`features.f${num.replace(/^0+/, '')}d`)}</p>
               </div>
             ))}
           </div>
@@ -434,15 +435,15 @@ export default function LandingPage() {
       {/* How it works */}
       <section className="border-b-[3px] border-earth-ink bg-earth-cream">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 py-20">
-          <p className="font-mono text-xs uppercase tracking-widest mb-2">// How it works</p>
-          <h2 className="font-display text-5xl md:text-6xl uppercase mb-12">Three Steps.</h2>
+          <p className="font-mono text-xs uppercase tracking-widest mb-2">// {t('howItWorks.tag')}</p>
+          <h2 className="font-display text-5xl md:text-6xl uppercase mb-12">{t('howItWorks.title')}</h2>
           <div className="grid md:grid-cols-3 gap-6">
-            {steps.map(({ n, t, d }, i) => (
+            {steps.map(({ n, t: defaultTitle, d }, i) => (
               <div key={n} className="relative">
                 <div className="card p-8 h-full">
                   <p className="font-display text-7xl text-earth-ink/20">{n}</p>
-                  <h3 className="font-display text-2xl uppercase mt-2">{t}</h3>
-                  <p className="mt-3 text-earth-ink/70">{d}</p>
+                  <h3 className="font-display text-2xl uppercase mt-2">{t(`howItWorks.s${n.replace(/^0+/, '')}`)}</h3>
+                  <p className="mt-3 text-earth-ink/70">{t(`howItWorks.s${n.replace(/^0+/, '')}d`)}</p>
                 </div>
                 {i < 2 && (
                   <div className="hidden md:block absolute top-1/2 -right-3 -translate-y-1/2 z-10 text-earth-ink">
@@ -458,12 +459,12 @@ export default function LandingPage() {
       {/* FAQ */}
       <section className="border-b-[3px] border-earth-ink">
         <div className="max-w-5xl mx-auto px-4 sm:px-8 py-20">
-          <p className="font-mono text-xs uppercase tracking-widest mb-2">// Frequently asked</p>
-          <h2 className="font-display text-5xl md:text-6xl uppercase mb-10">Questions?</h2>
+          <p className="font-mono text-xs uppercase tracking-widest mb-2">// {t('faq.tag')}</p>
+          <h2 className="font-display text-5xl md:text-6xl uppercase mb-10">{t('faq.title')}</h2>
           <div className="card p-6 md:p-10">
             {faqs.length === 0 ? (
               <p className="font-mono text-sm text-earth-ink/60">
-                // No FAQs published yet. Ask the chat assistant below for quick answers.
+                // {t('faq.noFaq')}
               </p>
             ) : (
               <div>
@@ -482,12 +483,12 @@ export default function LandingPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-earth-forest border-[3px] border-earth-ink mb-6 shadow-brutal-sm">
             <Mail className="w-7 h-7 text-earth-cream" />
           </div>
-          <p className="font-mono text-xs uppercase tracking-widest mb-2">// Stay in the loop</p>
+          <p className="font-mono text-xs uppercase tracking-widest mb-2">// {t('newsletter.tag')}</p>
           <h2 className="font-display text-5xl md:text-6xl uppercase leading-tight">
-            Get Campus<br/>Sustainability Updates
+            {t('newsletter.title1')}<br/>{t('newsletter.title2')}
           </h2>
           <p className="mt-4 max-w-xl mx-auto text-earth-ink/70">
-            Subscribe to receive a monthly digest of new surveys, top reports, and campus impact highlights.
+            {t('newsletter.desc')}
           </p>
 
           <form
@@ -502,7 +503,7 @@ export default function LandingPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="your.email@school.edu"
+              placeholder={t('newsletter.placeholder')}
               className="input flex-1"
               disabled={subState.status === 'loading'}
             />
@@ -513,11 +514,11 @@ export default function LandingPage() {
             >
               {subState.status === 'loading' ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" /> Subscribing
+                  <Loader2 className="w-5 h-5 animate-spin" /> {t('newsletter.subscribing')}
                 </>
               ) : (
                 <>
-                  Subscribe <ArrowRight className="w-5 h-5" />
+                  {t('newsletter.subscribe')} <ArrowRight className="w-5 h-5" />
                 </>
               )}
             </button>
@@ -543,14 +544,14 @@ export default function LandingPage() {
       <section className="border-b-[3px] border-earth-ink">
         <div className="max-w-5xl mx-auto px-4 sm:px-8 py-24 text-center">
           <h2 className="font-display text-5xl md:text-7xl uppercase leading-none">
-            Ready To Make<br/>A <span className="bg-earth-terracotta text-earth-paper px-2">Difference?</span>
+            {t('cta.title1')}<br/>{t('cta.title2')} <span className="bg-earth-terracotta text-earth-paper px-2">{t('cta.title3')}</span>
           </h2>
           <p className="mt-6 max-w-xl mx-auto text-lg">
-            Join your peers in building a more sustainable campus environment.
+            {t('cta.desc')}
           </p>
           <div className="mt-10 flex justify-center">
             <Link to="/register" className="btn-primary text-base px-10 py-4">
-              Start Your Journey <ArrowRight className="w-5 h-5" />
+              {t('cta.btn')} <ArrowRight className="w-5 h-5" />
             </Link>
           </div>
         </div>
@@ -566,17 +567,17 @@ export default function LandingPage() {
               </div>
               <p className="font-display text-lg uppercase">EcoSurvey</p>
             </div>
-            <p className="font-mono text-xs uppercase tracking-widest opacity-70">Built for greener campuses.</p>
+            <p className="font-mono text-xs uppercase tracking-widest opacity-70">{t('footer.builtFor')}</p>
           </div>
           <div>
-            <p className="ui-title mb-3">Explore</p>
+            <p className="ui-title mb-3">{t('footer.explore')}</p>
             <ul className="space-y-1 text-sm opacity-80">
-              <li><Link to="/login" className="hover:underline">Sign In</Link></li>
-              <li><Link to="/register" className="hover:underline">Register</Link></li>
+              <li><Link to="/login" className="hover:underline">{t('header.signIn')}</Link></li>
+              <li><Link to="/register" className="hover:underline">{t('howItWorks.s1')}</Link></li>
             </ul>
           </div>
           <div>
-            <p className="ui-title mb-3">Contact</p>
+            <p className="ui-title mb-3">{t('footer.contact')}</p>
             <p className="text-sm opacity-80">support@ecosurvey.edu</p>
           </div>
         </div>

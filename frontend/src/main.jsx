@@ -7,6 +7,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { SocketProvider } from './contexts/SocketContext'
 import './index.css'
+import './i18n' // Import i18n configuration
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

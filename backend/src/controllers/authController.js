@@ -296,7 +296,7 @@ exports.verifyEmail = async (req, res) => {
 exports.googleCallback = async (req, res) => {
   try {
     const user = req.user;
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:8080';
+    const clientUrl = (process.env.CLIENT_URL || 'http://localhost:8080').replace(/\/+$/, '');
 
     if (user.isNewGoogleUser) {
       // Redirect to registration page with pre-filled details
@@ -334,7 +334,8 @@ exports.googleCallback = async (req, res) => {
     res.redirect(`${clientUrl}/oauth/callback?accessToken=${accessToken}`);
   } catch (err) {
     logger.error('googleCallback error:', err);
-    res.redirect(`${process.env.CLIENT_URL || 'http://localhost:8080'}/login?error=server_error`);
+    const fallbackUrl = (process.env.CLIENT_URL || 'http://localhost:8080').replace(/\/+$/, '');
+    res.redirect(`${fallbackUrl}/login?error=server_error`);
   }
 };
 

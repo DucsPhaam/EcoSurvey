@@ -7,8 +7,10 @@ import { notificationService } from '../../services/notificationService'
 import ChangePasswordModal from '../features/ChangePasswordModal'
 import { useSocket } from '../../contexts/SocketContext'
 import { toast } from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 
 export default function Navbar() {
+  const { t, i18n } = useTranslation()
   const { user, logout, isAdmin } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
@@ -77,8 +79,8 @@ export default function Navbar() {
   }
 
   const navLinks = isAdmin
-    ? [{ to: '/admin', label: 'Dashboard' }, { to: '/admin/users', label: 'Users' }, { to: '/admin/surveys', label: 'Surveys' }, { to: '/admin/participations', label: 'Reports' }]
-    : [{ to: '/dashboard', label: 'Dashboard' }, { to: '/surveys', label: 'Surveys' }, { to: '/participations', label: 'My Reports' }, { to: '/leaderboard', label: 'Leaderboard' }]
+    ? [{ to: '/admin', label: t('nav.dashboard') }, { to: '/admin/users', label: t('nav.users') }, { to: '/admin/surveys', label: t('nav.surveys') }, { to: '/admin/participations', label: t('nav.participations') }]
+    : [{ to: '/dashboard', label: t('nav.dashboard') }, { to: '/surveys', label: t('nav.surveys') }, { to: '/participations', label: t('nav.participations') }, { to: '/leaderboard', label: t('nav.leaderboard') }]
 
   return (
     <>
@@ -114,8 +116,14 @@ export default function Navbar() {
               ))}
             </nav>
 
-            {/* Right actions */}
+              {/* Right actions */}
             <div className="flex items-center gap-2">
+              <button onClick={() => i18n.changeLanguage(i18n.language === 'vi' ? 'en' : 'vi')}
+                className="p-2 border-[2px] border-transparent text-earth-ink hover:border-earth-ink hover:bg-earth-cream transition-colors font-bold text-sm uppercase"
+                title="Change Language">
+                {i18n.language === 'vi' ? 'VI' : 'EN'}
+              </button>
+
               <button onClick={toggleTheme}
                 className="p-2 border-[2px] border-transparent text-earth-ink hover:border-earth-ink hover:bg-earth-cream transition-colors"
                 aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
@@ -141,16 +149,16 @@ export default function Navbar() {
                 {notifOpen && (
                   <div className="absolute right-0 mt-2 w-80 card shadow-brutal animate-slide-up z-50">
                     <div className="p-4 flex items-center justify-between border-b-[2px] border-earth-ink/20">
-                      <h3 className="ui-title text-sm">Notifications</h3>
+                      <h3 className="ui-title text-sm">{t('nav.notifications')}</h3>
                       {unreadCount > 0 && (
                         <button onClick={handleMarkAllRead} className="text-xs text-earth-forest ui-title hover:underline">
-                          Mark all read
+                          {t('nav.markAllRead')}
                         </button>
                       )}
                     </div>
                     <div className="max-h-72 overflow-y-auto">
                       {notifications.length === 0 ? (
-                        <p className="p-4 text-sm font-mono uppercase tracking-widest text-earth-ink/60 text-center">No notifications yet.</p>
+                        <p className="p-4 text-sm font-mono uppercase tracking-widest text-earth-ink/60 text-center">{t('nav.noNotifications')}</p>
                       ) : notifications.map((n) => (
                         <div key={n.id} className={`p-4 border-b-[2px] border-earth-ink/20 last:border-0 hover:bg-earth-cream transition-colors ${!n.is_read ? 'bg-earth-sand/40' : ''}`}>
                           <p className={`text-sm font-semibold ${!n.is_read ? 'text-earth-forest' : 'text-earth-ink'}`}>
@@ -198,12 +206,12 @@ export default function Navbar() {
                         to="/profile"
                         onClick={() => setUserMenuOpen(false)}
                         className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-earth-ink hover:bg-earth-cream transition-colors">
-                        <UserIcon className="w-4 h-4" /> My Profile
+                        <UserIcon className="w-4 h-4" /> {t('nav.myProfile')}
                       </Link>
                       <button
                         onClick={() => { setUserMenuOpen(false); logout() }}
                         className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-earth-terracotta hover:bg-earth-cream transition-colors">
-                        <LogOut className="w-4 h-4" /> Sign Out
+                        <LogOut className="w-4 h-4" /> {t('nav.signOut')}
                       </button>
                     </div>
                   </div>

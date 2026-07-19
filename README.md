@@ -9,6 +9,8 @@ A full-stack web application for managing environmental awareness surveys, track
 | Feature | Description |
 |---|---|
 | 🔐 **Advanced Security** | JWT Auth, Cloudflare Turnstile CAPTCHA, Redis Rate Limiting, Helmet CSP |
+| 🔑 **Google OAuth** | Seamless login with Google accounts |
+| 🌐 **Multi-language (i18n)** | Full English & Vietnamese translation support across the platform |
 | ✉️ **Account Recovery** | Forgot Password flow & Email Verification upon registration |
 | 📋 **Survey System** | Create surveys with Text, Single-Choice, Multi-Choice questions |
 | 📊 **Survey Analytics** | Per-question visual analytics & charts using **Recharts** |
@@ -28,11 +30,11 @@ A full-stack web application for managing environmental awareness surveys, track
 
 | Layer | Technology |
 |---|---|
-| **Frontend** | React 18 + Vite + Tailwind CSS + Recharts + Socket.io-client |
-| **Backend** | Node.js + Express.js + Sequelize ORM + Socket.io |
+| **Frontend** | React 18 + Vite + Tailwind CSS + Recharts + Socket.io-client + i18next |
+| **Backend** | Node.js + Express.js + Sequelize ORM + Socket.io + Passport.js |
 | **Database** | MySQL 8.0 |
 | **Cache/RateLimit** | Redis |
-| **Auth** | JWT (Access token 15m + Refresh 7d HttpOnly cookie) |
+| **Auth** | JWT (Access token 15m + Refresh 7d HttpOnly cookie) + Google OAuth 2.0 |
 | **Security** | Cloudflare Turnstile, express-rate-limit, Helmet, express-validator |
 | **Testing** | Jest, Supertest (Backend) / Vitest, React Testing Library (Frontend) |
 | **AI** | OpenRouter API (`gemini-2.5-flash`) |
@@ -188,6 +190,9 @@ When using Docker Compose, place the `.env` at the root folder:
 | `SMTP_HOST` | Email server host (for real emails) |
 | `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile Backend Secret Key |
 | `VITE_TURNSTILE_SITE_KEY` | Cloudflare Turnstile Frontend Site Key |
+| `GOOGLE_CLIENT_ID` | Google OAuth Client ID |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret |
+| `CLIENT_URL` | Frontend URL for Google OAuth callback redirect (e.g. `http://localhost:8080`) |
 
 ---
 

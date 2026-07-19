@@ -5,8 +5,10 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useTheme } from '../../contexts/ThemeContext'
 import toast from 'react-hot-toast'
 import { Turnstile } from '@marsidev/react-turnstile'
+import { useTranslation } from 'react-i18next'
 
 export default function LoginPage() {
+  const { t } = useTranslation(['auth', 'nav'])
   const { login, user } = useAuth()
   const { applyTheme } = useTheme()
   const navigate = useNavigate()
@@ -26,17 +28,17 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.login || !form.password) { toast.error('Please fill in all fields.'); return }
-    if (!captchaToken && import.meta.env.VITE_TURNSTILE_SITE_KEY) { toast.error('Please complete the CAPTCHA.'); return }
+    if (!form.login || !form.password) { toast.error(t('auth:toast.fillFields')); return }
+    if (!captchaToken && import.meta.env.VITE_TURNSTILE_SITE_KEY) { toast.error(t('auth:toast.captcha')); return }
     setLoading(true)
     try {
       const loggedUser = await login(form.login, form.password, captchaToken)
       applyTheme(loggedUser.ui_theme)
-      toast.success(`Welcome back, ${loggedUser.full_name}!`)
+      toast.success(`${t('auth:toast.welcomeBack')}, ${loggedUser.full_name}!`)
       const dest = from || (loggedUser.role === 'Admin' ? '/admin' : '/dashboard')
       navigate(dest, { replace: true })
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Login failed. Please try again.')
+      toast.error(err.response?.data?.message || t('auth:toast.loginFailed'))
     } finally {
       setLoading(false)
     }
@@ -60,30 +62,34 @@ export default function LoginPage() {
 
         <div className="relative space-y-8">
           <div>
-            <p className="font-mono text-xs uppercase tracking-widest mb-3 opacity-80">// Access portal</p>
-            <h1 className="font-display text-6xl uppercase leading-none">Welcome<br />Back.</h1>
+            <p className="font-mono text-xs uppercase tracking-widest mb-3 opacity-80">// {t('auth:leftPanel.accessPortal')}</p>
+            <h1 className="font-display text-6xl uppercase leading-none">{t('auth:leftPanel.welcomeBack1')}<br />{t('auth:leftPanel.welcomeBack2')}</h1>
           </div>
           <p className="max-w-md text-lg opacity-90">
-            Continue your journey toward a more sustainable campus community.
+            {t('auth:leftPanel.desc')}
           </p>
 
           <div className="grid grid-cols-3 gap-4">
-            {[['Surveys', 'Take'], ['Reports', 'Submit'], ['Rank', 'Climb']].map(([t, s]) => (
-              <div key={t} className="border-[3px] border-earth-paper p-4">
-                <p className="ui-title text-sm">{t}</p>
-                <p className="font-mono text-xs mt-1 opacity-80">{s}</p>
+            {[
+              [t('auth:leftPanel.surveys'), t('auth:leftPanel.take')], 
+              [t('auth:leftPanel.reports'), t('auth:leftPanel.submit')], 
+              [t('auth:leftPanel.rank'), t('auth:leftPanel.climb')]
+            ].map(([tItem, sItem]) => (
+              <div key={tItem} className="border-[3px] border-earth-paper p-4">
+                <p className="ui-title text-sm">{tItem}</p>
+                <p className="font-mono text-xs mt-1 opacity-80">{sItem}</p>
               </div>
             ))}
           </div>
 
           <div className="border-[3px] border-earth-paper p-5 bg-earth-forest">
-            <p className="font-mono text-xs uppercase tracking-widest opacity-80 mb-1">// Did you know?</p>
-            <p className="font-display text-lg">Every approved report saves ~2.4kg of CO₂ equivalent on campus.</p>
+            <p className="font-mono text-xs uppercase tracking-widest opacity-80 mb-1">// {t('auth:leftPanel.didYouKnow')}</p>
+            <p className="font-display text-lg">{t('auth:leftPanel.fact')}</p>
           </div>
         </div>
 
         <div className="relative font-mono text-xs uppercase tracking-widest opacity-70">
-          v1.0 · environmental portal
+          {t('auth:leftPanel.version')}
         </div>
       </aside>
 
@@ -99,14 +105,14 @@ export default function LoginPage() {
 
           <div className="card p-8">
             <div className="flex items-center gap-2 mb-2">
-              <span className="bg-earth-forest text-earth-paper px-2 py-0.5 font-mono text-xs uppercase tracking-widest">Sign In</span>
+              <span className="bg-earth-forest text-earth-paper px-2 py-0.5 font-mono text-xs uppercase tracking-widest">{t('auth:login')}</span>
             </div>
-            <h2 className="font-display text-3xl uppercase mt-2">Authenticate</h2>
-            <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60 mt-2">/ enter credentials</p>
+            <h2 className="font-display text-3xl uppercase mt-2">{t('auth:loginNow')}</h2>
+            <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60 mt-2">/ {t('auth:welcomeBack')}</p>
 
             <form onSubmit={handleSubmit} className="mt-8 space-y-5">
               <div>
-                <label htmlFor="login-field" className="label">Username or Email</label>
+                <label htmlFor="login-field" className="label">{t('auth:username')} / {t('auth:email')}</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-ink/60" aria-hidden="true" />
                   <input
@@ -114,7 +120,7 @@ export default function LoginPage() {
                     type="text"
                     value={form.login}
                     onChange={(e) => setForm({ ...form, login: e.target.value })}
-                    placeholder="username or email"
+                    placeholder={`${t('auth:username')} / ${t('auth:email')}`}
                     className="input pl-10"
                     autoComplete="username"
                   />
@@ -122,7 +128,7 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label htmlFor="password-field" className="label">Password</label>
+                <label htmlFor="password-field" className="label">{t('auth:password')}</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-ink/60" aria-hidden="true" />
                   <input
@@ -142,7 +148,7 @@ export default function LoginPage() {
                 </div>
                 <div className="flex justify-end mt-1.5">
                   <Link to="/forgot-password" className="text-xs text-earth-ink/50 hover:text-earth-forest transition-colors">
-                    Quên mật khẩu?
+                    {t('auth:forgotPassword')}
                   </Link>
                 </div>
               </div>
@@ -160,7 +166,7 @@ export default function LoginPage() {
                 {loading ? (
                   <span className="w-5 h-5 border-[3px] border-earth-paper/30 border-t-earth-paper" />
                 ) : (
-                  <>Sign In <ArrowRight className="w-5 h-5" /></>
+                  <>{t('auth:login')} <ArrowRight className="w-5 h-5" /></>
                 )}
               </button>
             </form>
@@ -176,13 +182,13 @@ export default function LoginPage() {
                   <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
                   <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                 </svg>
-                Continue with Google
+                {t('auth:loginGoogle')}
               </a>
 
               <div className="flex items-center justify-between text-sm">
-                <span className="font-mono uppercase tracking-widest text-earth-ink/60 text-xs">No account?</span>
+                <span className="font-mono uppercase tracking-widest text-earth-ink/60 text-xs">{t('auth:dontHaveAccount')}</span>
                 <Link to="/register" className="ui-title inline-flex items-center gap-1 hover:text-earth-forest">
-                  Register <ArrowUpRight className="w-4 h-4" />
+                  {t('auth:registerNow')} <ArrowUpRight className="w-4 h-4" />
                 </Link>
               </div>
             </div>

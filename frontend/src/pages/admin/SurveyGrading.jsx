@@ -5,6 +5,7 @@ import { adminService } from '../../services/adminService'
 import { SpinnerPage } from '../../components/ui/Spinner'
 import Pagination from '../../components/ui/Pagination'
 import toast from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 
 // ── Helpers ────────────────────────────────────────────────────
 const scoreColor = (score) => {
@@ -37,6 +38,7 @@ const SCORE_LABELS = ['Rất tệ', 'Tệ', 'Kém', 'Dưới TB', 'Trung bình',
 
 // ── Component ──────────────────────────────────────────────────
 export default function SurveyGrading() {
+  const { t } = useTranslation('admin')
   const { id } = useParams()
 
   const [survey,     setSurvey]     = useState(null)
@@ -73,11 +75,11 @@ export default function SurveyGrading() {
         return init
       })
     } catch {
-      toast.error('Không thể tải danh sách bài làm.')
+      toast.error(t('surveyGrading.loadFailed'))
     } finally {
       setLoading(false)
     }
-  }, [id])
+  }, [id, t])
 
   useEffect(() => {
     fetchSurvey()
@@ -92,9 +94,9 @@ export default function SurveyGrading() {
       setResponses((prev) =>
         prev.map((r) => r.id === responseId ? { ...r, opinion_score: score } : r)
       )
-      toast.success(`✅ Đã lưu ${score}/10 điểm.`)
+      toast.success(t('surveyGrading.saveSuccess', { score }))
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Lưu điểm thất bại.')
+      toast.error(err.response?.data?.message || t('surveyGrading.saveFailed'))
     } finally {
       setSaving((s) => ({ ...s, [responseId]: false }))
     }
@@ -116,13 +118,13 @@ export default function SurveyGrading() {
         <div className="flex items-start gap-3">
           <Link to="/admin/surveys"
             className="mt-1 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-            title="Quay lại">
+            title={t('surveyGrading.back')}>
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
             <h1 className="page-title flex items-center gap-3">
               <Star className="w-7 h-7 text-amber-500" />
-              Chấm điểm ý kiến cá nhân
+              {t('surveyGrading.gradingOpinion')}
             </h1>
             {survey && (
               <p className="page-subtitle max-w-xl line-clamp-1" title={survey.title}>
@@ -140,7 +142,7 @@ export default function SurveyGrading() {
             <Users className="w-5 h-5 text-brand-600" />
           </div>
           <div>
-            <p className="text-xs text-gray-400">Tổng bài làm</p>
+            <p className="text-xs text-gray-400">{t('surveyGrading.totalResponses')}</p>
             <p className="text-xl font-bold text-gray-900 dark:text-white">{total}</p>
           </div>
         </div>
@@ -149,7 +151,7 @@ export default function SurveyGrading() {
             <CheckCircle className="w-5 h-5 text-emerald-600" />
           </div>
           <div>
-            <p className="text-xs text-gray-400">Đã chấm (trang này)</p>
+            <p className="text-xs text-gray-400">{t('surveyGrading.gradedOnPage')}</p>
             <p className="text-xl font-bold text-gray-900 dark:text-white">
               {gradedOnPage}
               <span className="text-sm font-normal text-gray-400"> / {responses.length}</span>
@@ -161,7 +163,7 @@ export default function SurveyGrading() {
             <Award className="w-5 h-5 text-amber-500" />
           </div>
           <div>
-            <p className="text-xs text-gray-400">Điểm TB (trang này)</p>
+            <p className="text-xs text-gray-400">{t('surveyGrading.avgOnPage')}</p>
             <p className="text-xl font-bold text-gray-900 dark:text-white">
               {avgOnPage ?? '—'}
               {avgOnPage && <span className="text-sm font-normal text-gray-400"> /10</span>}
@@ -174,7 +176,7 @@ export default function SurveyGrading() {
       {loading ? <SpinnerPage /> : responses.length === 0 ? (
         <div className="card p-16 text-center">
           <Clock className="w-14 h-14 text-gray-200 dark:text-gray-700 mx-auto mb-4" />
-          <p className="text-gray-400 font-medium">Chưa có bài làm nào để chấm.</p>
+          <p className="text-gray-400 font-medium">{t('surveyGrading.noResponses')}</p>
         </div>
       ) : (
         <>
@@ -198,11 +200,23 @@ export default function SurveyGrading() {
                       </span>
                       {savedScore !== null && savedScore !== undefined ? (
                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${scoreBadge(savedScore)}`}>
-                          ✓ {savedScore}/10 · {SCORE_LABELS[savedScore]}
+                          ✓ {savedScore}/10 · {
+                            savedScore === 0 ? t('surveyGrading.veryBad') :
+                            savedScore === 1 ? t('surveyGrading.bad') :
+                            savedScore === 2 ? t('surveyGrading.poor') :
+                            savedScore === 3 ? t('surveyGrading.belowAvg') :
+                            savedScore === 4 ? t('surveyGrading.belowAvg') :
+                            savedScore === 5 ? t('surveyGrading.avg') :
+                            savedScore === 6 ? t('surveyGrading.fair') :
+                            savedScore === 7 ? t('surveyGrading.good') :
+                            savedScore === 8 ? t('surveyGrading.veryGood') :
+                            savedScore === 9 ? t('surveyGrading.excellent') :
+                            t('surveyGrading.perfect')
+                          }
                         </span>
                       ) : (
                         <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-400">
-                          Chưa chấm
+                          {t('surveyGrading.notGraded')}
                         </span>
                       )}
                     </div>
@@ -215,7 +229,7 @@ export default function SurveyGrading() {
                   {opinionTxt ? (
                     <div className="bg-gray-50 dark:bg-gray-800/60 rounded-xl p-4 mb-5 border-l-4 border-brand-300 dark:border-brand-600">
                       <p className="text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">
-                        Ý kiến cá nhân
+                        {t('surveyGrading.opinionText')}
                       </p>
                       <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
                         {opinionTxt}
@@ -223,7 +237,7 @@ export default function SurveyGrading() {
                     </div>
                   ) : (
                     <div className="bg-gray-50 dark:bg-gray-800/40 rounded-xl p-4 mb-5 text-center">
-                      <p className="text-sm text-gray-400 italic">Người dùng không để lại ý kiến.</p>
+                      <p className="text-sm text-gray-400 italic">{t('surveyGrading.noOpinionText')}</p>
                     </div>
                   )}
 
@@ -249,7 +263,7 @@ export default function SurveyGrading() {
                           setDrafts((prev) => ({ ...prev, [r.id]: parseInt(e.target.value) }))
                         }
                         className="w-full h-2 rounded-full appearance-none cursor-pointer accent-brand-600 bg-gray-200 dark:bg-gray-700"
-                        aria-label={`Điểm cho ${r.user?.displayName}`}
+                        aria-label={t('surveyGrading.scoreAria', { name: r.user?.displayName })}
                       />
                       <div className="flex justify-between text-[10px] text-gray-400 mt-1 select-none px-px">
                         {Array.from({ length: 11 }, (_, i) => (
@@ -257,7 +271,19 @@ export default function SurveyGrading() {
                         ))}
                       </div>
                       <p className={`text-xs text-center mt-1 font-semibold ${scoreColor(draft)}`}>
-                        {SCORE_LABELS[draft]}
+                        {
+                            draft === 0 ? t('surveyGrading.veryBad') :
+                            draft === 1 ? t('surveyGrading.bad') :
+                            draft === 2 ? t('surveyGrading.poor') :
+                            draft === 3 ? t('surveyGrading.belowAvg') :
+                            draft === 4 ? t('surveyGrading.belowAvg') :
+                            draft === 5 ? t('surveyGrading.avg') :
+                            draft === 6 ? t('surveyGrading.fair') :
+                            draft === 7 ? t('surveyGrading.good') :
+                            draft === 8 ? t('surveyGrading.veryGood') :
+                            draft === 9 ? t('surveyGrading.excellent') :
+                            t('surveyGrading.perfect')
+                        }
                       </p>
                     </div>
 
@@ -269,7 +295,7 @@ export default function SurveyGrading() {
                       className="btn-primary shrink-0 min-w-[100px] flex items-center justify-center gap-2 text-sm py-2.5">
                       {isSaving
                         ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        : '💾 Lưu điểm'
+                        : t('surveyGrading.saveScore')
                       }
                     </button>
                   </div>

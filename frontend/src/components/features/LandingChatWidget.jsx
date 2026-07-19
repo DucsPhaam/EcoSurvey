@@ -2,19 +2,23 @@ import { useState, useRef, useEffect } from 'react'
 import { MessageCircle, X, Send, Leaf, Sparkles } from 'lucide-react'
 import { aiService } from '../../services/aiService'
 
-const SUGGESTIONS = [
-  'How does the points system work?',
-  'How do I join a survey?',
-  'How do I submit an activity report?',
-  'How long does account approval take?',
-]
+import { useTranslation } from 'react-i18next'
 
 export default function LandingChatWidget() {
+  const { t } = useTranslation('chatWidget')
+  
+  const SUGGESTIONS = [
+    t('suggestions.s1'),
+    t('suggestions.s2'),
+    t('suggestions.s3'),
+    t('suggestions.s4'),
+  ]
+
   const [open, setOpen]         = useState(false)
   const [messages, setMessages] = useState([
     {
       role: 'bot',
-      text: "Hi there! I'm the EcoSurvey AI Assistant.\n\nI can answer any questions about the portal — surveys, points, activity reports, and more!",
+      text: t('greeting'),
     },
   ])
   const [input, setInput]       = useState('')
@@ -49,7 +53,7 @@ export default function LandingChatWidget() {
     } catch {
       setMessages((m) => [...m, {
         role: 'bot',
-        text: "Sorry, I'm unable to respond right now. Please try again later.",
+        text: t('errorMsg'),
       }])
     } finally {
       setLoading(false)
@@ -74,10 +78,10 @@ export default function LandingChatWidget() {
                 <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-earth-moss border-2 border-earth-paper animate-pulse" />
               </div>
               <div>
-                <p className="text-earth-paper font-semibold text-sm leading-tight">EcoSurvey Assistant</p>
+                <p className="text-earth-paper font-semibold text-sm leading-tight">{t('assistantName')}</p>
                 <div className="flex items-center gap-1 mt-0.5">
                   <Sparkles className="w-3 h-3 text-earth-sand" />
-                  <p className="text-earth-cream/80 text-xs font-mono uppercase tracking-widest">AI-powered</p>
+                  <p className="text-earth-cream/80 text-xs font-mono uppercase tracking-widest">{t('aiPowered')}</p>
                 </div>
               </div>
             </div>
@@ -140,7 +144,7 @@ export default function LandingChatWidget() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && send()}
-              placeholder="Ask a question..."
+              placeholder={t('placeholder')}
               className="flex-1 px-3.5 py-2 text-sm bg-earth-cream border-2 border-earth-ink focus:outline-none focus:bg-earth-paper text-earth-ink"
             />
             <button onClick={() => send()} disabled={loading || !input.trim()}
@@ -156,7 +160,7 @@ export default function LandingChatWidget() {
         onClick={handleOpen}
         className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-earth-forest text-earth-paper border-[3px] border-earth-ink shadow-brutal hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-brutal-sm transition-all duration-100 flex items-center justify-center"
         style={{ display: open ? 'none' : 'flex' }}
-        title="Chat with AI Assistant"
+        title={t('tooltip')}
       >
         <MessageCircle className="w-6 h-6" />
         {hasNewMsg && (

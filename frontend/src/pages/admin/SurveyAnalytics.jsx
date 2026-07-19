@@ -5,8 +5,10 @@ import { SpinnerPage } from '../../components/ui/Spinner'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { ArrowLeft, Users, BarChart2, MessageSquare } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 
 export default function SurveyAnalytics() {
+  const { t } = useTranslation('admin')
   const { id } = useParams()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -17,7 +19,7 @@ export default function SurveyAnalytics() {
         const res = await adminService.getSurveyAnalytics(id)
         setData(res.data)
       } catch (err) {
-        toast.error('Failed to load analytics.')
+        toast.error(t('surveyAnalytics.loadFailed'))
       } finally {
         setLoading(false)
       }
@@ -26,7 +28,7 @@ export default function SurveyAnalytics() {
   }, [id])
 
   if (loading) return <SpinnerPage />
-  if (!data) return <div className="p-8 text-center text-gray-500">No analytics data available.</div>
+  if (!data) return <div className="p-8 text-center text-gray-500">{t('surveyAnalytics.noData')}</div>
 
   const { survey, total_responses, questions } = data
 
@@ -43,10 +45,10 @@ export default function SurveyAnalytics() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <BarChart2 className="w-6 h-6 text-brand-600" />
-            Analytics: {survey.title}
+            {t('surveyAnalytics.analytics')} {survey.title}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Status: <span className="font-semibold text-gray-700 dark:text-gray-300">{survey.status}</span>
+            {t('surveyAnalytics.status')} <span className="font-semibold text-gray-700 dark:text-gray-300">{survey.status}</span>
           </p>
         </div>
       </div>
@@ -58,7 +60,7 @@ export default function SurveyAnalytics() {
             <div className="p-2 bg-brand-50 dark:bg-brand-900/20 text-brand-600 rounded-lg">
               <Users className="w-5 h-5" />
             </div>
-            <h3 className="text-sm font-medium text-gray-500">Total Responses</h3>
+            <h3 className="text-sm font-medium text-gray-500">{t('surveyAnalytics.totalResponses')}</h3>
           </div>
           <p className="text-3xl font-bold text-gray-900 dark:text-white">{total_responses}</p>
         </div>
@@ -67,7 +69,7 @@ export default function SurveyAnalytics() {
             <div className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-lg">
               <MessageSquare className="w-5 h-5" />
             </div>
-            <h3 className="text-sm font-medium text-gray-500">Questions</h3>
+            <h3 className="text-sm font-medium text-gray-500">{t('surveyAnalytics.questions')}</h3>
           </div>
           <p className="text-3xl font-bold text-gray-900 dark:text-white">{questions.length}</p>
         </div>
@@ -76,11 +78,11 @@ export default function SurveyAnalytics() {
       {/* Questions Breakdown */}
       <div className="space-y-6">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white pt-4 border-t border-gray-200 dark:border-gray-800">
-          Responses per Question
+          {t('surveyAnalytics.responsesPerQuestion')}
         </h2>
 
         {questions.length === 0 ? (
-          <p className="text-gray-500">This survey has no questions.</p>
+          <p className="text-gray-500">{t('surveyAnalytics.noQuestions')}</p>
         ) : (
           questions.map((q, index) => {
             const isChoice = q.question_type === 'Single_Choice' || q.question_type === 'Multiple_Choice'
@@ -103,13 +105,13 @@ export default function SurveyAnalytics() {
                       {q.question_text}
                     </h3>
                     <p className="text-xs text-gray-500 mt-1 uppercase tracking-wider font-medium">
-                      {q.question_type.replace('_', ' ')} • Response Rate: {q.response_rate}%
+                      {q.question_type.replace('_', ' ')} • {t('surveyAnalytics.responseRate')}: {q.response_rate}%
                     </p>
                   </div>
                 </div>
 
                 {total_responses === 0 ? (
-                  <p className="text-sm text-gray-400 italic">No responses yet.</p>
+                  <p className="text-sm text-gray-400 italic">{t('surveyAnalytics.noResponses')}</p>
                 ) : isChoice ? (
                   chartData.length > 0 ? (
                     <div className="h-64 w-full mt-6">
@@ -130,7 +132,7 @@ export default function SurveyAnalytics() {
                       </ResponsiveContainer>
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-400 italic">No answers recorded for this question.</p>
+                    <p className="text-sm text-gray-400 italic">{t('surveyAnalytics.noAnswers')}</p>
                   )
                 ) : (
                   // Text responses
@@ -142,7 +144,7 @@ export default function SurveyAnalytics() {
                         </div>
                       ))
                     ) : (
-                      <p className="text-sm text-gray-400 italic">No text answers recorded.</p>
+                      <p className="text-sm text-gray-400 italic">{t('surveyAnalytics.noTextAnswers')}</p>
                     )}
                   </div>
                 )}

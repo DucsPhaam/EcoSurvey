@@ -4,6 +4,7 @@ import { Trophy, ClipboardCheck, FileText, Star, TrendingUp, ArrowRight, ArrowUp
 import { useAuth } from '../../contexts/AuthContext'
 import { dashboardService } from '../../services/dashboardService'
 import { SpinnerPage } from '../../components/ui/Spinner'
+import { useTranslation } from 'react-i18next'
 
 function ImpactStat({ num, label, sub, tone = 'forest' }) {
   const tones = {
@@ -25,6 +26,7 @@ function ImpactStat({ num, label, sub, tone = 'forest' }) {
 }
 
 export default function MyDashboard() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -52,27 +54,27 @@ export default function MyDashboard() {
       <div className="card p-6 md:p-8 relative">
         <div className="stamp top-4 right-4 bg-earth-terracotta text-earth-paper">Live</div>
         <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60">// Dashboard</p>
-        <h1 className="page-title mt-2">Welcome, {user?.full_name?.split(' ')[0]}.</h1>
-        <p className="page-subtitle">/ here's your environmental impact summary</p>
+        <h1 className="page-title mt-2">{t('dashboard.welcome')}, {user?.full_name?.split(' ')[0]}.</h1>
+        <p className="page-subtitle">/ {t('dashboard.yourImpact')}</p>
       </div>
 
       {/* Personal Impact Numbers */}
       <section>
         <div className="flex items-end justify-between mb-4">
           <div>
-            <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60">// Your impact</p>
-            <h2 className="font-display text-3xl uppercase mt-1">Personal Numbers</h2>
+            <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60">// {t('dashboard.yourImpact')}</p>
+            <h2 className="font-display text-3xl uppercase mt-1">{t('dashboard.personalNumbers')}</h2>
           </div>
           <Link to="/leaderboard" className="hidden sm:inline-flex ui-title text-sm border-b-[3px] border-earth-ink pb-0.5 hover:text-earth-forest">
-            See Leaderboard <ArrowUpRight className="inline w-4 h-4" />
+            {t('dashboard.seeLeaderboard')} <ArrowUpRight className="inline w-4 h-4" />
           </Link>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <ImpactStat num={points} label="Points Earned" sub="lifetime" tone="forest" />
-          <ImpactStat num={data?.surveys_completed || 0} label="Surveys Taken" sub="completed" tone="moss" />
-          <ImpactStat num={approved} label="Reports Approved" sub={`${pending} pending`} tone="clay" />
-          <ImpactStat num={rank ? `#${rank}` : '—'} label="Leaderboard Rank" sub="campus wide" tone="terra" />
+          <ImpactStat num={points} label={t('dashboard.pointsEarned')} sub={t('dashboard.lifetime')} tone="forest" />
+          <ImpactStat num={data?.surveys_completed || 0} label={t('dashboard.surveysTaken')} sub={t('dashboard.completed')} tone="moss" />
+          <ImpactStat num={approved} label={t('dashboard.reportsApproved')} sub={`${pending} ${t('dashboard.pendingStatus', { defaultValue: t('dashboard.pending') })}`} tone="clay" />
+          <ImpactStat num={rank ? `#${rank}` : '—'} label={t('dashboard.leaderboardRank')} sub={t('dashboard.campusWide')} tone="terra" />
         </div>
       </section>
 
@@ -84,29 +86,29 @@ export default function MyDashboard() {
         <div className="relative">
           <div className="flex items-center gap-2 mb-2">
             <Leaf className="w-5 h-5 text-earth-cream" />
-            <p className="font-mono text-xs uppercase tracking-widest opacity-90">// Estimated footprint</p>
+            <p className="font-mono text-xs uppercase tracking-widest opacity-90">// {t('dashboard.estimatedFootprint')}</p>
           </div>
-          <h2 className="font-display text-3xl md:text-4xl uppercase">Your Environmental Impact</h2>
+          <h2 className="font-display text-3xl md:text-4xl uppercase">{t('dashboard.environmentalImpact')}</h2>
           <p className="font-mono text-sm opacity-80 mt-2 max-w-2xl">
-            Based on your approved activity reports. Numbers are campus-wide estimates from the EcoSurvey program.
+            {t('dashboard.envDesc')}
           </p>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-8">
             <div className="border-l-[3px] border-earth-cream pl-4">
               <p className="font-display text-5xl md:text-6xl">{co2Estimate}</p>
-              <p className="font-mono text-xs uppercase tracking-widest mt-2 opacity-90">kg CO₂ saved (est.)</p>
+              <p className="font-mono text-xs uppercase tracking-widest mt-2 opacity-90">{t('dashboard.kgCO2')}</p>
             </div>
             <div className="border-l-[3px] border-earth-cream pl-4">
               <p className="font-display text-5xl md:text-6xl">{treesEquivalent}</p>
-              <p className="font-mono text-xs uppercase tracking-widest mt-2 opacity-90">trees equivalent</p>
+              <p className="font-mono text-xs uppercase tracking-widest mt-2 opacity-90">{t('dashboard.treesEq')}</p>
             </div>
             <div className="border-l-[3px] border-earth-cream pl-4">
               <p className="font-display text-5xl md:text-6xl">{approved}</p>
-              <p className="font-mono text-xs uppercase tracking-widest mt-2 opacity-90">activities</p>
+              <p className="font-mono text-xs uppercase tracking-widest mt-2 opacity-90">{t('dashboard.activitiesLabel')}</p>
             </div>
             <div className="border-l-[3px] border-earth-cream pl-4">
               <p className="font-display text-5xl md:text-6xl">{Math.floor(points / 10)}</p>
-              <p className="font-mono text-xs uppercase tracking-widest mt-2 opacity-90">impact credits</p>
+              <p className="font-mono text-xs uppercase tracking-widest mt-2 opacity-90">{t('dashboard.impactCredits')}</p>
             </div>
           </div>
         </div>
@@ -117,16 +119,16 @@ export default function MyDashboard() {
         <div className="lg:col-span-2 card p-6">
           <div className="flex items-center justify-between mb-5">
             <h2 className="font-display text-xl uppercase flex items-center gap-2">
-              <Activity className="w-5 h-5" /> Recent Activity
+              <Activity className="w-5 h-5" /> {t('dashboard.recentActivities')}
             </h2>
-            <span className="font-mono text-[10px] uppercase tracking-widest text-earth-ink/60">/ last 5</span>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-earth-ink/60">{t('dashboard.last5')}</span>
           </div>
           {data?.recent_activity?.length === 0 ? (
             <div className="text-center py-10 text-earth-ink/60">
               <Star className="w-10 h-10 mx-auto mb-3 opacity-40" />
-              <p className="ui-title">No activity yet</p>
-              <p className="font-mono text-xs uppercase tracking-widest mt-1">/ complete a survey to get started</p>
-              <Link to="/surveys" className="btn-primary mt-4 text-sm">View Surveys</Link>
+              <p className="ui-title">{t('dashboard.noActivityYet')}</p>
+              <p className="font-mono text-xs uppercase tracking-widest mt-1">{t('dashboard.completeSurvey')}</p>
+              <Link to="/surveys" className="btn-primary mt-4 text-sm">{t('dashboard.viewSurveysBtn')}</Link>
             </div>
           ) : (
             <div className="space-y-0">
@@ -141,7 +143,7 @@ export default function MyDashboard() {
                     <p className="font-mono text-[10px] uppercase tracking-widest text-earth-ink/60">{new Date(a.created_at).toLocaleDateString()}</p>
                   </div>
                   <span className={`px-2 py-1 border-2 border-earth-ink font-display text-sm ${a.points >= 0 ? 'bg-earth-moss text-earth-paper' : 'bg-earth-terracotta text-earth-paper'}`}>
-                    {a.points >= 0 ? '+' : ''}{a.points} pts
+                    {a.points >= 0 ? '+' : ''}{a.points} {t('dashboard.pts')}
                   </span>
                 </div>
               ))}
@@ -153,14 +155,14 @@ export default function MyDashboard() {
         <div className="space-y-4">
           <div className="card p-6">
             <h2 className="font-display text-xl uppercase mb-4 flex items-center gap-2">
-              <Zap className="w-5 h-5" /> Quick Actions
+              <Zap className="w-5 h-5" /> {t('dashboard.quickActions')}
             </h2>
             <div className="space-y-0">
               {[
-                { to: '/surveys',                label: 'Take a Survey',        sub: `${data?.surveys_available || 0} available` },
-                { to: '/participations/submit',  label: 'Submit Activity',      sub: 'Earn 50 points' },
-                { to: '/leaderboard',            label: 'View Leaderboard',     sub: `You're #${rank || '?'}` },
-                { to: '/participations',         label: 'My Reports',           sub: `${pending} pending` },
+                { to: '/surveys',                label: t('survey.takeSurvey'),        sub: `${data?.surveys_available || 0} ${t('dashboard.available')}` },
+                { to: '/participations/submit',  label: t('nav.participations'),      sub: t('dashboard.earn50Pts') },
+                { to: '/leaderboard',            label: t('dashboard.seeLeaderboard'),     sub: `${t('dashboard.youAreRank')}${rank || '?'}` },
+                { to: '/participations',         label: t('nav.participations'),           sub: `${pending} ${t('dashboard.pending')}` },
               ].map(({ to, label, sub }, i) => (
                 <Link key={to} to={to}
                   className={`flex items-center gap-3 p-3 hover:bg-earth-cream transition-colors group ${i !== 0 ? 'border-t-[2px] border-earth-ink/20' : ''}`}>
@@ -176,29 +178,29 @@ export default function MyDashboard() {
 
           <div className="card p-6">
             <h2 className="font-display text-sm uppercase tracking-widest mb-3 flex items-center gap-2">
-              <Star className="w-4 h-4" /> Points Breakdown
+              <Star className="w-4 h-4" /> {t('dashboard.pointsBreakdown')}
             </h2>
             <div className="space-y-2">
               <div className="flex justify-between border-b-[2px] border-earth-ink/20 pb-2">
-                <span className="font-mono text-xs uppercase tracking-widest">From Surveys</span>
-                <span className="font-display">{(data?.surveys_completed || 0) * 10} pts</span>
+                <span className="font-mono text-xs uppercase tracking-widest">{t('dashboard.fromSurveys')}</span>
+                <span className="font-display">{(data?.surveys_completed || 0) * 10} {t('dashboard.pts')}</span>
               </div>
               <div className="flex justify-between border-b-[2px] border-earth-ink/20 pb-2">
-                <span className="font-mono text-xs uppercase tracking-widest">From Reports</span>
-                <span className="font-display">{approved * 50} pts</span>
+                <span className="font-mono text-xs uppercase tracking-widest">{t('dashboard.fromReports')}</span>
+                <span className="font-display">{approved * 50} {t('dashboard.pts')}</span>
               </div>
               <div className="flex justify-between pt-2">
-                <span className="ui-title">Total</span>
-                <span className="font-display text-xl text-earth-forest">{points} pts</span>
+                <span className="ui-title">{t('dashboard.total')}</span>
+                <span className="font-display text-xl text-earth-forest">{points} {t('dashboard.pts')}</span>
               </div>
             </div>
           </div>
 
           {rejected > 0 && (
             <div className="card p-5 bg-earth-sand">
-              <p className="font-mono text-[10px] uppercase tracking-widest text-earth-ink/60">// Heads up</p>
-              <p className="font-display uppercase mt-1">{rejected} Rejected</p>
-              <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/70 mt-1">review and resubmit</p>
+              <p className="font-mono text-[10px] uppercase tracking-widest text-earth-ink/60">{t('dashboard.headsUp')}</p>
+              <p className="font-display uppercase mt-1">{rejected} {t('dashboard.rejectedStatus')}</p>
+              <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/70 mt-1">{t('dashboard.reviewResubmit')}</p>
             </div>
           )}
         </div>

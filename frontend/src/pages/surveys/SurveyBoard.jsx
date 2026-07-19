@@ -4,8 +4,10 @@ import { Search, ClipboardList, CheckCircle2, ChevronRight, Users, Calendar, Arr
 import { surveyService } from '../../services/surveyService'
 import { SpinnerPage } from '../../components/ui/Spinner'
 import Pagination from '../../components/ui/Pagination'
+import { useTranslation } from 'react-i18next'
 
 function SurveyCard({ survey, index }) {
+  const { t } = useTranslation('survey')
   const isExpired = new Date(survey.end_date) < new Date()
   const daysLeft  = Math.ceil((new Date(survey.end_date) - new Date()) / 86400000)
   const num = String(index + 1).padStart(2, '0')
@@ -23,7 +25,7 @@ function SurveyCard({ survey, index }) {
         <div className="flex flex-wrap gap-1.5 pt-1">
           {survey.is_completed && (
             <span className="badge-approved flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" /> Done
+              <CheckCircle2 className="w-3 h-3" /> {t('done')}
             </span>
           )}
           <span className={survey.target_role === 'All' ? 'badge-published' : 'badge-pending'}>
@@ -41,11 +43,11 @@ function SurveyCard({ survey, index }) {
 
       <div className="mt-5 pt-4 border-t-[2px] border-earth-ink/20 flex items-center gap-3 font-mono text-[10px] uppercase tracking-widest">
         <span className="flex items-center gap-1">
-          <ClipboardList className="w-3 h-3" /> {survey.question_count} Q
+          <ClipboardList className="w-3 h-3" /> {survey.question_count} {t('questions')}
         </span>
         <span className="flex items-center gap-1">
           <Calendar className="w-3 h-3" />
-          {isExpired ? 'Expired' : daysLeft === 1 ? 'Last day' : `${daysLeft}d left`}
+          {isExpired ? t('expired') : daysLeft === 1 ? t('lastDay') : `${daysLeft} ${t('daysLeft')}`}
         </span>
         {survey.creator && (
           <span className="flex items-center gap-1 ml-auto truncate">
@@ -56,7 +58,7 @@ function SurveyCard({ survey, index }) {
 
       {!survey.is_completed && (
         <div className="mt-4 flex items-center gap-1 ui-title text-sm border-t-[2px] border-earth-ink pt-3">
-          Take Survey <ArrowRight className="w-4 h-4" />
+          {t('takeSurvey')} <ArrowRight className="w-4 h-4" />
         </div>
       )}
     </Link>
@@ -77,6 +79,7 @@ function ImpactStat({ label, value, sub }) {
 }
 
 export default function SurveyBoard() {
+  const { t } = useTranslation(['survey', 'common'])
   const [surveys, setSurveys]   = useState([])
   const [loading, setLoading]   = useState(true)
   const [search, setSearch]     = useState('')
@@ -113,20 +116,20 @@ export default function SurveyBoard() {
     <div className="animate-fade-in space-y-8">
       {/* Header */}
       <div className="card p-6 md:p-8 relative">
-        <div className="stamp top-4 right-4 bg-earth-forest text-earth-paper">Open</div>
-        <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60">// Survey board</p>
-        <h1 className="page-title mt-2">Available Surveys</h1>
-        <p className="page-subtitle">/ complete surveys, earn points, track impact</p>
+        <div className="stamp top-4 right-4 bg-earth-forest text-earth-paper">{t('survey:open')}</div>
+        <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60">{t('survey:boardHeader')}</p>
+        <h1 className="page-title mt-2">{t('survey:title')}</h1>
+        <p className="page-subtitle">{t('survey:subtitle')}</p>
       </div>
 
       {/* Impact numbers */}
       <section>
-        <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60 mb-3">// impact at a glance</p>
+        <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60 mb-3">{t('survey:impactHeader')}</p>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <ImpactStat label="Total Surveys"  value={total} />
-          <ImpactStat label="Available Now"  value={available} sub="ready to take" />
-          <ImpactStat label="Potential Pts"  value={estPoints} sub={`+${estCo2}kg CO₂ est.`} />
-          <ImpactStat label="Total Questions" value={totalQuestions} sub={`${completed} completed`} />
+          <ImpactStat label={t('survey:totalSurveys')}  value={total} />
+          <ImpactStat label={t('survey:availableNow')}  value={available} sub={t('survey:availableSub')} />
+          <ImpactStat label={t('survey:potentialPts')}  value={estPoints} sub={`+${estCo2}kg CO₂ est.`} />
+          <ImpactStat label={t('survey:totalQuestions')} value={totalQuestions} sub={`${completed} ${t('survey:completedSub')}`} />
         </div>
       </section>
 
@@ -136,19 +139,19 @@ export default function SurveyBoard() {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-ink/60" />
           <input
             type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search surveys by title…"
+            placeholder={t('common:search')}
             className="input pl-10"
           />
         </div>
-        <button type="submit" className="btn-primary px-8">Search</button>
+        <button type="submit" className="btn-primary px-8">{t('common:search')}</button>
       </form>
 
       {/* Grid */}
       {loading ? <SpinnerPage /> : surveys.length === 0 ? (
         <div className="card p-16 text-center">
           <ClipboardList className="w-12 h-12 mx-auto mb-4 text-earth-ink/40" />
-          <p className="ui-title">No surveys available</p>
-          <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60 mt-1">/ check back later or ask your admin</p>
+          <p className="ui-title">{t('survey:noSurveys')}</p>
+          <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60 mt-1">{t('survey:noSurveysSub')}</p>
         </div>
       ) : (
         <>

@@ -5,8 +5,10 @@ import { surveyService } from '../../services/surveyService'
 import { SpinnerPage } from '../../components/ui/Spinner'
 import toast from 'react-hot-toast'
 import { Turnstile } from '@marsidev/react-turnstile'
+import { useTranslation } from 'react-i18next'
 
 function QuestionItem({ question, answer, onChange }) {
+  const { t } = useTranslation('survey')
   const { question_type: type, options, question_text, is_required, order_num } = question
 
   return (
@@ -26,7 +28,7 @@ function QuestionItem({ question, answer, onChange }) {
         <textarea
           value={answer || ''}
           onChange={(e) => onChange(question.id, e.target.value)}
-          placeholder="Type your answer here…"
+          placeholder={t('typeAnswer')}
           rows={3}
           className="input resize-none mt-2"
         />
@@ -87,6 +89,7 @@ function ImpactBlock({ num, label }) {
 }
 
 export default function SurveyDetail() {
+  const { t } = useTranslation('survey')
   const { id } = useParams()
   const navigate = useNavigate()
   const [survey, setSurvey]       = useState(null)
@@ -117,13 +120,13 @@ export default function SurveyDetail() {
     for (const q of required) {
       const a = answers[q.id]
       if (!a || (Array.isArray(a) && a.length === 0) || (typeof a === 'string' && !a.trim())) {
-        toast.error(`Please answer: "${q.question_text.substring(0, 60)}…"`)
+        toast.error(`${t('pleaseAnswer')} "${q.question_text.substring(0, 60)}…"`)
         return
       }
     }
 
     if (!captchaToken && import.meta.env.VITE_TURNSTILE_SITE_KEY) {
-      toast.error('Please complete the CAPTCHA.')
+      toast.error(t('completeCaptcha'))
       return
     }
 
@@ -134,10 +137,10 @@ export default function SurveyDetail() {
         answer_text: formatAnswer(q, answers[q.id]),
       }))
       await surveyService.submitSurvey(id, payload, captchaToken)
-      toast.success('Survey submitted! You earned 10 points.')
+      toast.success(t('submitSuccess'))
       setCompleted(true)
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Submission failed.')
+      toast.error(err.response?.data?.message || t('submitFailed'))
     } finally { setSubmitting(false) }
   }
 
@@ -157,12 +160,12 @@ export default function SurveyDetail() {
       {/* Back */}
       <button onClick={() => navigate('/surveys')}
         className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-widest border-b-[3px] border-earth-ink pb-0.5 hover:text-earth-forest">
-        <ChevronLeft className="w-4 h-4" /> Back to Board
+        <ChevronLeft className="w-4 h-4" /> {t('backToBoard')}
       </button>
 
       {/* Survey header */}
       <div className="card p-6 md:p-8 relative overflow-hidden">
-        <div className="stamp top-4 right-4 bg-earth-terracotta text-earth-paper">{completed ? 'Done' : 'Active'}</div>
+        <div className="stamp top-4 right-4 bg-earth-terracotta text-earth-paper">{completed ? t('done') : t('active')}</div>
         <div className="flex items-start gap-4 mb-4">
           <div className="w-14 h-14 bg-earth-forest border-[3px] border-earth-ink flex items-center justify-center flex-shrink-0">
             <ClipboardList className="w-6 h-6 text-earth-cream" />
@@ -170,8 +173,8 @@ export default function SurveyDetail() {
           <div className="flex-1">
             <div className="flex flex-wrap gap-2 mb-3">
               <span className="badge-published">{survey.target_role}</span>
-              {completed && <span className="badge-approved flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Completed</span>}
-              {!completed && daysLeft > 0 && daysLeft <= 3 && <span className="badge-pending">⚠ {daysLeft}d left</span>}
+              {completed && <span className="badge-approved flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> {t('completed')}</span>}
+              {!completed && daysLeft > 0 && daysLeft <= 3 && <span className="badge-pending">⚠ {daysLeft}{t('daysLeft')}</span>}
             </div>
             <h1 className="font-display text-3xl md:text-4xl uppercase leading-tight">{survey.title}</h1>
           </div>
@@ -179,10 +182,10 @@ export default function SurveyDetail() {
         {survey.description && <p className="text-earth-ink/80 leading-relaxed">{survey.description}</p>}
 
         <div className="mt-6 pt-6 border-t-[3px] border-earth-ink grid grid-cols-2 md:grid-cols-4 gap-3">
-          <ImpactBlock num={questions.length} label="Questions" />
-          <ImpactBlock num={requiredCount}    label="Required" />
-          <ImpactBlock num={`+10`}            label="Points" />
-          <ImpactBlock num={daysLeft > 0 ? daysLeft : '0'} label="Days Left" />
+          <ImpactBlock num={questions.length} label={t('questionsLabel')} />
+          <ImpactBlock num={requiredCount}    label={t('requiredLabel')} />
+          <ImpactBlock num={`+10`}            label={t('points')} />
+          <ImpactBlock num={daysLeft > 0 ? daysLeft : '0'} label={t('daysLeftLabel')} />
         </div>
       </div>
 
@@ -192,11 +195,11 @@ export default function SurveyDetail() {
           <div className="w-20 h-20 mx-auto mb-4 bg-earth-moss border-[3px] border-earth-ink flex items-center justify-center shadow-brutal">
             <CheckCircle2 className="w-10 h-10 text-earth-paper" />
           </div>
-          <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60">/ status</p>
-          <h2 className="font-display text-3xl uppercase mt-2">Survey Completed</h2>
-          <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60 mt-2">/ you&apos;ve already submitted your responses</p>
+          <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60">{t('statusLabel')}</p>
+          <h2 className="font-display text-3xl uppercase mt-2">{t('surveyCompleted')}</h2>
+          <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60 mt-2">{t('alreadySubmitted')}</p>
           <button onClick={() => navigate('/surveys')} className="btn-primary mt-6">
-            Back to Board <ClipboardList className="w-4 h-4" />
+            {t('backToBoard')} <ClipboardList className="w-4 h-4" />
           </button>
         </div>
       ) : (
@@ -206,7 +209,7 @@ export default function SurveyDetail() {
             <Leaf className="w-6 h-6 text-earth-forest" />
             <div className="flex-1">
               <div className="flex items-center justify-between mb-1">
-                <p className="font-mono text-xs uppercase tracking-widest">Progress</p>
+                <p className="font-mono text-xs uppercase tracking-widest">{t('progress')}</p>
                 <p className="font-display text-sm">{answeredCount}/{questions.length}</p>
               </div>
               <div className="h-[6px] bg-earth-cream border-[2px] border-earth-ink">
@@ -228,7 +231,7 @@ export default function SurveyDetail() {
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-widest">
                 <AlertCircle className="w-4 h-4" />
-                Answer required (<span className="text-earth-terracotta">*</span>) before submitting
+                {t('answerRequired')} (<span className="text-earth-terracotta">*</span>) {t('beforeSubmitting')}
               </div>
               {import.meta.env.VITE_TURNSTILE_SITE_KEY && (
                 <div className="flex">
@@ -243,7 +246,7 @@ export default function SurveyDetail() {
               {submitting ? (
                 <span className="w-4 h-4 border-[3px] border-earth-paper/30 border-t-earth-paper" />
               ) : (
-                <><Send className="w-4 h-4" /> Submit Survey</>
+                <><Send className="w-4 h-4" /> {t('submit')}</>
               )}
             </button>
           </div>

@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { Leaf, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 import api from '../../services/axiosInstance'
+import { useTranslation } from 'react-i18next'
 
 export default function EmailVerificationPage() {
+  const { t } = useTranslation('auth')
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const token = searchParams.get('token') || ''
@@ -15,7 +17,7 @@ export default function EmailVerificationPage() {
   useEffect(() => {
     if (!token || !email) {
       setStatus('error')
-      setMessage('Liên kết xác minh không hợp lệ.')
+      setMessage(t('emailVerificationPage.invalidLink'))
       return
     }
     const verify = async () => {
@@ -24,12 +26,12 @@ export default function EmailVerificationPage() {
         setMessage(res.data.message)
         setStatus('success')
       } catch (err) {
-        setMessage(err.response?.data?.message || 'Có lỗi xảy ra khi xác minh email.')
+        setMessage(err.response?.data?.message || t('emailVerificationPage.defaultError'))
         setStatus('error')
       }
     }
     verify()
-  }, [token, email])
+  }, [token, email, t])
 
   return (
     <div className="min-h-screen bg-earth-paper flex items-center justify-center p-4">
@@ -45,8 +47,8 @@ export default function EmailVerificationPage() {
           {status === 'verifying' && (
             <>
               <Loader2 className="w-12 h-12 text-earth-forest mx-auto mb-4 animate-spin" />
-              <h2 className="font-display text-2xl uppercase mb-2">Đang xác minh...</h2>
-              <p className="text-sm text-earth-ink/60">Vui lòng đợi trong giây lát.</p>
+              <h2 className="font-display text-2xl uppercase mb-2">{t('emailVerificationPage.verifying')}</h2>
+              <p className="text-sm text-earth-ink/60">{t('emailVerificationPage.pleaseWait')}</p>
             </>
           )}
           {status === 'success' && (
@@ -54,10 +56,10 @@ export default function EmailVerificationPage() {
               <div className="w-16 h-16 bg-earth-forest/10 border-[3px] border-earth-forest rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle className="w-8 h-8 text-earth-forest" />
               </div>
-              <h2 className="font-display text-2xl uppercase mb-3">Xác minh thành công!</h2>
+              <h2 className="font-display text-2xl uppercase mb-3">{t('emailVerificationPage.successTitle')}</h2>
               <p className="text-sm text-earth-ink/70 mb-6">{message}</p>
               <button onClick={() => navigate('/login')} className="btn-primary w-full">
-                Đăng nhập ngay
+                {t('emailVerificationPage.loginNow')}
               </button>
             </>
           )}
@@ -66,10 +68,10 @@ export default function EmailVerificationPage() {
               <div className="w-16 h-16 bg-red-50 border-[3px] border-red-400 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AlertCircle className="w-8 h-8 text-red-500" />
               </div>
-              <h2 className="font-display text-2xl uppercase mb-3">Xác minh thất bại</h2>
+              <h2 className="font-display text-2xl uppercase mb-3">{t('emailVerificationPage.errorTitle')}</h2>
               <p className="text-sm text-earth-ink/70 mb-6">{message}</p>
               <Link to="/login" className="btn-primary w-full text-center block">
-                Quay lại đăng nhập
+                {t('emailVerificationPage.backToLogin')}
               </Link>
             </>
           )}

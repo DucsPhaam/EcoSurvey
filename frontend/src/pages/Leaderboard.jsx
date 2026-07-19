@@ -3,6 +3,7 @@ import { Trophy, Medal, Star, Crown } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { leaderboardService } from '../services/leaderboardService'
 import { SpinnerPage } from '../components/ui/Spinner'
+import { useTranslation } from 'react-i18next'
 
 const MEDALS = [
   { bg: 'from-yellow-400 to-amber-500', text: 'text-yellow-900', icon: Crown  },
@@ -27,6 +28,7 @@ function RankBadge({ rank }) {
 }
 
 export default function Leaderboard() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const [data, setData]       = useState(null)
   const [loading, setLoading] = useState(true)
@@ -48,13 +50,13 @@ export default function Leaderboard() {
         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mx-auto mb-4 shadow-lg">
           <Trophy className="w-8 h-8 text-white" />
         </div>
-        <h1 className="page-title">Leaderboard</h1>
-        <p className="page-subtitle">Top contributors in environmental awareness.</p>
+        <h1 className="page-title">{t('leaderboard.title')}</h1>
+        <p className="page-subtitle">{t('leaderboard.subtitle')}</p>
       </div>
 
       {/* Period tabs */}
       <div className="flex gap-2 justify-center mb-8">
-        {[['week','This Week'], ['month','This Month'], ['all','All Time']].map(([p, label]) => (
+        {[['week', t('leaderboard.thisWeek')], ['month', t('leaderboard.thisMonth')], ['all', t('leaderboard.allTime')]].map(([p, label]) => (
           <button key={p} onClick={() => { setPeriod(p); fetch(p) }}
             className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
               period === p
@@ -77,7 +79,7 @@ export default function Leaderboard() {
                   {data.leaderboard[1]?.full_name?.[0]}
                 </div>
                 <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 truncate">{data.leaderboard[1]?.full_name}</p>
-                <p className="text-sm font-bold text-gray-700 dark:text-gray-300">{data.leaderboard[1]?.total_points} pts</p>
+                <p className="text-sm font-bold text-gray-700 dark:text-gray-300">{data.leaderboard[1]?.total_points} {t('leaderboard.pts')}</p>
                 <div className="h-16 bg-gradient-to-t from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-t-xl mt-2 flex items-center justify-center">
                   <span className="font-bold text-2xl text-gray-500">2</span>
                 </div>
@@ -91,7 +93,7 @@ export default function Leaderboard() {
                   </div>
                 </div>
                 <p className="text-sm font-bold text-gray-800 dark:text-gray-200 truncate">{data.leaderboard[0]?.full_name}</p>
-                <p className="text-base font-bold text-amber-500">{data.leaderboard[0]?.total_points} pts</p>
+                <p className="text-base font-bold text-amber-500">{data.leaderboard[0]?.total_points} {t('leaderboard.pts')}</p>
                 <div className="h-24 bg-gradient-to-t from-amber-400 to-yellow-400 rounded-t-xl mt-2 flex items-center justify-center">
                   <span className="font-bold text-3xl text-yellow-900">1</span>
                 </div>
@@ -102,7 +104,7 @@ export default function Leaderboard() {
                   {data.leaderboard[2]?.full_name?.[0]}
                 </div>
                 <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 truncate">{data.leaderboard[2]?.full_name}</p>
-                <p className="text-sm font-bold text-gray-700 dark:text-gray-300">{data.leaderboard[2]?.total_points} pts</p>
+                <p className="text-sm font-bold text-gray-700 dark:text-gray-300">{data.leaderboard[2]?.total_points} {t('leaderboard.pts')}</p>
                 <div className="h-12 bg-gradient-to-t from-orange-200 to-orange-300 dark:from-orange-900/40 dark:to-orange-800/40 rounded-t-xl mt-2 flex items-center justify-center">
                   <span className="font-bold text-2xl text-orange-600">3</span>
                 </div>
@@ -124,7 +126,7 @@ export default function Leaderboard() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-semibold truncate ${isMe ? 'text-brand-700 dark:text-brand-400' : 'text-gray-800 dark:text-gray-200'}`}>
-                      {entry.full_name} {isMe && <span className="text-xs font-normal ml-1 opacity-70">(You)</span>}
+                      {entry.full_name} {isMe && <span className="text-xs font-normal ml-1 opacity-70">({t('leaderboard.you')})</span>}
                     </p>
                     <p className="text-xs text-gray-400">{entry.role}</p>
                   </div>
@@ -132,7 +134,7 @@ export default function Leaderboard() {
                     <p className={`font-bold text-sm ${isMe ? 'text-brand-600 dark:text-brand-400' : 'text-gray-700 dark:text-gray-300'}`}>
                       {entry.total_points.toLocaleString()}
                     </p>
-                    <p className="text-xs text-gray-400">points</p>
+                    <p className="text-xs text-gray-400">{t('leaderboard.points')}</p>
                   </div>
                 </div>
               )
@@ -149,17 +151,17 @@ export default function Leaderboard() {
                     {user?.full_name?.[0]}
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-brand-700 dark:text-brand-400">{user?.full_name} (You)</p>
-                    <p className="text-xs text-gray-400">Your current position</p>
+                    <p className="text-sm font-semibold text-brand-700 dark:text-brand-400">{user?.full_name} ({t('leaderboard.you')})</p>
+                    <p className="text-xs text-gray-400">{t('leaderboard.yourPosition')}</p>
                   </div>
-                  <p className="font-bold text-brand-600">{data.my_points.toLocaleString()} pts</p>
+                  <p className="font-bold text-brand-600">{data.my_points.toLocaleString()} {t('leaderboard.pts')}</p>
                 </div>
               </div>
             )}
           </div>
 
           <p className="text-center text-sm text-gray-400 mt-4">
-            {data?.total_participants || 0} participants ranked
+            {data?.total_participants || 0} {t('leaderboard.participantsRanked')}
           </p>
         </>
       )}

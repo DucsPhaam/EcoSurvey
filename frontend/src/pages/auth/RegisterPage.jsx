@@ -5,18 +5,19 @@ import { authService } from '../../services/authService'
 import toast from 'react-hot-toast'
 import { Turnstile } from '@marsidev/react-turnstile'
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 
-const STEPS = ['Account', 'Personal', 'Review']
+const STEPS = (t) => [t('auth:registerPage.steps.account'), t('auth:registerPage.steps.personal'), t('auth:registerPage.steps.review')]
 
-const ROLES = [
-  { id: 'Student', label: 'Student', sub: 'For enrolled students' },
-  { id: 'Staff',   label: 'Staff',   sub: 'For university staff' },
+const ROLES = (t) => [
+  { id: 'Student', label: t('auth:registerPage.roles.student'), sub: t('auth:registerPage.roles.studentSub') },
+  { id: 'Staff',   label: t('auth:registerPage.roles.staff'),   sub: t('auth:registerPage.roles.staffSub') },
 ]
 
-function StepIndicator({ current }) {
+function StepIndicator({ current, t }) {
   return (
     <div className="flex items-center gap-2 mb-8" role="group" aria-label="Registration progress">
-      {STEPS.map((label, i) => (
+      {STEPS(t).map((label, i) => (
         <div key={label} className="flex items-center gap-2 flex-1">
           <div className={`flex items-center gap-2 ${i <= current ? 'text-earth-ink' : 'text-earth-ink/30'}`}>
             <div className={`w-9 h-9 border-[3px] border-earth-ink flex items-center justify-center font-display text-sm transition-colors ${
@@ -35,11 +36,11 @@ function StepIndicator({ current }) {
   )
 }
 
-function PasswordStrength({ password }) {
+function PasswordStrength({ password, t }) {
   const checks = [
-    { ok: password.length >= 8,           label: '≥8 characters' },
-    { ok: /[A-Z]/.test(password),         label: 'Uppercase letter' },
-    { ok: /[0-9]/.test(password),         label: 'Number' },
+    { ok: password.length >= 8,           label: t('auth:registerPage.passwordChecks.length') },
+    { ok: /[A-Z]/.test(password),         label: t('auth:registerPage.passwordChecks.upper') },
+    { ok: /[0-9]/.test(password),         label: t('auth:registerPage.passwordChecks.number') },
   ]
   return (
     <div className="mt-2 grid grid-cols-3 gap-1">
@@ -53,6 +54,7 @@ function PasswordStrength({ password }) {
 }
 
 export default function RegisterPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const [step, setStep] = useState(0)
@@ -99,31 +101,31 @@ export default function RegisterPage() {
   }, [])
 
   const validateStep0 = () => {
-    if (!form.username || !form.email || !form.password || !form.confirm_password) return 'Fill in all fields.'
-    if (availability.username === false) return 'Username is already taken.'
-    if (availability.email === false) return 'Email is already in use.'
+    if (!form.username || !form.email || !form.password || !form.confirm_password) return t('auth:registerPage.errors.fillAll')
+    if (availability.username === false) return t('auth:registerPage.errors.usernameTaken')
+    if (availability.email === false) return t('auth:registerPage.errors.emailTaken')
     if (form.password.length < 8 || !/[A-Z]/.test(form.password) || !/[0-9]/.test(form.password))
-      return 'Password must be ≥8 chars with uppercase & number.'
-    if (form.password !== form.confirm_password) return 'Passwords do not match.'
+      return t('auth:registerPage.errors.passwordRules')
+    if (form.password !== form.confirm_password) return t('auth:registerPage.errors.passwordMismatch')
     return null
   }
 
   const next = () => {
     if (step === 0) { const e = validateStep0(); if (e) { toast.error(e); return } }
-    if (step === 1) { if (!form.full_name || !form.role) { toast.error('Name and role are required.'); return } }
+    if (step === 1) { if (!form.full_name || !form.role) { toast.error(t('auth:registerPage.errors.nameRole')); return } }
     setStep((s) => Math.min(s + 1, 2))
   }
   const back = () => setStep((s) => Math.max(s - 1, 0))
 
   const handleSubmit = async () => {
-    if (!captchaToken && import.meta.env.VITE_TURNSTILE_SITE_KEY) { toast.error('Please complete the CAPTCHA.'); return }
+    if (!captchaToken && import.meta.env.VITE_TURNSTILE_SITE_KEY) { toast.error(t('auth:toast.captcha')); return }
     setLoading(true)
     try {
       await authService.register(form, captchaToken)
-      toast.success('Registered! Awaiting admin approval.')
+      toast.success(t('auth:registerPage.errors.registerSuccess'))
       navigate('/login')
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Registration failed.')
+      toast.error(err.response?.data?.message || t('auth:registerPage.errors.registerFailed'))
     } finally { setLoading(false) }
   }
 
@@ -137,17 +139,17 @@ export default function RegisterPage() {
             </div>
             <span className="font-display text-2xl uppercase">EcoSurvey</span>
           </Link>
-          <h1 className="font-display text-4xl md:text-5xl uppercase mt-6">Create Account</h1>
-          <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60 mt-2">// join the movement</p>
+          <h1 className="font-display text-4xl md:text-5xl uppercase mt-6">{t('auth:registerPage.title')}</h1>
+          <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60 mt-2">// {t('auth:registerPage.joinMovement')}</p>
         </div>
 
         <div className="card p-8">
-          <StepIndicator current={step} />
+          <StepIndicator current={step} t={t} />
 
           {step === 0 && (
             <div className="space-y-5 animate-fade-in">
               <div>
-                <label htmlFor="reg-username" className="label">Username</label>
+                <label htmlFor="reg-username" className="label">{t('auth:username')}</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-ink/60" aria-hidden="true" />
                   <input id="reg-username" type="text" placeholder="e.g. nguyenvan_a" value={form.username}
@@ -157,11 +159,11 @@ export default function RegisterPage() {
                   {availability.username === true  && <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-forest" />}
                   {availability.username === false && <X    className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-terracotta" />}
                 </div>
-                {availability.username === false && <p className="text-earth-terracotta font-mono text-xs uppercase tracking-wider mt-1" role="alert">/ username taken</p>}
+                {availability.username === false && <p className="text-earth-terracotta font-mono text-xs uppercase tracking-wider mt-1" role="alert">/ {t('auth:registerPage.usernameTaken')}</p>}
               </div>
 
               <div>
-                <label htmlFor="reg-email" className="label">Email</label>
+                <label htmlFor="reg-email" className="label">{t('auth:email')}</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-ink/60" aria-hidden="true" />
                   <input id="reg-email" type="email" placeholder="you@example.com" value={form.email}
@@ -171,10 +173,11 @@ export default function RegisterPage() {
                   {availability.email === true  && <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-forest" />}
                   {availability.email === false && <X    className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-terracotta" />}
                 </div>
+                {availability.email === false && <p className="text-earth-terracotta font-mono text-xs uppercase tracking-wider mt-1" role="alert">/ {t('auth:registerPage.emailTaken')}</p>}
               </div>
 
               <div>
-                <label htmlFor="reg-password" className="label">Password</label>
+                <label htmlFor="reg-password" className="label">{t('auth:password')}</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-ink/60" aria-hidden="true" />
                   <input id="reg-password" type={showPass ? 'text' : 'password'} placeholder="••••••••" value={form.password}
@@ -185,11 +188,11 @@ export default function RegisterPage() {
                     {showPass ? <EyeOff className="w-4 h-4" aria-hidden="true" /> : <Eye className="w-4 h-4" aria-hidden="true" />}
                   </button>
                 </div>
-                {form.password && <PasswordStrength password={form.password} />}
+                {form.password && <PasswordStrength password={form.password} t={t} />}
               </div>
 
               <div>
-                <label htmlFor="reg-confirm" className="label">Confirm Password</label>
+                <label htmlFor="reg-confirm" className="label">{t('auth:registerPage.confirmPassword')}</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-ink/60" aria-hidden="true" />
                   <input id="reg-confirm" type={showPass ? 'text' : 'password'} placeholder="••••••••" value={form.confirm_password}
@@ -197,7 +200,7 @@ export default function RegisterPage() {
                     className={`input pl-10 ${form.confirm_password && form.password !== form.confirm_password ? 'border-earth-terracotta' : ''}`} />
                 </div>
                 {form.confirm_password && form.password !== form.confirm_password && (
-                  <p className="text-earth-terracotta font-mono text-xs uppercase tracking-wider mt-1">/ mismatch</p>
+                  <p className="text-earth-terracotta font-mono text-xs uppercase tracking-wider mt-1">/ {t('auth:registerPage.passwordMismatch')}</p>
                 )}
               </div>
             </div>
@@ -206,7 +209,7 @@ export default function RegisterPage() {
           {step === 1 && (
             <div className="space-y-5 animate-fade-in">
               <div>
-                <label htmlFor="reg-fullname" className="label">Full Name</label>
+                <label htmlFor="reg-fullname" className="label">{t('auth:fullName')}</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-ink/60" aria-hidden="true" />
                   <input id="reg-fullname" type="text" placeholder="Nguyen Van A" value={form.full_name}
@@ -215,9 +218,9 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <label className="label">Role</label>
+                <label className="label">{t('auth:role')}</label>
                 <div className="grid grid-cols-2 gap-3">
-                  {ROLES.map(({ id, label, sub }) => (
+                  {ROLES(t).map(({ id, label, sub }) => (
                     <button key={id} type="button" onClick={() => set('role', id)}
                       className={`text-left p-4 border-[3px] border-earth-ink transition-all ${
                         form.role === id ? 'bg-earth-forest text-earth-paper shadow-brutal-sm' : 'bg-earth-paper hover:bg-earth-cream'
@@ -230,33 +233,33 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <label className="label">Student/Staff ID</label>
+                <label className="label">{t('auth:registerPage.id')}</label>
                 <div className="relative">
                   <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-ink/60" />
-                  <input type="text" placeholder={form.role === 'Student' ? 'SV2023001' : 'NV001'} value={form.student_staff_id}
+                  <input type="text" placeholder={form.role === 'Student' ? t('auth:registerPage.studentIdPlaceholder') : t('auth:registerPage.staffIdPlaceholder')} value={form.student_staff_id}
                     onChange={(e) => set('student_staff_id', e.target.value)} className="input pl-10" />
                 </div>
               </div>
 
               {form.role === 'Student' && (
                 <div>
-                  <label className="label">Class</label>
-                  <input type="text" placeholder="e.g. CNTT01K20" value={form.class_name}
+                  <label className="label">{t('auth:registerPage.class')}</label>
+                  <input type="text" placeholder={t('auth:registerPage.classPlaceholder')} value={form.class_name}
                     onChange={(e) => set('class_name', e.target.value)} className="input" />
                 </div>
               )}
 
               <div>
-                <label className="label">{form.role === 'Student' ? 'Faculty/Major' : 'Department'}</label>
+                <label className="label">{t('auth:registerPage.department')}</label>
                 <div className="relative">
                   <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-ink/60" />
-                  <input type="text" placeholder={form.role === 'Student' ? 'Faculty of Information Technology' : 'IT Department'} value={form.department}
+                  <input type="text" placeholder={form.role === 'Student' ? t('auth:registerPage.departmentPlaceholderStudent') : t('auth:registerPage.departmentPlaceholderStaff')} value={form.department}
                     onChange={(e) => set('department', e.target.value)} className="input pl-10" />
                 </div>
               </div>
 
               <div>
-                <label className="label">{form.role === 'Student' ? 'Enrollment Date' : 'Start Date'}</label>
+                <label className="label">{form.role === 'Student' ? t('auth:registerPage.enrollmentDate') : t('auth:registerPage.startDate')}</label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-ink/60" />
                   <input type="date" value={form.joined_date}
@@ -268,15 +271,15 @@ export default function RegisterPage() {
 
           {step === 2 && (
             <div className="space-y-3 animate-fade-in">
-              <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60">/ confirm & submit</p>
+              <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60">/ {t('auth:registerPage.confirmSubmit')}</p>
               <div className="space-y-0">
                 {[
-                  ['Username',    form.username],
-                  ['Email',       form.email],
-                  ['Full Name',   form.full_name],
-                  ['Role',        form.role],
-                  ['ID',          form.student_staff_id || '—'],
-                  ['Department',  form.department || '—'],
+                  [t('auth:username'),    form.username],
+                  [t('auth:email'),       form.email],
+                  [t('auth:fullName'),   form.full_name],
+                  [t('auth:role'),        t(`auth:registerPage.roles.${form.role.toLowerCase()}`)],
+                  [t('auth:registerPage.id'),          form.student_staff_id || '—'],
+                  [t('auth:registerPage.department'),  form.department || '—'],
                 ].map(([label, val]) => (
                   <div key={label} className="flex justify-between py-3 border-b-[2px] border-earth-ink/30">
                     <span className="font-mono text-xs uppercase tracking-widest text-earth-ink/60">{label}</span>
@@ -285,7 +288,7 @@ export default function RegisterPage() {
                 ))}
               </div>
               <div className="mt-4 bg-earth-sand border-[3px] border-earth-ink p-4">
-                <p className="font-mono text-xs uppercase tracking-widest">⚠ Note: After submitting, your account will be pending admin approval.</p>
+                <p className="font-mono text-xs uppercase tracking-widest">⚠ {t('auth:registerPage.note')}</p>
               </div>
 
               {import.meta.env.VITE_TURNSTILE_SITE_KEY && (
@@ -302,19 +305,19 @@ export default function RegisterPage() {
           <div className="flex gap-3 mt-8 pt-6 border-t-[3px] border-earth-ink">
             {step > 0 && (
               <button onClick={back} className="btn-secondary flex-1">
-                <ChevronLeft className="w-4 h-4" /> Back
+                <ChevronLeft className="w-4 h-4" /> {t('auth:registerPage.back')}
               </button>
             )}
             {step < 2 ? (
               <button onClick={next} className="btn-primary flex-1">
-                Continue <ChevronRight className="w-4 h-4" />
+                {t('auth:registerPage.continue')} <ChevronRight className="w-4 h-4" />
               </button>
             ) : (
               <button onClick={handleSubmit} disabled={loading || (!captchaToken && !!import.meta.env.VITE_TURNSTILE_SITE_KEY)} className="btn-primary flex-1">
                 {loading ? (
                   <span className="w-5 h-5 border-[3px] border-earth-paper/30 border-t-earth-paper" />
                 ) : (
-                  <>Submit <ArrowRight className="w-5 h-5" /></>
+                  <>{t('auth:registerPage.submit')} <ArrowRight className="w-5 h-5" /></>
                 )}
               </button>
             )}
@@ -322,8 +325,8 @@ export default function RegisterPage() {
         </div>
 
         <p className="text-center font-mono text-xs uppercase tracking-widest text-earth-ink/60 mt-6">
-          Already have an account?{' '}
-          <Link to="/login" className="font-display text-earth-ink underline">Sign In <ArrowUpRight className="inline w-3 h-3" /></Link>
+          {t('auth.alreadyHaveAccount')}{' '}
+          <Link to="/login" className="font-display text-earth-ink underline">{t('auth.loginNow')} <ArrowUpRight className="inline w-3 h-3" /></Link>
         </p>
       </div>
     </div>
