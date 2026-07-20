@@ -1,201 +1,242 @@
 # 🌿 EcoSurvey — Environmental Awareness Survey Portal
 
-A full-stack web application for managing environmental awareness surveys, tracking student/staff participation, and gamifying sustainability with a points-based leaderboard.
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
+[![React Version](https://img.shields.io/badge/react-18.3.1-blue.svg)](https://reactjs.org/)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+A full-stack web application designed for educational institutions to manage environmental awareness surveys, monitor student/staff participation, visualize analytical data, and gamify sustainability with interactive leaderboards and achievements.
 
 ---
 
-## ✨ Features (Updated for v2.0)
+## ✨ Outstanding Features (v2.0 Overhaul)
 
-| Feature | Description |
-|---|---|
-| 🔐 **Advanced Security** | JWT Auth, Cloudflare Turnstile CAPTCHA, Redis Rate Limiting, Helmet CSP |
-| 🔑 **Google OAuth** | Seamless login with Google accounts |
-| 🌐 **Multi-language (i18n)** | Full English & Vietnamese translation support across the platform |
-| ✉️ **Account Recovery** | Forgot Password flow & Email Verification upon registration |
-| 📋 **Survey System** | Create surveys with Text, Single-Choice, Multi-Choice questions |
-| 📊 **Survey Analytics** | Per-question visual analytics & charts using **Recharts** |
-| 📁 **Participation Reports** | Submit activity reports with file evidence (image/PDF) |
-| 🔔 **Realtime Notifications** | Instant alerts via **Socket.io** when reports are graded or surveys published |
-| 🏆 **Leaderboard** | Real-time rankings by week / month / all-time |
-| 🤖 **AI Assistant** | Gemini-powered FAQ chatbot (mock fallback when no API key) |
-| 📤 **Export** | Excel (.xlsx) for survey results, PDF for participation reports |
-| 🌙 **Dark Mode** | Full dark/light theme with user preference persistence |
-| 📧 **Email Notifications** | Account, recovery & report status emails |
-| 🐳 **Docker** | Full Docker Compose setup with MySQL + Redis + Backend + Frontend |
-| 🧪 **Automated Testing** | Comprehensive test coverage using **Jest**, **Supertest**, **Vitest**, & **RTL** |
+### 🔐 Advanced Security & Hardening
+- **Cloudflare Turnstile Defense**: Bot protection on registration, login, and survey submission endpoints.
+- **Redis Rate Limiting**: Targeted request limiting for Authentication (10 req/15m), Survey Submissions (5 req/m), and Global requests (100 req/15m).
+- **Google OAuth 2.0**: Seamless Single Sign-On (SSO) integration powered by Passport.js.
+- **Password Recovery & Verification**: Token-based forgot password recovery flow (15-min TTL) and registration email verification.
+- **Strict Input Sanitization & CSP**: Unified request validation schemas (`express-validator`), XSS filtering (`xss`), and dynamic Content Security Policy headers (`Helmet`).
+
+### 🎨 Modern UI/UX, Accessibility & i18n
+- **Brand New Design Language**: Completely overhauled sleek, responsive interface with Dark/Light theme toggles.
+- **Accessibility Compliance (a11y)**: Full ARIA labels (`aria-label`, `aria-describedby`), focus-trap modal dialogs, visible focus indicators, and screen reader compatibility.
+- **Multi-language Support (i18n)**: Instant switching between **Vietnamese** and **English** (`react-i18next`).
+
+### 📊 Analytics, Maps & Cloud Integration
+- **Per-Question Interactive Analytics**: Dynamic data charts (`Recharts`) for survey administrators to analyze response distributions.
+- **Geolocation & Heatmap**: Survey response geotagging (Browser Geolocation API) with an interactive spatial heatmap for admins (`Leaflet Map`).
+- **Cloud Media Storage**: Integrated Cloudinary Cloud Storage SDK for uploading user avatars and participation evidence.
+
+### 🏆 Gamification, Rewards & Reporting
+- **Badges & Achievements Engine**: Unlockable sustainability badges (*First Step*, *Eco Warrior*, *Century Mark*, *Top 10*) triggered automatically upon activity.
+- **Monthly Challenges**: Time-limited sustainability challenges with bonus point rewards.
+- **PDF Certificate Export**: Generated official PDF completion certificates for top users (`PDFKit`).
+- **Admin Excel Bulk Import**: Bulk user account creation via Excel file upload (`.xlsx`).
+- **Real-Time Notification Center**: Background-polled navbar notification center with read/unread tracking and Socket.io events.
+- **AI Assistant Chatbot**: Interactive Gemini-powered sustainability assistant directly on the landing page.
 
 ---
 
 ## 🛠 Technology Stack
 
-| Layer | Technology |
+| Layer | Technologies & Tools |
 |---|---|
-| **Frontend** | React 18 + Vite + Tailwind CSS + Recharts + Socket.io-client + i18next |
-| **Backend** | Node.js + Express.js + Sequelize ORM + Socket.io + Passport.js |
-| **Database** | MySQL 8.0 |
-| **Cache/RateLimit** | Redis |
-| **Auth** | JWT (Access token 15m + Refresh 7d HttpOnly cookie) + Google OAuth 2.0 |
-| **Security** | Cloudflare Turnstile, express-rate-limit, Helmet, express-validator |
-| **Testing** | Jest, Supertest (Backend) / Vitest, React Testing Library (Frontend) |
-| **AI** | OpenRouter API (`gemini-2.5-flash`) |
-| **Container** | Docker + Docker Compose |
+| **Frontend** | React 18, Vite, Tailwind CSS, Recharts, Leaflet, Socket.io-client, i18next, Lucide Icons |
+| **Backend** | Node.js, Express.js, Sequelize ORM, Socket.io, Passport.js, Winston, Nodemailer, PDFKit, ExcelJS |
+| **Database & Caching** | MySQL 8.0, Redis |
+| **Security & Auth** | JWT (HttpOnly Cookies), Cloudflare Turnstile, express-rate-limit, Helmet, express-validator, xss |
+| **Testing** | Jest, Supertest (Backend Integration) / Vitest, React Testing Library (Frontend) |
+| **Cloud Services** | Cloudinary (Media Storage), OpenRouter API / Gemini AI |
+| **Containerization** | Docker, Docker Compose, Nginx |
+
+---
+
+## 📁 Repository Structure
+
+```
+EcoSurvey/
+├── backend/                  # Node.js + Express API Backend
+│   ├── __tests__/            # Jest & Supertest Integration Tests
+│   ├── src/
+│   │   ├── config/           # Database, Cloudinary, Passport, & Redis Configs
+│   │   ├── controllers/      # API Request Handlers
+│   │   ├── middleware/       # Turnstile, Rate Limiters, Validators, Auth Middleware
+│   │   ├── models/           # Sequelize Database Models & Associations
+│   │   ├── routes/           # Express Route Definitions
+│   │   ├── services/         # Badge, Email, Storage, & Cron Services
+│   │   └── server.js         # Express App Initialization & Socket.io Server
+│   ├── Dockerfile
+│   └── package.json
+├── frontend/                 # React 18 + Vite Frontend Application
+│   ├── src/
+│   │   ├── components/       # Shared UI, Layout, Modal, & Accessibility Components
+│   │   ├── contexts/         # Auth, Notification, & Theme Contexts
+│   │   ├── i18n/             # English & Vietnamese Translations (en.json, vi.json)
+│   │   ├── pages/            # Student, Admin, Auth, & Analytics Views
+│   │   ├── services/         # Axios API Service Modules
+│   │   └── setupTests.js     # Vitest Setup & RTL Testing Utilities
+│   ├── Dockerfile
+│   ├── nginx.conf
+│   └── package.json
+├── database/                 # MySQL Schema & Seed Data
+│   └── init.sql
+├── docker-compose.yml        # Full-Stack Orchestration (DB + Redis + Backend + Frontend)
+└── README.md
+```
 
 ---
 
 ## 🚀 Quick Start (Local Development)
 
 ### Prerequisites
-- Node.js 18+
-- MySQL 8.0 running locally
-- Redis running locally (for Rate Limiting)
+- **Node.js**: v18.0.0 or higher
+- **MySQL**: v8.0 running on `localhost:3306` (or `3307`)
+- **Redis**: Running on `localhost:6379` (for Rate Limiting)
 
 ### 1. Database Setup
-
+Import the database schema and default seeds:
 ```bash
-# Create database and run seed data
 mysql -u root -p < database/init.sql
 ```
 
-### 2. Backend
-
+### 2. Backend Setup
 ```bash
 cd backend
 
-# Copy and edit environment variables
+# Copy environment template
 cp .env.example .env
 
 # Install dependencies
 npm install
 
-# Start development server
+# Run dev server with Nodemon
 npm run dev
 ```
+Backend API runs at: `http://localhost:5000`
 
-Backend runs at: `http://localhost:5000`
-
-### 3. Frontend
-
+### 3. Frontend Setup
 ```bash
 cd frontend
 
-# Copy and edit environment variables
+# Copy environment template
 cp .env.example .env
 
 # Install dependencies
 npm install
 
-# Start development server
+# Start Vite dev server
 npm run dev
 ```
-
-Frontend runs at: `http://localhost:3000`
+Frontend Web App runs at: `http://localhost:3000`
 
 ---
 
-## 🐳 Docker (Full Stack)
+## 🐳 Docker Deployment (Full Stack)
+
+Launch the entire stack (MySQL + Redis + Backend + Frontend Nginx) with a single command:
 
 ```bash
-# Create an environment file at the root level
+# Copy root environment file
 cp backend/.env.example .env
 
-# Edit .env (at root level) with your secrets (including Turnstile keys)
-# TURNSTILE_SECRET_KEY=...
-# VITE_TURNSTILE_SITE_KEY=...
+# Edit .env with your environment credentials (Turnstile, Cloudinary, Google OAuth)
 
-# Build and start all services
+# Build and start containers in background
 docker-compose up --build -d
 ```
 
-Services:
-- **Frontend**: http://localhost:8080 (Mapped to port 80 internally)
-- **Backend API**: http://localhost:5000/api
-- **MySQL**: localhost:3307
-- **Redis**: internal only
+### Exposed Endpoints:
+- **Frontend App**: `http://localhost:8080` (Port 80 internally mapped via Nginx)
+- **Backend API**: `http://localhost:5000/api`
+- **MySQL DB**: `localhost:3307`
+- **Redis Cache**: Internal Docker network (`redis:6379`)
 
 ---
 
-## 🧪 Running Tests
+## 🧪 Automated Testing
 
-### Backend Tests (Jest + Supertest)
+### Backend Unit & Integration Tests (Jest + Supertest)
 ```bash
 cd backend
 npm test
 ```
-Tests cover: Authentication flows, Survey submission, Admin actions, Leaderboard, and Rate Limiting.
+*Tests cover: Registration & Login flows, Turnstile verification, Survey submissions, Admin RBAC guards, Leaderboard ranking, and Rate limit blockages.*
 
-### Frontend Tests (Vitest + React Testing Library)
+### Frontend Component Tests (Vitest + Testing Library)
 ```bash
 cd frontend
 npm test
 ```
-Tests cover: AuthContext, ProtectedRoutes, Form rendering, and Interactions.
+*Tests cover: AuthContext state management, ProtectedRoute authorization guards, Form validations, and Accessibility DOM rendering.*
 
 ---
 
-## 🔑 Default Demo Accounts
+## 🔑 Demo User Accounts
 
-> Password for all demo accounts: **`Admin@123456`**
+> **Default password for all demo accounts**: `Admin@123456`
 
-| Username | Role | Status |
+| Username | Role | Status | Description |
+|---|---|---|---|
+| `admin` | Admin | Approved | System Administrator with full access |
+| `nva_student` | Student | Approved | Active Student account |
+| `pcb_staff` | Staff | Approved | Active Staff account |
+| `ttb_student` | Student | Pending | Awaiting Admin Approval |
+| `lvc_student` | Student | Rejected | Account rejected by Admin |
+
+---
+
+## 👥 User Roles & Workflow
+
+```
+[User Registration] ➔ [Email Verification Link] ➔ [Account Status: Pending]
+                                                            │
+                                                   [Admin Review]
+                                                      ┌─────┴─────┐
+                                                      ▼           ▼
+                                                 [Approved]   [Rejected]
+                                                      │           │
+                                       (Full Access Enabled)  (Blocked)
+```
+
+| Role | Permissions & Capabilities |
+|---|---|
+| **Admin** | Create/manage surveys, inspect per-question analytics, review participation reports, import users via Excel, manage FAQs, view heatmaps, award points. |
+| **Student / Staff** | Take published surveys, geotag responses, submit participation reports with file evidence, earn badges, compete on leaderboards, download certificates. |
+
+---
+
+## 🏆 Gamification & Points Model
+
+| Activity | Reward / Trigger |
+|---|---|
+| **Complete Survey** | +10 Points |
+| **Admin Opinion Rating** | 0 to 10 Bonus Points |
+| **Approved Activity Report** | +50 Points |
+| **First Survey Badge** | Completed 1st Survey |
+| **Eco Warrior Badge** | Completed 10+ Surveys |
+| **Top 10 Badge** | Achieved Top 10 on Global Leaderboard |
+
+---
+
+## ⚙️ Environment Configuration
+
+Set the following keys in your `.env` file:
+
+| Key | Description | Default / Example |
 |---|---|---|
-| `admin` | Admin | Approved |
-| `nva_student` | Student | Approved |
-| `pcb_staff` | Staff | Approved |
-| `ttb_student` | Student | Pending |
-| `lvc_student` | Student | Rejected |
-
----
-
-## 👥 User Roles
-
-| Role | Capabilities |
-|---|---|
-| **Admin** | Manage users, create/publish surveys, review reports, manage FAQs, view analytics, export data |
-| **Student** | Take surveys, submit activity reports, view leaderboard & personal dashboard |
-| **Staff** | Same as Student |
-
-### Registration Flow
-1. User registers & completes Cloudflare Turnstile CAPTCHA.
-2. User receives an Email Verification link and verifies email.
-3. Account status becomes **Pending**.
-4. Admin reviews and **Approves** or **Rejects**.
-5. Approved users receive an email notification and can log in.
-
----
-
-## 🏆 Points System
-
-| Action | Points |
-|---|---|
-| Complete a survey | +10 points |
-| Survey opinion scored by Admin | 0 - 10 Bonus points |
-| Approved participation report | +50 points |
-
----
-
-## 🔧 Environment Variables (Root `.env`)
-
-When using Docker Compose, place the `.env` at the root folder:
-
-| Variable | Description |
-|---|---|
-| `DB_HOST` | MySQL host (use `db` in Docker) |
-| `DB_NAME` | Database name |
-| `MYSQL_ROOT_PASSWORD` | Root password for MySQL |
-| `JWT_SECRET` | JWT signing secret |
-| `JWT_REFRESH_SECRET` | Refresh token secret |
-| `OPENROUTER_API_KEY` | OpenRouter API key (optional) |
-| `SMTP_HOST` | Email server host (for real emails) |
-| `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile Backend Secret Key |
-| `VITE_TURNSTILE_SITE_KEY` | Cloudflare Turnstile Frontend Site Key |
-| `GOOGLE_CLIENT_ID` | Google OAuth Client ID |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret |
-| `CLIENT_URL` | Frontend URL for Google OAuth callback redirect (e.g. `http://localhost:8080`) |
+| `PORT` | Backend server port | `5000` |
+| `DB_HOST` | MySQL database host | `localhost` or `db` |
+| `DB_NAME` | Database name | `ecosurvey` |
+| `JWT_SECRET` | Secret key for access token | Min 32 chars |
+| `REDIS_URL` | Redis connection URL | `redis://localhost:6379` |
+| `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile Backend Secret | `0x4AAAAAA...` |
+| `VITE_TURNSTILE_SITE_KEY` | Cloudflare Turnstile Frontend Site Key | `0x4AAAAAA...` |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary Account Cloud Name | `your_cloud_name` |
+| `GOOGLE_CLIENT_ID` | Google OAuth Client ID | `xxx.apps.googleusercontent.com` |
 
 ---
 
 ## 📄 License
 
-This project is developed for educational purposes as part of an eProject assignment.
-
-## đây là PE chính
+This project is open-source under the [MIT License](LICENSE). Developed for educational and sustainability initiatives.
