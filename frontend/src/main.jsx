@@ -5,14 +5,18 @@ import { Toaster } from 'react-hot-toast'
 import App from './App'
 import { AuthProvider } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
+import { SocketProvider } from './contexts/SocketContext'
 import './index.css'
+import './i18n' // Import i18n configuration
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
-          <App />
+          <SocketProvider>
+            <App />
+          </SocketProvider>
           <Toaster
             position="top-right"
             toastOptions={{
@@ -23,7 +27,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 borderRadius: '12px',
                 padding: '12px 16px',
               },
-              success: { iconTheme: { primary: '#1a7f4b', secondary: '#fff' } },
+              success: { iconTheme: { primary: '#708238', secondary: '#fff' } },
               error:   { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
             }}
           />

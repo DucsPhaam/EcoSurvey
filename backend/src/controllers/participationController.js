@@ -73,9 +73,13 @@ exports.createParticipation = async (req, res) => {
 
     // Handle uploaded files
     if (req.files && req.files.length > 0) {
-      const fileRecords = req.files.map((f) => ({
+      const storageService = require('../services/storageService');
+      const uploadPromises = req.files.map(f => storageService.uploadBuffer(f.buffer, 'participations'));
+      const uploadResults = await Promise.all(uploadPromises);
+
+      const fileRecords = req.files.map((f, i) => ({
         participation_id: participation.id,
-        file_url:  `/uploads/${f.filename}`,
+        file_url:  uploadResults[i].secure_url,
         file_name: f.originalname,
         file_type: f.mimetype,
         file_size: f.size,
@@ -210,7 +214,7 @@ exports.reviewParticipation = async (req, res) => {
     }
 
     // In-app notification (trong transaction để nhất quán)
-    await Notification.create({
+    const notification = await Notification.create({
       user_id:        part.user_id,
       title:          status === 'Approved' ? 'Report Approved' : 'Report Rejected',
       message:        status === 'Approved'
@@ -220,7 +224,18 @@ exports.reviewParticipation = async (req, res) => {
       reference_id:   part.id,
     }, { transaction: t });
 
+    // Emit real-time notification
+    const socketService = require('../services/socketService');
+    socketService.emitToUser(part.user_id, 'new_notification', notification);
+
     await t.commit();
+
+    if (status === 'Approved') {
+      const badgeService = require('../services/badgeService');
+      badgeService.checkAndAwardBadges(part.user_id).catch(err => {
+        logger.error(`Error checking badges for user ${part.user_id} after participation approval:`, err);
+      });
+    }
 
     // Email là non-critical — gửi sau khi commit
     emailService.sendParticipationReviewEmail(

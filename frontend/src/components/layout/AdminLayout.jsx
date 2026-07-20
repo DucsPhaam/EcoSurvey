@@ -1,46 +1,44 @@
 import { Outlet, NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Users, ClipboardList,
-  FileText, HelpCircle, Menu, X, Leaf,
+  FileText, HelpCircle, Leaf,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import Navbar from './Navbar'
 import FAQChatWidget from '../features/FAQChatWidget'
 
-const navItems = [
-  { to: '/admin',              label: 'Dashboard',     icon: LayoutDashboard, end: true },
-  { to: '/admin/users',        label: 'Users',         icon: Users },
-  { to: '/admin/surveys',      label: 'Surveys',       icon: ClipboardList },
-  { to: '/admin/participations', label: 'Reports',     icon: FileText },
-  { to: '/admin/faqs',         label: 'FAQs',          icon: HelpCircle },
-]
-
 export default function AdminLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const { t } = useTranslation('nav')
+
+  const navItems = [
+    { to: '/admin',              label: t('dashboard'),     icon: LayoutDashboard, end: true },
+    { to: '/admin/users',        label: t('users'),         icon: Users },
+    { to: '/admin/surveys',      label: t('surveys'),       icon: ClipboardList },
+    { to: '/admin/participations', label: t('participations'),     icon: FileText },
+    { to: '/admin/faqs',         label: t('faqs'),          icon: HelpCircle },
+  ]
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
+    <div className="min-h-screen bg-earth-paper flex flex-col">
       <Navbar />
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1">
         {/* Sidebar */}
-        <aside className={`${sidebarOpen ? 'w-64' : 'w-0 overflow-hidden'} transition-all duration-300 
-          bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 
-          flex-shrink-0 hidden lg:block`}>
+        <aside className="w-64 bg-earth-cream border-r-[3px] border-earth-ink flex-shrink-0 hidden lg:block" role="complementary" aria-label="Admin sidebar">
           <div className="p-6">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-accent-400 flex items-center justify-center">
-                <Leaf className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 bg-earth-forest border-[3px] border-earth-ink flex items-center justify-center">
+                <Leaf className="w-4 h-4 text-earth-cream" aria-hidden="true" />
               </div>
-              <span className="font-display font-bold text-brand-700 dark:text-brand-400">Admin Panel</span>
+              <span className="ui-title text-earth-forest">{t('adminPanel')}</span>
             </div>
-            <p className="text-xs text-gray-400 mb-6">EcoSurvey Management</p>
-            <nav className="space-y-1">
+            <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60 mb-6">{t('management')}</p>
+            <nav className="space-y-1" aria-label="Admin navigation">
               {navItems.map(({ to, label, icon: Icon, end }) => (
                 <NavLink
                   key={to} to={to} end={end}
                   className={({ isActive }) => isActive ? 'sidebar-link-active' : 'sidebar-link'}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-4 h-4" aria-hidden="true" />
                   {label}
                 </NavLink>
               ))}
@@ -49,7 +47,7 @@ export default function AdminLayout() {
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 overflow-auto">
+        <main id="main-content" className="flex-1 overflow-auto">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <Outlet />
           </div>

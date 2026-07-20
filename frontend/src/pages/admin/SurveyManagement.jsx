@@ -1,29 +1,27 @@
 import { useEffect, useState } from 'react'
-import { Plus, Edit3, Trash2, Download, Eye, ClipboardList, Search, Globe } from 'lucide-react'
-import api from '../../services/axiosInstance'
+import { Plus, Edit3, Trash2, Download, Eye, ClipboardList, Search, Globe, Star, BarChart2 } from 'lucide-react'
+import { adminService } from '../../services/adminService'
+import { exportService, downloadBlob } from '../../services/exportService'
 import { SpinnerPage } from '../../components/ui/Spinner'
 import Pagination from '../../components/ui/Pagination'
 import Modal from '../../components/ui/Modal'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 
-const downloadFile = async (url, filename) => {
+const downloadFile = async (fn, filename, t) => {
   try {
-    const res = await api.get(url, { responseType: 'blob' })
-    const blob = new Blob([res.data], { type: res.headers['content-type'] })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = filename
-    link.click()
-    URL.revokeObjectURL(link.href)
+    const res = await fn()
+    downloadBlob(res.data, filename)
   } catch (err) {
-    toast.error(err.response?.data?.message || 'Export failed.')
+    toast.error(err.response?.data?.message || t('surveyManagement.exportFailed'))
   }
 }
 
 const STATUS_BADGE = { Draft: 'badge-draft', Published: 'badge-published', Closed: 'badge-closed' }
 
 export default function SurveyManagement() {
+  const { t } = useTranslation('admin')
   const [surveys, setSurveys]   = useState([])
   const [loading, setLoading]   = useState(true)
   const [search, setSearch]     = useState('')
@@ -39,7 +37,7 @@ export default function SurveyManagement() {
   const fetch = async (p = 1) => {
     setLoading(true)
     try {
-      const res = await api.get('/admin/surveys', { params: { page: p, limit: 10, search: search || undefined, status: statusF || undefined } })
+      const res = await adminService.getSurveys({ page: p, limit: 10, search: search || undefined, status: statusF || undefined })
       setSurveys(res.data.surveys); setTotal(res.data.total); setTotalPages(res.data.totalPages)
     } catch { /* ignore */ } finally { setLoading(false) }
   }
@@ -49,46 +47,46 @@ export default function SurveyManagement() {
   const handleSearch = (e) => { e.preventDefault(); setPage(1); fetch(1) }
 
   const createSurvey = async () => {
-    if (!form.title || !form.start_date || !form.end_date) { toast.error('Title, start and end date required.'); return }
+    if (!form.title || !form.start_date || !form.end_date) { toast.error(t('surveyManagement.reqFields')); return }
     setActionLoading(true)
     try {
-      await api.post('/admin/surveys', form)
-      toast.success('Survey created.')
+      await adminService.createSurvey(form)
+      toast.success(t('surveyManagement.created'))
       setCreateModal(false)
       setForm({ title: '', description: '', target_role: 'All', start_date: '', end_date: '', status: 'Draft' })
       fetch(1)
-    } catch (err) { toast.error(err.response?.data?.message || 'Failed to create survey.') }
+    } catch (err) { toast.error(err.response?.data?.message || t('surveyManagement.createFailed')) }
     finally { setActionLoading(false) }
   }
 
   const deleteSurvey = async (id) => {
     setActionLoading(true)
     try {
-      await api.delete(`/admin/surveys/${id}`)
-      toast.success('Survey deleted.')
+      await adminService.deleteSurvey(id)
+      toast.success(t('surveyManagement.deleted'))
       setDeleteModal(null)
       fetch(page)
-    } catch (err) { toast.error(err.response?.data?.message || 'Cannot delete survey.') }
+    } catch (err) { toast.error(err.response?.data?.message || t('surveyManagement.deleteFailed')) }
     finally { setActionLoading(false) }
   }
 
   const quickStatus = async (id, status) => {
     try {
-      await api.patch(`/admin/surveys/${id}`, { status })
-      toast.success(`Survey ${status.toLowerCase()}.`)
+      await adminService.updateSurvey(id, { status })
+      toast.success(status === 'Published' ? t('surveyManagement.published') : t('surveyManagement.closed'))
       fetch(page)
-    } catch (err) { toast.error(err.response?.data?.message || 'Update failed.') }
+    } catch (err) { toast.error(err.response?.data?.message || t('surveyManagement.updateFailed')) }
   }
 
   return (
     <div className="animate-fade-in">
       <div className="page-header flex items-start justify-between">
         <div>
-          <h1 className="page-title flex items-center gap-3"><ClipboardList className="w-7 h-7 text-brand-600" /> Survey Management</h1>
-          <p className="page-subtitle">{total} surveys total.</p>
+          <h1 className="page-title flex items-center gap-3"><ClipboardList className="w-7 h-7 text-brand-600" /> {t('surveyManagement.title')}</h1>
+          <p className="page-subtitle">{t('surveyManagement.totalSurveys', { total })}</p>
         </div>
         <button onClick={() => setCreateModal(true)} className="btn-primary">
-          <Plus className="w-4 h-4" /> New Survey
+          <Plus className="w-4 h-4" /> {t('surveyManagement.newSurvey')}
         </button>
       </div>
 
@@ -97,13 +95,15 @@ export default function SurveyManagement() {
         <form onSubmit={handleSearch} className="flex gap-2 flex-1 min-w-48">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search surveys…" className="input pl-9 py-2" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('surveyManagement.searchPlaceholder')} className="input pl-9 py-2" />
           </div>
-          <button type="submit" className="btn-primary py-2 px-4 text-sm">Search</button>
+          <button type="submit" className="btn-primary py-2 px-4 text-sm">{t('surveyManagement.searchBtn')}</button>
         </form>
         <select value={statusF} onChange={(e) => { setStatusF(e.target.value); setPage(1) }} className="input py-2 w-auto">
-          <option value="">All Statuses</option>
-          <option>Draft</option><option>Published</option><option>Closed</option>
+          <option value="">{t('surveyManagement.allStatuses')}</option>
+          <option value="Draft">{t('surveyManagement.draft')}</option>
+          <option value="Published">{t('surveyManagement.published')}</option>
+          <option value="Closed">{t('surveyManagement.closed')}</option>
         </select>
       </div>
 
@@ -112,13 +112,13 @@ export default function SurveyManagement() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-800/50">
-                <tr>{['Survey', 'Target', 'Status', 'Questions', 'Responses', 'Period', 'Actions'].map((h) => (
+                <tr>{[t('surveyManagement.tableSurvey'), t('surveyManagement.tableTarget'), t('surveyManagement.tableStatus'), t('surveyManagement.tableQuestions'), t('surveyManagement.tableResponses'), t('surveyManagement.tablePeriod'), t('surveyManagement.tableActions')].map((h) => (
                   <th key={h} className="table-header">{h}</th>
                 ))}</tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {surveys.length === 0 ? (
-                  <tr><td colSpan={7} className="py-12 text-center text-gray-400">No surveys found.</td></tr>
+                  <tr><td colSpan={7} className="py-12 text-center text-gray-400">{t('surveyManagement.noSurveys')}</td></tr>
                 ) : surveys.map((s) => (
                   <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                     <td className="table-cell max-w-56">
@@ -127,10 +127,10 @@ export default function SurveyManagement() {
                     </td>
                     <td className="table-cell">
                       <span className="flex items-center gap-1 text-xs text-gray-500">
-                        <Globe className="w-3 h-3" /> {s.target_role}
+                        <Globe className="w-3 h-3" /> {s.target_role === 'All' ? t('surveyManagement.modalAll') : s.target_role === 'Student' ? t('surveyManagement.modalStudent') : t('surveyManagement.modalStaff')}
                       </span>
                     </td>
-                    <td className="table-cell"><span className={STATUS_BADGE[s.status]}>{s.status}</span></td>
+                    <td className="table-cell"><span className={STATUS_BADGE[s.status]}>{s.status === 'Draft' ? t('surveyManagement.draft') : s.status === 'Published' ? t('surveyManagement.published') : t('surveyManagement.closed')}</span></td>
                     <td className="table-cell text-center text-sm font-medium">{s.question_count || 0}</td>
                     <td className="table-cell text-center text-sm font-medium">{s.response_count || 0}</td>
                     <td className="table-cell text-xs text-gray-400">
@@ -140,28 +140,39 @@ export default function SurveyManagement() {
                     <td className="table-cell">
                       <div className="flex items-center gap-1">
                         <Link to={`/admin/surveys/${s.id}/edit`}
-                          className="p-1.5 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-900/20 text-gray-400 hover:text-brand-600 transition-colors" title="Edit">
+                          className="p-1.5 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-900/20 text-gray-400 hover:text-brand-600 transition-colors" title={t('surveyManagement.edit')}>
                           <Edit3 className="w-4 h-4" />
                         </Link>
+                        <Link to={`/admin/surveys/${s.id}/analytics`}
+                          className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-400 hover:text-blue-600 transition-colors" title={t('surveyManagement.analytics')}>
+                          <BarChart2 className="w-4 h-4" />
+                        </Link>
+                        {/* Chấm điểm — chỉ hiện khi survey có bài làm */}
+                        {(s.response_count > 0) && (
+                          <Link to={`/admin/surveys/${s.id}/grade`}
+                            className="p-1.5 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 text-gray-400 hover:text-amber-500 transition-colors" title={t('surveyManagement.gradeOpinion')}>
+                            <Star className="w-4 h-4" />
+                          </Link>
+                        )}
                         {s.status === 'Draft' && (
                           <button onClick={() => quickStatus(s.id, 'Published')}
                             className="px-2 py-1 rounded-lg text-xs font-medium bg-green-50 dark:bg-green-900/20 text-green-600 hover:bg-green-100 transition-colors">
-                            Publish
+                            {t('surveyManagement.publish')}
                           </button>
                         )}
                         {s.status === 'Published' && (
                           <button onClick={() => quickStatus(s.id, 'Closed')}
                             className="px-2 py-1 rounded-lg text-xs font-medium bg-purple-50 dark:bg-purple-900/20 text-purple-600 hover:bg-purple-100 transition-colors">
-                            Close
+                            {t('surveyManagement.close')}
                           </button>
                         )}
                         <button
-                          onClick={() => downloadFile(`/export/surveys/${s.id}/excel`, `survey_${s.id}_results.xlsx`)}
-                          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 transition-colors" title="Export Excel">
+                          onClick={() => downloadFile(() => exportService.exportSurveyExcel(s.id), `survey_${s.id}_results.xlsx`, t)}
+                          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 transition-colors" title={t('surveyManagement.exportExcel')}>
                           <Download className="w-4 h-4" />
                         </button>
                         <button onClick={() => setDeleteModal(s)}
-                          className="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-colors" title="Delete">
+                          className="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-colors" title={t('surveyManagement.delete')}>
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -177,57 +188,62 @@ export default function SurveyManagement() {
       <Pagination page={page} totalPages={totalPages} onPageChange={(p) => { setPage(p); fetch(p) }} />
 
       {/* Create modal */}
-      <Modal isOpen={createModal} onClose={() => setCreateModal(false)} title="Create New Survey" size="lg">
+      <Modal isOpen={createModal} onClose={() => setCreateModal(false)} title={t('surveyManagement.modalCreateTitle')} size="lg">
         <div className="space-y-4">
           <div>
-            <label className="label">Title <span className="text-red-400">*</span></label>
-            <input type="text" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Survey title…" className="input" />
+            <label className="label">{t('surveyManagement.modalTitle')} <span className="text-red-400">*</span></label>
+            <input type="text" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t('surveyManagement.modalTitlePlaceholder')} className="input" />
           </div>
           <div>
-            <label className="label">Description</label>
-            <textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Describe the survey purpose…" className="input resize-none" />
+            <label className="label">{t('surveyManagement.modalDesc')}</label>
+            <textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={t('surveyManagement.modalDescPlaceholder')} className="input resize-none" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Target Audience</label>
+              <label className="label">{t('surveyManagement.modalTarget')}</label>
               <select value={form.target_role} onChange={(e) => setForm({ ...form, target_role: e.target.value })} className="input">
-                <option>All</option><option>Student</option><option>Staff</option>
+                <option value="All">{t('surveyManagement.modalAll')}</option>
+                <option value="Student">{t('surveyManagement.modalStudent')}</option>
+                <option value="Staff">{t('surveyManagement.modalStaff')}</option>
               </select>
             </div>
             <div>
-              <label className="label">Initial Status</label>
+              <label className="label">{t('surveyManagement.modalInitStatus')}</label>
               <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="input">
-                <option>Draft</option><option>Published</option>
+                <option value="Draft">{t('surveyManagement.draft')}</option>
+                <option value="Published">{t('surveyManagement.published')}</option>
               </select>
             </div>
             <div>
-              <label className="label">Start Date <span className="text-red-400">*</span></label>
+              <label className="label">{t('surveyManagement.modalStartDate')} <span className="text-red-400">*</span></label>
               <input type="datetime-local" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="input" />
             </div>
             <div>
-              <label className="label">End Date <span className="text-red-400">*</span></label>
+              <label className="label">{t('surveyManagement.modalEndDate')} <span className="text-red-400">*</span></label>
               <input type="datetime-local" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} className="input" />
             </div>
           </div>
           <div className="flex gap-3 pt-2">
-            <button onClick={() => setCreateModal(false)} className="btn-secondary flex-1">Cancel</button>
+            <button onClick={() => setCreateModal(false)} className="btn-secondary flex-1">{t('surveyManagement.modalCancel')}</button>
             <button onClick={createSurvey} disabled={actionLoading} className="btn-primary flex-1">
-              {actionLoading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Create Survey'}
+              {actionLoading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t('surveyManagement.modalCreateBtn')}
             </button>
           </div>
         </div>
       </Modal>
 
       {/* Delete confirm */}
-      <Modal isOpen={!!deleteModal} onClose={() => setDeleteModal(null)} title="Delete Survey" size="sm">
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Delete "<strong>{deleteModal?.title}</strong>"?</p>
+      <Modal isOpen={!!deleteModal} onClose={() => setDeleteModal(null)} title={t('surveyManagement.modalDelTitle')} size="sm">
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4" dangerouslySetInnerHTML={{ __html: t('surveyManagement.modalDelConfirm', { title: deleteModal?.title }) }}></p>
         {deleteModal?.response_count > 0 && (
-          <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-xl mb-4">⚠️ This survey has {deleteModal.response_count} responses. Close it instead of deleting to preserve data.</p>
+          <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-xl mb-4">
+            {t('surveyManagement.modalDelWarning', { count: deleteModal.response_count })}
+          </p>
         )}
         <div className="flex gap-3">
-          <button onClick={() => setDeleteModal(null)} className="btn-secondary flex-1">Cancel</button>
+          <button onClick={() => setDeleteModal(null)} className="btn-secondary flex-1">{t('surveyManagement.modalCancel')}</button>
           <button onClick={() => deleteSurvey(deleteModal.id)} disabled={actionLoading} className="btn-danger flex-1">
-            {actionLoading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Delete'}
+            {actionLoading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t('surveyManagement.modalDelBtn')}
           </button>
         </div>
       </Modal>

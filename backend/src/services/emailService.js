@@ -75,3 +75,51 @@ exports.sendParticipationReviewEmail = async (email, fullName, eventName, status
            <br><p>— EcoSurvey Team</p>`,
   });
 };
+
+exports.sendForgotPasswordEmail = async (email, fullName, resetUrl) => {
+  await sendMail({
+    to: email,
+    subject: 'EcoSurvey — Đặt lại mật khẩu',
+    html: `
+      <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px;">
+        <h2 style="color:#2d5a27;">EcoSurvey — Đặt lại mật khẩu</h2>
+        <p>Xin chào <strong>${fullName}</strong>,</p>
+        <p>Chúng tôi đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>
+        <p>Nhấn vào nút bên dưới để tạo mật khẩu mới. Liên kết sẽ hết hạn sau <strong>15 phút</strong>.</p>
+        <div style="text-align:center;margin:32px 0;">
+          <a href="${resetUrl}"
+             style="background:#2d5a27;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;">
+            Đặt lại mật khẩu
+          </a>
+        </div>
+        <p style="color:#666;font-size:13px;">Nếu bạn không yêu cầu điều này, hãy bỏ qua email này. Mật khẩu của bạn sẽ không thay đổi.</p>
+        <p style="color:#666;font-size:12px;">Liên kết: <a href="${resetUrl}">${resetUrl}</a></p>
+        <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
+        <p style="color:#aaa;font-size:12px;">— EcoSurvey Team</p>
+      </div>`,
+  });
+};
+
+exports.sendEmailVerificationEmail = async (email, fullName, verifyUrl) => {
+  await sendMail({
+    to: email,
+    subject: 'EcoSurvey — Xác minh địa chỉ email',
+    html: `
+      <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px;">
+        <h2 style="color:#2d5a27;">EcoSurvey — Xác minh Email</h2>
+        <p>Xin chào <strong>${fullName}</strong>,</p>
+        <p>Cảm ơn bạn đã đăng ký tài khoản EcoSurvey! Vui lòng xác minh địa chỉ email của bạn.</p>
+        <div style="text-align:center;margin:32px 0;">
+          <a href="${verifyUrl}"
+             style="background:#2d5a27;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;">
+            Xác minh Email
+          </a>
+        </div>
+        <p style="color:#666;font-size:13px;">Liên kết xác minh có hiệu lực trong <strong>24 giờ</strong>.</p>
+        <p style="color:#666;font-size:12px;">Liên kết: <a href="${verifyUrl}">${verifyUrl}</a></p>
+        <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
+        <p style="color:#aaa;font-size:12px;">— EcoSurvey Team</p>
+      </div>`,
+  });
+};
+

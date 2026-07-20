@@ -40,6 +40,89 @@ exports.getUsers = async (req, res) => {
   }
 };
 
+// ── POST /api/admin/users/import ─────────────────────────────
+const ExcelJS = require('exceljs');
+const bcrypt = require('bcrypt');
+
+exports.importUsers = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No Excel file provided.' });
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(req.file.buffer);
+    
+    // Assume data is in the first worksheet
+    const worksheet = workbook.worksheets[0];
+    if (!worksheet) {
+      return res.status(400).json({ message: 'Excel file is empty.' });
+    }
+
+    let successful = 0;
+    let failed = 0;
+    const errors = [];
+
+    // Iterate starting from row 2 (assuming row 1 is headers)
+    for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
+      const row = worksheet.getRow(rowNumber);
+      // Skip empty rows
+      if (!row.hasValues) continue;
+
+      // Map columns (adjust indices if needed based on plan: 1: FullName, 2: Username, 3: Email, 4: Password, 5: Role, 6: ID, 7: Class, 8: Dept)
+      const full_name = row.getCell(1).text?.trim();
+      const username = row.getCell(2).text?.trim();
+      const email = row.getCell(3).text?.trim();
+      const password = row.getCell(4).text?.trim();
+      let role = row.getCell(5).text?.trim() || 'Student';
+      const student_staff_id = row.getCell(6).text?.trim() || null;
+      const class_name = row.getCell(7).text?.trim() || null;
+      const department = row.getCell(8).text?.trim() || null;
+
+      if (!full_name || !username || !email || !password) {
+        failed++;
+        errors.push(`Row ${rowNumber}: Missing required fields.`);
+        continue;
+      }
+
+      if (!['Student', 'Staff', 'Admin'].includes(role)) {
+        role = 'Student'; // Default fallback
+      }
+
+      try {
+        const password_hash = await bcrypt.hash(password, 10);
+        await User.create({
+          full_name,
+          username,
+          email,
+          password_hash,
+          role,
+          status: 'Approved', // Auto-approve imported users
+          student_staff_id,
+          class_name,
+          department,
+          email_verified: true, // Imported users are considered verified
+        });
+        successful++;
+      } catch (err) {
+        failed++;
+        // likely a unique constraint error (username or email already exists)
+        errors.push(`Row ${rowNumber}: ${err.errors?.[0]?.message || 'Database error'}`);
+      }
+    }
+
+    res.json({
+      message: `Import completed. ${successful} created, ${failed} failed.`,
+      successful,
+      failed,
+      errors: errors.slice(0, 10), // Send only first 10 errors to avoid huge payloads
+    });
+  } catch (err) {
+    logger.error('importUsers error:', err);
+    res.status(500).json({ message: 'Failed to process Excel file.' });
+  }
+};
+
 // ── PATCH /api/admin/users/:id/status ─────────────────────────
 exports.updateUserStatus = async (req, res) => {
   try {

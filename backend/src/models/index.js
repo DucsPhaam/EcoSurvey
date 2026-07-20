@@ -9,6 +9,8 @@ const ParticipationFile= require('./ParticipationFile');
 const PointLog         = require('./PointLog');
 const FAQ              = require('./FAQ');
 const Notification     = require('./Notification');
+const Badge            = require('./Badge');
+const UserBadge        = require('./UserBadge');
 
 // ── User associations ─────────────────────────────────────────
 User.hasMany(RefreshToken,     { foreignKey: 'user_id', as: 'refreshTokens' });
@@ -17,6 +19,7 @@ User.hasMany(SurveyResponse,   { foreignKey: 'user_id', as: 'surveyResponses' })
 User.hasMany(Participation,    { foreignKey: 'user_id', as: 'participations' });
 User.hasMany(PointLog,         { foreignKey: 'user_id', as: 'pointLogs' });
 User.hasMany(Notification,     { foreignKey: 'user_id', as: 'notifications' });
+User.belongsToMany(Badge,      { through: UserBadge, foreignKey: 'user_id', as: 'badges' });
 
 RefreshToken.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
@@ -51,9 +54,15 @@ PointLog.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 // ── Notification associations ─────────────────────────────────
 Notification.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
+// ── Badge associations ────────────────────────────────────────
+Badge.belongsToMany(User, { through: UserBadge, foreignKey: 'badge_id', as: 'users' });
+
+UserBadge.belongsTo(User,  { foreignKey: 'user_id' });
+UserBadge.belongsTo(Badge, { foreignKey: 'badge_id' });
+
 module.exports = {
   User, RefreshToken, Survey, Question,
   SurveyResponse, SurveyAnswer,
   Participation, ParticipationFile,
-  PointLog, FAQ, Notification,
+  PointLog, FAQ, Notification, Badge, UserBadge
 };

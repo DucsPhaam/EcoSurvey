@@ -1,15 +1,23 @@
-import axios from 'axios'
 
+import axios from 'axios'
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
   withCredentials: true, // send cookies (refresh token)
   timeout: 30000,
 })
 
+// Request interceptor to ensure token is attached immediately
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('ecosurvey_token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
 // Refresh token interceptor
 let isRefreshing = false
 let failedQueue = []
-
 const processQueue = (error, token = null) => {
   failedQueue.forEach((prom) => {
     if (error) prom.reject(error)
@@ -17,13 +25,13 @@ const processQueue = (error, token = null) => {
   })
   failedQueue = []
 }
-
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const originalRequest = error.config
-
-    if (error.response?.status === 401 && !originalRequest._retry && error.response?.data?.code === 'TOKEN_EXPIRED') {
+    // Skip interceptor for login and refresh endpoints
+    const isAuthRoute = originalRequest.url.includes('/auth/login') || originalRequest.url.includes('/auth/refresh')
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject })
@@ -35,7 +43,6 @@ api.interceptors.response.use(
 
       originalRequest._retry = true
       isRefreshing = true
-
       try {
         const res = await api.post('/auth/refresh')
         const newToken = res.data.accessToken
@@ -55,9 +62,10 @@ api.interceptors.response.use(
         isRefreshing = false
       }
     }
-
     return Promise.reject(error)
   }
 )
-
 export default api
+
+
+

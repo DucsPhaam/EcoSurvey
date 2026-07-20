@@ -67,3 +67,70 @@ exports.getMe = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch user profile.' });
   }
 };
+
+// GET /api/users/me/points
+exports.getPointHistory = async (req, res) => {
+  try {
+    const { PointLog } = require('../models');
+    const logs = await PointLog.findAll({
+      where: { user_id: req.user.id },
+      order: [['created_at', 'DESC']],
+      limit: 50
+    });
+    res.json({ logs });
+  } catch (err) {
+    logger.error('getPointHistory error:', err);
+    res.status(500).json({ message: 'Failed to fetch point history.' });
+  }
+};
+
+// POST /api/users/me/avatar
+exports.uploadAvatar = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded.' });
+    }
+    const storageService = require('../services/storageService');
+    const result = await storageService.uploadBuffer(req.file.buffer, 'avatars');
+    
+    await User.update({ avatar_url: result.secure_url }, { where: { id: req.user.id } });
+    res.json({ message: 'Avatar updated successfully.', avatar_url: result.secure_url });
+  } catch (err) {
+    logger.error('uploadAvatar error:', err);
+    res.status(500).json({ message: 'Failed to upload avatar.' });
+  }
+};
+
+// GET /api/users/me/badges
+exports.getBadges = async (req, res) => {
+  try {
+    const { Badge, UserBadge } = require('../models');
+    
+    // Get all available badges
+    const allBadges = await Badge.findAll({ order: [['id', 'ASC']] });
+    
+    // Get badges earned by user
+    const earnedBadges = await UserBadge.findAll({
+      where: { user_id: req.user.id }
+    });
+    const earnedBadgeIds = new Set(earnedBadges.map(ub => ub.badge_id));
+
+    // Map to include earned status and earned_at date
+    const badgesWithStatus = allBadges.map(b => {
+      const earned = earnedBadges.find(ub => ub.badge_id === b.id);
+      return {
+        id: b.id,
+        name: b.name,
+        icon_emoji: b.icon_emoji,
+        description: b.description,
+        is_earned: !!earned,
+        earned_at: earned ? earned.earned_at : null
+      };
+    });
+
+    res.json({ badges: badgesWithStatus });
+  } catch (err) {
+    logger.error('getBadges error:', err);
+    res.status(500).json({ message: 'Failed to fetch badges.' });
+  }
+};

@@ -1,11 +1,14 @@
 const router = require('express').Router();
 const { authenticate } = require('../middleware/authMiddleware');
-const { generalLimiter } = require('../middleware/rateLimitMiddleware');
+const { surveySubmitLimiter } = require('../middleware/rateLimitMiddleware');
 const surveyCtrl = require('../controllers/surveyController');
+
+const { verifyCaptcha } = require('../middleware/captchaMiddleware');
 
 router.get('/',            authenticate, surveyCtrl.getSurveys);
 router.get('/:id',         authenticate, surveyCtrl.getSurveyDetail);
-// FIX #20: Thêm generalLimiter cho submit endpoint để chống flood request
-router.post('/:id/submit', authenticate, generalLimiter, surveyCtrl.submitSurvey);
+// Anti-spam: 5 submits/minute per user + CAPTCHA
+router.post('/:id/submit', authenticate, surveySubmitLimiter, verifyCaptcha, surveyCtrl.submitSurvey);
 
 module.exports = router;
+

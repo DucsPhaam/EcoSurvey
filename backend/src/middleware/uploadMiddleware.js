@@ -18,18 +18,7 @@ const EXTENSION_MIME_MAP = {
   '.pdf':  ['application/pdf'],
 };
 
-// Ensure upload directory exists
-const uploadDir = path.join(__dirname, '..', '..', process.env.UPLOAD_DIR || 'uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDir),
-  filename: (_req, file, cb) => {
-    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, `${unique}${path.extname(file.originalname).toLowerCase()}`);
-  },
-});
-
+const storage = multer.memoryStorage();
 const fileFilter = (_req, file, cb) => {
   const ext = path.extname(file.originalname).toLowerCase();
   const allowedMimes = EXTENSION_MIME_MAP[ext];

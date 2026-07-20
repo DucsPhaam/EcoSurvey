@@ -31,6 +31,7 @@ exports.register = async (req, res) => {
     const {
       full_name, username, email, password, confirm_password,
       role, student_staff_id, class_name, department, joined_date,
+      google_id
     } = req.body;
 
     if (!full_name || !username || !email || !password || !confirm_password || !role) {
@@ -62,6 +63,8 @@ exports.register = async (req, res) => {
       student_staff_id, class_name, department,
       joined_date: joined_date || null,
       status: 'Pending',
+      google_id: google_id || null,
+      auth_provider: google_id ? 'google' : 'local'
     });
 
     emailService.sendRegistrationEmail(email, full_name).catch(logger.error);
@@ -114,8 +117,8 @@ exports.login = async (req, res) => {
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production' && !process.env.CLIENT_URL?.includes('localhost'),
+      sameSite: process.env.NODE_ENV === 'production' && !process.env.CLIENT_URL?.includes('localhost') ? 'strict' : 'lax',
       maxAge: REFRESH_DAYS * 86400 * 1000,
     });
 
@@ -142,7 +145,8 @@ exports.login = async (req, res) => {
 exports.refresh = async (req, res) => {
   try {
     const raw = req.cookies?.refreshToken;
-    if (!raw) return res.status(401).json({ message: 'No refresh token found.' });
+    logger.info(`[Auth Refresh] Received cookies:`, req.cookies);
+    if (!raw) return res.status(401).json({ message: 'Refresh token missing.' });
 
     const hash = crypto.createHash('sha256').update(raw).digest('hex');
     const stored = await RefreshToken.findOne({ where: { token_hash: hash } });
@@ -179,3 +183,159 @@ exports.logout = async (req, res) => {
     res.status(500).json({ message: 'Server error during logout.' });
   }
 };
+
+// POST /api/auth/forgot-password
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email là bắt buộc.' });
+
+    const user = await User.findOne({ where: { email } });
+    // Always respond success to prevent email enumeration
+    if (!user) return res.json({ message: 'Nếu email tồn tại, chúng tôi đã gửi liên kết đặt lại mật khẩu.' });
+
+    // Generate secure token
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    await user.update({
+      reset_password_token: tokenHash,
+      reset_password_expires: expires,
+    });
+
+    const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:8080'}/reset-password?token=${rawToken}&email=${encodeURIComponent(email)}`;
+    emailService.sendForgotPasswordEmail(email, user.full_name, resetUrl).catch(logger.error);
+
+    res.json({ message: 'Nếu email tồn tại, chúng tôi đã gửi liên kết đặt lại mật khẩu.' });
+  } catch (err) {
+    logger.error('forgotPassword error:', err);
+    res.status(500).json({ message: 'Lỗi máy chủ.' });
+  }
+};
+
+// POST /api/auth/reset-password
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token, email, password, confirm_password } = req.body;
+    if (!token || !email || !password || !confirm_password) {
+      return res.status(400).json({ message: 'Thiếu thông tin bắt buộc.' });
+    }
+    if (password !== confirm_password) {
+      return res.status(400).json({ message: 'Mật khẩu xác nhận không khớp.' });
+    }
+    if (password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+      return res.status(400).json({ message: 'Mật khẩu phải ít nhất 8 ký tự, có chữ hoa và chữ số.' });
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const user = await User.findOne({ where: { email, reset_password_token: tokenHash } });
+
+    if (!user) return res.status(400).json({ message: 'Liên kết đặt lại mật khẩu không hợp lệ.' });
+    if (new Date(user.reset_password_expires) < new Date()) {
+      return res.status(400).json({ message: 'Liên kết đặt lại mật khẩu đã hết hạn. Vui lòng thử lại.' });
+    }
+
+    const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
+    await user.update({
+      password_hash,
+      reset_password_token: null,
+      reset_password_expires: null,
+    });
+    // Revoke all refresh tokens for security
+    await RefreshToken.update({ revoked: true }, { where: { user_id: user.id } });
+
+    res.json({ message: 'Mật khẩu đã được đặt lại thành công. Vui lòng đăng nhập lại.' });
+  } catch (err) {
+    logger.error('resetPassword error:', err);
+    res.status(500).json({ message: 'Lỗi máy chủ.' });
+  }
+};
+
+// POST /api/auth/send-verification
+exports.sendVerificationEmail = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id);
+    if (!user) return res.status(404).json({ message: 'Tài khoản không tồn tại.' });
+    if (user.email_verified) return res.json({ message: 'Email đã được xác minh.' });
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    await user.update({ email_verify_token: tokenHash });
+
+    const verifyUrl = `${process.env.CLIENT_URL || 'http://localhost:8080'}/verify-email?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
+    emailService.sendEmailVerificationEmail(user.email, user.full_name, verifyUrl).catch(logger.error);
+
+    res.json({ message: 'Email xác minh đã được gửi.' });
+  } catch (err) {
+    logger.error('sendVerificationEmail error:', err);
+    res.status(500).json({ message: 'Lỗi máy chủ.' });
+  }
+};
+
+// GET /api/auth/verify-email?token=xxx&email=xxx
+exports.verifyEmail = async (req, res) => {
+  try {
+    const { token, email } = req.query;
+    if (!token || !email) return res.status(400).json({ message: 'Thiếu thông tin xác minh.' });
+
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const user = await User.findOne({ where: { email, email_verify_token: tokenHash } });
+
+    if (!user) return res.status(400).json({ message: 'Liên kết xác minh không hợp lệ hoặc đã được dùng.' });
+
+    await user.update({ email_verified: true, email_verify_token: null });
+    res.json({ message: 'Email đã được xác minh thành công!' });
+  } catch (err) {
+    logger.error('verifyEmail error:', err);
+    res.status(500).json({ message: 'Lỗi máy chủ.' });
+  }
+};
+
+// GET /api/auth/google/callback
+exports.googleCallback = async (req, res) => {
+  try {
+    const user = req.user;
+    const clientUrl = (process.env.CLIENT_URL || 'http://localhost:8080').replace(/\/+$/, '');
+
+    if (user.isNewGoogleUser) {
+      // Redirect to registration page with pre-filled details
+      const params = new URLSearchParams({
+        email: user.email || '',
+        name: user.full_name || '',
+        google_id: user.google_id || ''
+      });
+      return res.redirect(`${clientUrl}/register?${params.toString()}`);
+    }
+
+    // Account exists, check status
+    if (user.status === 'Pending') {
+      return res.redirect(`${clientUrl}/login?error=pending`);
+    }
+    if (user.status === 'Rejected') {
+      return res.redirect(`${clientUrl}/login?error=rejected`);
+    }
+    if (user.status === 'Deactivated') {
+      return res.redirect(`${clientUrl}/login?error=deactivated`);
+    }
+
+    // Generate tokens
+    const accessToken = signAccessToken(user);
+    const refreshToken = await createRefreshToken(user.id);
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production' && !process.env.CLIENT_URL?.includes('localhost'),
+      sameSite: process.env.NODE_ENV === 'production' && !process.env.CLIENT_URL?.includes('localhost') ? 'strict' : 'lax',
+      maxAge: REFRESH_DAYS * 86400 * 1000,
+    });
+
+    // Redirect to frontend callback to process access token
+    res.redirect(`${clientUrl}/oauth/callback?accessToken=${accessToken}`);
+  } catch (err) {
+    logger.error('googleCallback error:', err);
+    const fallbackUrl = (process.env.CLIENT_URL || 'http://localhost:8080').replace(/\/+$/, '');
+    res.redirect(`${fallbackUrl}/login?error=server_error`);
+  }
+};
+

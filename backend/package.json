@@ -4,12 +4,16 @@
   "description": "EcoSurvey Backend API - Node.js + Express + Sequelize + MySQL",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "lint": "eslint src/**/*.js"
+    "start": "node --dns-result-order=ipv4first src/server.js",
+    "dev": "nodemon --exec 'node --dns-result-order=ipv4first' src/server.js",
+    "lint": "eslint src/**/*.js",
+    "test": "jest --forceExit",
+    "test:watch": "jest --watch --forceExit",
+    "test:coverage": "jest --coverage --forceExit"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
+    "cloudinary": "^2.10.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -24,14 +28,21 @@
     "mysql2": "^3.11.3",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.15",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
     "pdfkit": "^0.15.0",
     "sequelize": "^6.37.3",
+    "socket.io": "^4.8.3",
     "uuid": "^10.0.0",
     "winston": "^3.14.2",
     "xss": "^1.0.15"
   },
   "devDependencies": {
     "eslint": "^9.11.1",
-    "nodemon": "^3.1.7"
+    "jest": "^30.4.2",
+    "nodemon": "^3.1.7",
+    "sequelize-mock": "^0.10.2",
+    "sqlite3": "^6.0.1",
+    "supertest": "^7.2.2"
   }
 }

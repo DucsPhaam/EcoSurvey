@@ -2,12 +2,13 @@ const { Op, literal } = require('sequelize');
 const { sequelize } = require('../config/database');
 const { Survey, Question, SurveyResponse, SurveyAnswer, PointLog, Notification, User } = require('../models');
 const logger = require('../utils/logger');
+const badgeService = require('../services/badgeService');
 
 // ── GET /api/surveys — for students/staff ────────────────────
 exports.getSurveys = async (req, res) => {
   try {
     const userRole = req.user.role;
-    const userId   = req.user.id;
+    const userId = req.user.id;
     const { page = 1, limit = 12, search } = req.query;
 
     const where = {
@@ -165,16 +166,21 @@ exports.submitSurvey = async (req, res) => {
     });
     if (!existingPoint) {
       await PointLog.create({
-        user_id:        userId,
-        action_type:    'Survey_Completion',
-        points:         10,
-        reference_id:   response.id,
+        user_id: userId,
+        action_type: 'Survey_Completion',
+        points: 10,
+        reference_id: response.id,
         reference_type: 'survey_responses',
-        note:           `Completed survey: ${survey.title}`,
+        note: `Completed survey: ${survey.title}`,
       }, { transaction: t });
     }
 
     await t.commit();
+
+    // Tích hợp kiểm tra Badges (Gamification Phase 5)
+    badgeService.checkAndAwardBadges(userId).catch(err => {
+      logger.error(`Error checking badges for user ${userId} after survey submission:`, err);
+    });
 
     res.status(201).json({ message: 'Survey submitted successfully! You earned 10 points.', response_id: response.id });
   } catch (err) {
@@ -219,14 +225,116 @@ exports.adminGetSurveys = async (req, res) => {
   }
 };
 
+// ── ADMIN: GET /api/admin/surveys/:id ─────────────────────────
+exports.adminGetSurveyById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const survey = await Survey.findByPk(id, {
+      include: [
+        { model: Question, as: 'questions', order: [['order_num', 'ASC']] },
+        { model: User, as: 'creator', attributes: ['full_name'] },
+      ],
+    });
+    if (!survey) return res.status(404).json({ message: 'Survey not found.' });
+    res.json({ survey });
+  } catch (err) {
+    logger.error('adminGetSurveyById error:', err);
+    res.status(500).json({ message: 'Failed to fetch survey.' });
+  }
+};
+
+// ── ADMIN: GET /api/admin/surveys/:id/analytics ───────────────
+exports.adminGetAnalytics = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const survey = await Survey.findByPk(id, {
+      attributes: ['id', 'title', 'status', 'start_date', 'end_date'],
+      include: [
+        { model: Question, as: 'questions', order: [['order_num', 'ASC']] },
+        { model: SurveyResponse, as: 'responses', attributes: ['id'] },
+      ],
+    });
+
+    if (!survey) return res.status(404).json({ message: 'Survey not found.' });
+
+    const totalResponses = survey.responses.length;
+    const responseIds = survey.responses.map(r => r.id);
+
+    // Fetch all answers for these responses
+    let allAnswers = [];
+    if (responseIds.length > 0) {
+      allAnswers = await SurveyAnswer.findAll({
+        where: { response_id: { [Op.in]: responseIds } },
+        attributes: ['question_id', 'answer_text'],
+      });
+    }
+
+    // Process analytics per question
+    const questionsData = survey.questions.map(q => {
+      const qAnswers = allAnswers.filter(a => a.question_id === q.id && a.answer_text);
+      const answeredCount = qAnswers.length;
+      const responseRate = totalResponses > 0 ? Math.round((answeredCount / totalResponses) * 100) : 0;
+
+      let processedAnswers = null;
+
+      if (q.question_type === 'Single_Choice') {
+        const counts = {};
+        qAnswers.forEach(a => {
+          counts[a.answer_text] = (counts[a.answer_text] || 0) + 1;
+        });
+        processedAnswers = counts;
+      } else if (q.question_type === 'Multiple_Choice') {
+        const counts = {};
+        qAnswers.forEach(a => {
+          const parts = a.answer_text.split('|||');
+          parts.forEach(p => {
+            counts[p] = (counts[p] || 0) + 1;
+          });
+        });
+        processedAnswers = counts;
+      } else {
+        // Text responses
+        processedAnswers = qAnswers.map(a => a.answer_text);
+      }
+
+      return {
+        id: q.id,
+        question_text: q.question_text,
+        question_type: q.question_type,
+        options: q.options,
+        answers: processedAnswers,
+        response_rate: responseRate,
+      };
+    });
+
+    res.json({
+      survey: {
+        id: survey.id,
+        title: survey.title,
+        status: survey.status,
+      },
+      total_responses: totalResponses,
+      questions: questionsData,
+    });
+
+  } catch (err) {
+    logger.error('adminGetAnalytics error:', err);
+    res.status(500).json({ message: 'Failed to fetch survey analytics.' });
+  }
+};
+
 // ── ADMIN: POST /api/admin/surveys ────────────────────────────
 exports.adminCreateSurvey = async (req, res) => {
+  const t = await sequelize.transaction();
   try {
     const { title, description, target_role, start_date, end_date, status } = req.body;
     if (!title || !start_date || !end_date) {
+      await t.rollback();
       return res.status(400).json({ message: 'Title, start date, and end date are required.' });
     }
     if (new Date(end_date) <= new Date(start_date)) {
+      await t.rollback();
       return res.status(400).json({ message: 'End date must be after start date.' });
     }
 
@@ -235,10 +343,22 @@ exports.adminCreateSurvey = async (req, res) => {
       start_date, end_date,
       status: status || 'Draft',
       created_by: req.user.id,
-    });
+    }, { transaction: t });
 
+    // Tự động tạo câu hỏi "Ý kiến cá nhân" — luôn xuất hiện cuối cùng
+    await Question.create({
+      survey_id: survey.id,
+      question_text: 'Ý kiến cá nhân về bài khảo sát',
+      question_type: 'Text',
+      is_required: true,
+      options: { isOpinion: true, maxLength: 150 },
+      order_num: 9999,
+    }, { transaction: t });
+
+    await t.commit();
     res.status(201).json({ message: 'Survey created.', survey });
   } catch (err) {
+    await t.rollback();
     logger.error('adminCreateSurvey error:', err);
     res.status(500).json({ message: 'Failed to create survey.' });
   }
@@ -262,7 +382,7 @@ exports.adminUpdateSurvey = async (req, res) => {
 
     // Validate date range nếu có thay đổi
     const newStartDate = start_date || survey.start_date;
-    const newEndDate   = end_date   || survey.end_date;
+    const newEndDate = end_date || survey.end_date;
     if (new Date(newEndDate) <= new Date(newStartDate)) {
       return res.status(400).json({ message: 'End date must be after start date.' });
     }
@@ -300,17 +420,24 @@ async function _notifyUsersForNewSurvey(survey) {
   if (users.length === 0) return;
 
   const notifications = users.map((u) => ({
-    user_id:        u.id,
-    title:          'Khảo sát mới dành cho bạn',
-    message:        `Khảo sát "${survey.title}" vừa được mở. Hãy tham gia ngay để nhận điểm thưởng!`,
+    user_id: u.id,
+    title: 'Khảo sát mới dành cho bạn',
+    message: `Khảo sát "${survey.title}" vừa được mở. Hãy tham gia ngay để nhận điểm thưởng!`,
     reference_type: 'survey',
-    reference_id:   survey.id,
+    reference_id: survey.id,
   }));
 
   // Gửi theo batch nhỏ để tránh quá tải DB
   const BATCH_SIZE = 100;
   for (let i = 0; i < notifications.length; i += BATCH_SIZE) {
-    await Notification.bulkCreate(notifications.slice(i, i + BATCH_SIZE));
+    const batch = notifications.slice(i, i + BATCH_SIZE);
+    const createdNotes = await Notification.bulkCreate(batch);
+    
+    // Emit real-time notification to connected users
+    const socketService = require('../services/socketService');
+    createdNotes.forEach(note => {
+      socketService.emitToUser(note.user_id, 'new_notification', note);
+    });
   }
 
   logger.info(`[Survey Publish] Sent notifications to ${users.length} users for survey "${survey.title}"`);
@@ -418,6 +545,7 @@ exports.reorderQuestions = async (req, res) => {
 };
 
 // ── GET /api/admin/surveys/:id/responses ─────────────────────
+// Trả về danh sách bài làm ẩn danh — Admin KHÔNG thấy tên/email người nộp.
 exports.getSurveyResponses = async (req, res) => {
   try {
     const { page = 1, limit = 20 } = req.query;
@@ -426,7 +554,8 @@ exports.getSurveyResponses = async (req, res) => {
     const { count, rows } = await SurveyResponse.findAndCountAll({
       where: { survey_id: req.params.id },
       include: [
-        { model: User, as: 'user', attributes: ['id', 'full_name', 'username', 'role'] },
+        // Chỉ lấy role để hiển thị nhóm (Student/Staff), không lấy tên hay email
+        { model: User, as: 'user', attributes: ['role'] },
         { model: SurveyAnswer, as: 'answers', include: [{ model: Question, as: 'question' }] },
       ],
       order: [['submitted_at', 'DESC']],
@@ -434,8 +563,89 @@ exports.getSurveyResponses = async (req, res) => {
       offset,
     });
 
-    res.json({ responses: rows, total: count, page: parseInt(page), totalPages: Math.ceil(count / parseInt(limit)) });
+    // Gán nhãn ẩn danh theo thứ tự — Admin chỉ thấy "Ẩn danh #1", "Ẩn danh #2"…
+    const anonymousResponses = rows.map((r, idx) => {
+      const json = r.toJSON();
+      return {
+        ...json,
+        user: {
+          displayName: `Ẩn danh #${offset + idx + 1}`,
+          role: json.user?.role || 'Unknown',
+        },
+      };
+    });
+
+    res.json({ responses: anonymousResponses, total: count, page: parseInt(page), totalPages: Math.ceil(count / parseInt(limit)) });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch survey responses.' });
+  }
+};
+
+// ── PUT /api/admin/surveys/responses/:id/score ────────────────
+// Admin chấm điểm ý kiến cá nhân (0–10). Tạo/cập nhật PointLog Bonus tương ứng.
+exports.gradeOpinion = async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const { id } = req.params; // response_id
+    const { opinion_score } = req.body;
+
+    // Validate điểm
+    if (opinion_score === undefined || opinion_score === null) {
+      await t.rollback();
+      return res.status(400).json({ message: 'opinion_score is required.' });
+    }
+    const score = parseInt(opinion_score, 10);
+    if (isNaN(score) || score < 0 || score > 10) {
+      await t.rollback();
+      return res.status(400).json({ message: 'opinion_score must be an integer between 0 and 10.' });
+    }
+
+    const response = await SurveyResponse.findByPk(id, { transaction: t });
+    if (!response) {
+      await t.rollback();
+      return res.status(404).json({ message: 'Survey response not found.' });
+    }
+
+    const previousScore = response.opinion_score; // null nếu chưa chấm
+
+    // Cập nhật điểm trên bản ghi response
+    await response.update({ opinion_score: score }, { transaction: t });
+
+    // Tìm PointLog Bonus hiện có (nếu đã chấm lần trước)
+    const existingLog = await PointLog.findOne({
+      where: {
+        user_id: response.user_id,
+        action_type: 'Bonus',
+        reference_id: response.id,
+        reference_type: 'opinion_score',
+      },
+      transaction: t,
+    });
+
+    if (existingLog) {
+      // Cập nhật điểm cũ → điểm mới
+      await existingLog.update({ points: score, note: `Điểm ý kiến cá nhân bài khảo sát (survey_response #${id})` }, { transaction: t });
+    } else {
+      // Tạo mới PointLog
+      await PointLog.create({
+        user_id: response.user_id,
+        action_type: 'Bonus',
+        points: score,
+        reference_id: response.id,
+        reference_type: 'opinion_score',
+        note: `Điểm ý kiến cá nhân bài khảo sát (survey_response #${id})`,
+      }, { transaction: t });
+    }
+
+    await t.commit();
+    res.json({
+      message: `Đã chấm ${score}/10 điểm cho bài làm #${id}.`,
+      previous_score: previousScore,
+      new_score: score,
+    });
+  } catch (err) {
+    await t.rollback();
+    logger.error('gradeOpinion error:', err);
+    res.status(500).json({ message: 'Failed to grade opinion.' });
   }
 };

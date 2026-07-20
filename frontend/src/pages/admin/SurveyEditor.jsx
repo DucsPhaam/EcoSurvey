@@ -1,18 +1,19 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ChevronLeft, Plus, Trash2, GripVertical, Save, Eye, Globe, CheckSquare, Type, List } from 'lucide-react'
-import api from '../../services/axiosInstance'
+import { adminService } from '../../services/adminService'
 import { SpinnerPage } from '../../components/ui/Spinner'
 import Modal from '../../components/ui/Modal'
 import toast from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 
-const Q_TYPES = [
-  { value: 'Text',            label: 'Text (Open-ended)',    icon: Type },
-  { value: 'Single_Choice',   label: 'Single Choice',        icon: List },
-  { value: 'Multiple_Choice', label: 'Multiple Choice',      icon: CheckSquare },
+const Q_TYPES = (t) => [
+  { value: 'Text',            label: t('surveyEditor.textOpenEnded'),    icon: Type },
+  { value: 'Single_Choice',   label: t('surveyEditor.singleChoice'),        icon: List },
+  { value: 'Multiple_Choice', label: t('surveyEditor.multipleChoice'),      icon: CheckSquare },
 ]
 
-function QuestionCard({ q, index, onEdit, onDelete, onDragStart, onDragOver, onDrop }) {
+function QuestionCard({ q, index, onEdit, onDelete, onDragStart, onDragOver, onDrop, t }) {
   return (
     <div draggable
       onDragStart={() => onDragStart(index)}
@@ -26,11 +27,11 @@ function QuestionCard({ q, index, onEdit, onDelete, onDragStart, onDragOver, onD
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <span className="text-xs badge-published">{q.question_type.replace('_', ' ')}</span>
-            {q.is_required && <span className="text-xs text-red-400 font-medium">Required</span>}
+            <span className="text-xs badge-published">{q.question_type === 'Text' ? t('surveyEditor.textOpenEnded') : q.question_type === 'Single_Choice' ? t('surveyEditor.singleChoice') : t('surveyEditor.multipleChoice')}</span>
+            {q.is_required && <span className="text-xs text-red-400 font-medium">{t('surveyEditor.required')}</span>}
           </div>
           <p className="text-sm font-medium text-gray-800 dark:text-gray-200 leading-relaxed">{q.question_text}</p>
-          {q.options && (
+          {Array.isArray(q.options) && (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {q.options.map((opt, i) => (
                 <span key={i} className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full">{opt}</span>
@@ -53,7 +54,16 @@ function QuestionCard({ q, index, onEdit, onDelete, onDragStart, onDragOver, onD
 
 const EMPTY_Q = { question_text: '', question_type: 'Text', options: [], is_required: true }
 
+// Module-level helper — returns current local time as "YYYY-MM-DDTHH:mm".
+// Must be outside the component so it can be called in the useState lazy initializer.
+const localNow = () => {
+  const now = new Date()
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`
+}
+
 export default function SurveyEditor() {
+  const { t } = useTranslation('admin')
   const { id } = useParams()
   const navigate = useNavigate()
   const isNew = !id
@@ -68,78 +78,119 @@ export default function SurveyEditor() {
   const [optionInput, setOptionInput] = useState('')
   const [dragFrom, setDragFrom]     = useState(null)
 
-  // Survey form
-  const [sForm, setSForm] = useState({ title: '', description: '', target_role: 'All', start_date: '', end_date: '', status: 'Draft' })
+  // Survey form — initialise date fields with current local time so the
+  // browser's native "Today" button works (it only changes the date part;
+  // if the time part is empty the full value stays invalid and Today appears
+  // to do nothing).
+  const [sForm, setSForm] = useState(() => ({
+    title: '', description: '', target_role: 'All',
+    start_date: localNow(), end_date: localNow(), status: 'Draft'
+  }))
+
+  // Convert UTC ISO string from API → local datetime-local input value (YYYY-MM-DDTHH:mm)
+  const toLocalDatetimeInput = (isoStr) => {
+    if (!isoStr) return ''
+    // new Date() parses ISO/UTC strings correctly across all browsers
+    const d = new Date(isoStr)
+    if (isNaN(d.getTime())) return ''
+    const pad = (n) => String(n).padStart(2, '0')
+    // Use local getters so the displayed time matches the user's machine timezone
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  }
+
+  // Convert datetime-local input value → UTC ISO string for the API
+  // datetime-local returns "YYYY-MM-DDTHH:mm" (local time, no tz info)
+  // We interpret it as local time and convert to UTC.
+  const toUTCIso = (localStr) => {
+    if (!localStr) return ''
+    // Treat as local time by constructing a Date from local parts
+    const d = new Date(localStr)   // JS interprets YYYY-MM-DDTHH:mm as LOCAL time
+    if (isNaN(d.getTime())) return ''
+    return d.toISOString()         // Always UTC ISO 8601
+  }
+
 
   useEffect(() => {
     if (!isNew && id) {
-      Promise.all([
-        api.get(`/admin/surveys`).then((r) => r.data.surveys.find((s) => s.id === parseInt(id))),
-        api.get(`/admin/surveys/${id}/questions`).then((r) => r.data.questions),
-      ]).then(([s, qs]) => {
-        if (s) {
+      adminService.getSurveyById(id)
+        .then((r) => {
+          const s = r.data.survey
           setSurvey(s)
-          setSForm({ title: s.title, description: s.description || '', target_role: s.target_role, start_date: s.start_date?.slice(0, 16) || '', end_date: s.end_date?.slice(0, 16) || '', status: s.status })
-        }
-        setQuestions(qs || [])
-      }).catch(() => navigate('/admin/surveys')).finally(() => setLoading(false))
+          setQuestions(s.questions || [])
+          setSForm({
+            title: s.title,
+            description: s.description || '',
+            target_role: s.target_role,
+            start_date: toLocalDatetimeInput(s.start_date),
+            end_date: toLocalDatetimeInput(s.end_date),
+            status: s.status,
+          })
+        })
+        .catch(() => navigate('/admin/surveys'))
+        .finally(() => setLoading(false))
     }
   }, [id])
 
   const saveSurvey = async () => {
-    if (!sForm.title) { toast.error('Title is required.'); return }
+    if (!sForm.title) { toast.error(t('surveyEditor.titleRequired')); return }
     setSaving(true)
     try {
+      // Convert datetime-local values (local time) → UTC ISO strings for the API
+      const payload = {
+        ...sForm,
+        start_date: toUTCIso(sForm.start_date),
+        end_date:   toUTCIso(sForm.end_date),
+      }
       if (isNew) {
-        const res = await api.post('/admin/surveys', sForm)
-        toast.success('Survey created! Now add questions.')
+        const res = await adminService.createSurvey(payload)
+        toast.success(t('surveyEditor.surveyCreated'))
         navigate(`/admin/surveys/${res.data.survey.id}/edit`)
       } else {
-        await api.patch(`/admin/surveys/${id}`, sForm)
-        toast.success('Survey saved.')
+        await adminService.updateSurvey(id, payload)
+        toast.success(t('surveyEditor.surveySaved'))
       }
-    } catch (err) { toast.error(err.response?.data?.message || 'Save failed.') }
+    } catch (err) { toast.error(err.response?.data?.message || t('surveyEditor.saveFailed')) }
     finally { setSaving(false) }
   }
 
   const openAddQ = () => { setEditingQ(null); setQForm({ ...EMPTY_Q }); setOptionInput(''); setQModal(true) }
-  const openEditQ = (q) => { setEditingQ(q); setQForm({ question_text: q.question_text, question_type: q.question_type, options: q.options || [], is_required: q.is_required }); setOptionInput(''); setQModal(true) }
+  const openEditQ = (q) => { setEditingQ(q); setQForm({ question_text: q.question_text, question_type: q.question_type, options: Array.isArray(q.options) ? q.options : [], is_required: q.is_required }); setOptionInput(''); setQModal(true) }
 
   const addOption = () => {
-    const t = optionInput.trim()
-    if (!t) return
-    if (qForm.options.length >= 10) { toast.error('Maximum 10 options.'); return }
-    setQForm((f) => ({ ...f, options: [...f.options, t] }))
+    const txt = optionInput.trim()
+    if (!txt) return
+    if (qForm.options.length >= 10) { toast.error(t('surveyEditor.maxOptions')); return }
+    setQForm((f) => ({ ...f, options: [...f.options, txt] }))
     setOptionInput('')
   }
 
   const saveQuestion = async () => {
-    if (!qForm.question_text.trim()) { toast.error('Question text is required.'); return }
+    if (!qForm.question_text.trim()) { toast.error(t('surveyEditor.questionTextRequired')); return }
     if (['Single_Choice', 'Multiple_Choice'].includes(qForm.question_type) && qForm.options.length < 2) {
-      toast.error('Choice questions need at least 2 options.'); return
+      toast.error(t('surveyEditor.choiceNeedOptions')); return
     }
     try {
       if (editingQ) {
-        await api.patch(`/admin/questions/${editingQ.id}`, { ...qForm, options: qForm.question_type === 'Text' ? null : qForm.options })
-        toast.success('Question updated.')
+        await adminService.updateQuestion(id, editingQ.id, { ...qForm, options: qForm.question_type === 'Text' ? null : qForm.options })
+        toast.success(t('surveyEditor.questionUpdated'))
       } else {
         const payload = { ...qForm, order_num: questions.length, options: qForm.question_type === 'Text' ? null : qForm.options }
-        await api.post(`/admin/surveys/${id}/questions`, payload)
-        toast.success('Question added.')
+        await adminService.createQuestion(id, payload)
+        toast.success(t('surveyEditor.questionAdded'))
       }
-      const qs = await api.get(`/admin/surveys/${id}/questions`)
+      const qs = await adminService.getQuestions(id)
       setQuestions(qs.data.questions)
       setQModal(false)
-    } catch (err) { toast.error(err.response?.data?.message || 'Failed to save question.') }
+    } catch (err) { toast.error(err.response?.data?.message || t('surveyEditor.saveQuestionFailed')) }
   }
 
   const deleteQuestion = async (qId) => {
-    if (!window.confirm('Delete this question?')) return
+    if (!window.confirm(t('surveyEditor.deleteConfirm'))) return
     try {
-      await api.delete(`/admin/questions/${qId}`)
+      await adminService.deleteQuestion(id, qId)
       setQuestions((qs) => qs.filter((q) => q.id !== qId))
-      toast.success('Question deleted.')
-    } catch { toast.error('Failed to delete question.') }
+      toast.success(t('surveyEditor.questionDeleted'))
+    } catch { toast.error(t('surveyEditor.deleteFailed')) }
   }
 
   // Drag & drop reorder
@@ -151,10 +202,8 @@ export default function SurveyEditor() {
     setQuestions(reordered)
     setDragFrom(null)
     try {
-      await api.patch(`/admin/surveys/${id}/questions/reorder`, {
-        order: reordered.map((q, i) => ({ id: q.id, order_num: i }))
-      })
-    } catch { toast.error('Failed to save order.') }
+      await adminService.reorderQuestions(id, reordered.map((q, i) => ({ id: q.id, order_num: i })))
+    } catch { toast.error(t('surveyEditor.orderSavedFailed')) }
   }
 
   if (loading) return <SpinnerPage />
@@ -165,14 +214,14 @@ export default function SurveyEditor() {
       <div className="flex items-center gap-4 mb-6">
         <button onClick={() => navigate('/admin/surveys')}
           className="flex items-center gap-2 text-sm text-gray-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
-          <ChevronLeft className="w-4 h-4" /> Back
+          <ChevronLeft className="w-4 h-4" /> {t('surveyEditor.back')}
         </button>
         <div className="flex-1">
-          <h1 className="page-title">{isNew ? 'Create Survey' : 'Edit Survey'}</h1>
-          {survey && <span className={`badge-${survey.status === 'Draft' ? 'draft' : survey.status === 'Published' ? 'published' : 'closed'} mt-1 inline-block`}>{survey.status}</span>}
+          <h1 className="page-title">{isNew ? t('surveyEditor.createSurvey') : t('surveyEditor.editSurvey')}</h1>
+          {survey && <span className={`badge-${survey.status === 'Draft' ? 'draft' : survey.status === 'Published' ? 'published' : 'closed'} mt-1 inline-block`}>{survey.status === 'Draft' ? t('surveyEditor.draft') : survey.status === 'Published' ? t('surveyEditor.published') : t('surveyEditor.closed')}</span>}
         </div>
         <button onClick={saveSurvey} disabled={saving} className="btn-primary">
-          {saving ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Save className="w-4 h-4" /> Save</>}
+          {saving ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Save className="w-4 h-4" /> {t('surveyEditor.save')}</>}
         </button>
       </div>
 
@@ -180,34 +229,42 @@ export default function SurveyEditor() {
         {/* Survey details */}
         <div className="lg:col-span-1">
           <div className="card p-6 space-y-4 sticky top-24">
-            <h2 className="font-display font-bold text-gray-900 dark:text-white">Survey Details</h2>
+            <h2 className="font-display font-bold text-gray-900 dark:text-white">{t('surveyEditor.surveyDetails')}</h2>
             <div>
-              <label className="label">Title <span className="text-red-400">*</span></label>
-              <input value={sForm.title} onChange={(e) => setSForm({ ...sForm, title: e.target.value })} placeholder="Survey title…" className="input" />
+              <label className="label">{t('surveyEditor.title')} <span className="text-red-400">*</span></label>
+              <input value={sForm.title} onChange={(e) => setSForm({ ...sForm, title: e.target.value })} placeholder={t('surveyEditor.titlePlaceholder')} className="input" />
             </div>
             <div>
-              <label className="label">Description</label>
-              <textarea rows={3} value={sForm.description} onChange={(e) => setSForm({ ...sForm, description: e.target.value })} placeholder="Optional description…" className="input resize-none" />
+              <label className="label">{t('surveyEditor.description')}</label>
+              <textarea rows={3} value={sForm.description} onChange={(e) => setSForm({ ...sForm, description: e.target.value })} placeholder={t('surveyEditor.descriptionPlaceholder')} className="input resize-none" />
             </div>
             <div>
-              <label className="label">Target Audience</label>
+              <label className="label">{t('surveyEditor.targetAudience')}</label>
               <select value={sForm.target_role} onChange={(e) => setSForm({ ...sForm, target_role: e.target.value })} className="input">
-                <option>All</option><option>Student</option><option>Staff</option>
+                <option value="All">{t('surveyEditor.all')}</option>
+                <option value="Student">{t('surveyEditor.student')}</option>
+                <option value="Staff">{t('surveyEditor.staff')}</option>
               </select>
             </div>
             <div>
-              <label className="label">Status</label>
+              <label className="label">{t('surveyEditor.status')}</label>
               <select value={sForm.status} onChange={(e) => setSForm({ ...sForm, status: e.target.value })} className="input">
-                <option>Draft</option><option>Published</option><option>Closed</option>
+                <option value="Draft">{t('surveyEditor.draft')}</option>
+                <option value="Published">{t('surveyEditor.published')}</option>
+                <option value="Closed">{t('surveyEditor.closed')}</option>
               </select>
             </div>
             <div>
-              <label className="label">Start Date</label>
-              <input type="datetime-local" value={sForm.start_date} onChange={(e) => setSForm({ ...sForm, start_date: e.target.value })} className="input" />
+              <label className="label">{t('surveyEditor.startDate')}</label>
+              <input type="datetime-local" value={sForm.start_date}
+                onChange={(e) => setSForm({ ...sForm, start_date: e.target.value })}
+                className="input" />
             </div>
             <div>
-              <label className="label">End Date</label>
-              <input type="datetime-local" value={sForm.end_date} onChange={(e) => setSForm({ ...sForm, end_date: e.target.value })} className="input" />
+              <label className="label">{t('surveyEditor.endDate')}</label>
+              <input type="datetime-local" value={sForm.end_date}
+                onChange={(e) => setSForm({ ...sForm, end_date: e.target.value })}
+                className="input" />
             </div>
           </div>
         </div>
@@ -216,11 +273,11 @@ export default function SurveyEditor() {
         <div className="lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display font-bold text-gray-900 dark:text-white">
-              Questions <span className="text-gray-400 font-normal text-sm ml-2">({questions.length})</span>
+              {t('surveyEditor.questions')} <span className="text-gray-400 font-normal text-sm ml-2">({questions.length})</span>
             </h2>
             {!isNew && (
               <button onClick={openAddQ} className="btn-primary text-sm py-2">
-                <Plus className="w-4 h-4" /> Add Question
+                <Plus className="w-4 h-4" /> {t('surveyEditor.addQuestion')}
               </button>
             )}
           </div>
@@ -228,23 +285,23 @@ export default function SurveyEditor() {
           {isNew ? (
             <div className="card p-10 text-center text-gray-400">
               <List className="w-10 h-10 mx-auto mb-3 opacity-30" />
-              <p>Save the survey first, then add questions.</p>
+              <p>{t('surveyEditor.saveSurveyFirst')}</p>
             </div>
           ) : questions.length === 0 ? (
             <div className="card p-10 text-center text-gray-400">
               <List className="w-10 h-10 mx-auto mb-3 opacity-30" />
-              <p>No questions yet. Add your first question!</p>
-              <button onClick={openAddQ} className="btn-primary mt-4 text-sm"><Plus className="w-4 h-4" /> Add Question</button>
+              <p>{t('surveyEditor.noQuestionsYet')}</p>
+              <button onClick={openAddQ} className="btn-primary mt-4 text-sm"><Plus className="w-4 h-4" /> {t('surveyEditor.addQuestion')}</button>
             </div>
           ) : (
             <div className="space-y-3">
               {questions.map((q, i) => (
-                <QuestionCard key={q.id} q={q} index={i}
+                <QuestionCard key={q.id} q={q} index={i} t={t}
                   onEdit={openEditQ} onDelete={deleteQuestion}
                   onDragStart={setDragFrom} onDragOver={() => {}} onDrop={handleDrop} />
               ))}
               <div className="text-xs text-gray-400 text-center py-2">
-                <GripVertical className="w-3 h-3 inline mr-1" /> Drag to reorder questions
+                <GripVertical className="w-3 h-3 inline mr-1" /> {t('surveyEditor.dragToReorder')}
               </div>
             </div>
           )}
@@ -252,12 +309,12 @@ export default function SurveyEditor() {
       </div>
 
       {/* Question modal */}
-      <Modal isOpen={qModal} onClose={() => setQModal(false)} title={editingQ ? 'Edit Question' : 'Add Question'} size="lg">
+      <Modal isOpen={qModal} onClose={() => setQModal(false)} title={editingQ ? t('surveyEditor.editQuestion') : t('surveyEditor.addQuestion')} size="lg">
         <div className="space-y-4">
           <div>
-            <label className="label">Question Type</label>
+            <label className="label">{t('surveyEditor.questionType')}</label>
             <div className="grid grid-cols-3 gap-2">
-              {Q_TYPES.map(({ value, label, icon: Icon }) => (
+              {Q_TYPES(t).map(({ value, label, icon: Icon }) => (
                 <button key={value} type="button" onClick={() => setQForm((f) => ({ ...f, question_type: value, options: [] }))}
                   className={`p-3 rounded-xl border-2 text-sm font-medium transition-all flex flex-col items-center gap-1.5 ${
                     qForm.question_type === value
@@ -271,21 +328,21 @@ export default function SurveyEditor() {
           </div>
 
           <div>
-            <label className="label">Question Text <span className="text-red-400">*</span></label>
+            <label className="label">{t('surveyEditor.questionText')} <span className="text-red-400">*</span></label>
             <textarea rows={3} value={qForm.question_text} onChange={(e) => setQForm((f) => ({ ...f, question_text: e.target.value }))}
-              placeholder="Enter your question…" className="input resize-none" />
+              placeholder={t('surveyEditor.questionTextPlaceholder')} className="input resize-none" />
           </div>
 
           <div className="flex items-center gap-3">
             <input type="checkbox" id="q-required" checked={qForm.is_required}
               onChange={(e) => setQForm((f) => ({ ...f, is_required: e.target.checked }))}
               className="w-4 h-4 accent-brand-600 rounded" />
-            <label htmlFor="q-required" className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">Required question</label>
+            <label htmlFor="q-required" className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">{t('surveyEditor.requiredQuestion')}</label>
           </div>
 
           {['Single_Choice', 'Multiple_Choice'].includes(qForm.question_type) && (
             <div>
-              <label className="label">Options ({qForm.options.length}/10)</label>
+              <label className="label">{t('surveyEditor.options')} ({qForm.options.length}/10)</label>
               <div className="space-y-2 mb-2">
                 {qForm.options.map((opt, i) => (
                   <div key={i} className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg">
@@ -299,16 +356,16 @@ export default function SurveyEditor() {
               <div className="flex gap-2">
                 <input value={optionInput} onChange={(e) => setOptionInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addOption())}
-                  placeholder="Type option and press Enter…" className="input flex-1 py-2 text-sm" />
-                <button type="button" onClick={addOption} className="btn-secondary py-2 px-3 text-sm">Add</button>
+                  placeholder={t('surveyEditor.typeOptionPlaceholder')} className="input flex-1 py-2 text-sm" />
+                <button type="button" onClick={addOption} className="btn-secondary py-2 px-3 text-sm">{t('surveyEditor.add')}</button>
               </div>
             </div>
           )}
 
           <div className="flex gap-3 pt-2">
-            <button onClick={() => setQModal(false)} className="btn-secondary flex-1">Cancel</button>
+            <button onClick={() => setQModal(false)} className="btn-secondary flex-1">{t('surveyEditor.cancel')}</button>
             <button onClick={saveQuestion} className="btn-primary flex-1">
-              {editingQ ? 'Update Question' : 'Add Question'}
+              {editingQ ? t('surveyEditor.updateQuestion') : t('surveyEditor.addQuestion')}
             </button>
           </div>
         </div>

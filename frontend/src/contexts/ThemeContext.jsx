@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import api from '../services/axiosInstance'
+import { userService } from '../services/userService'
 
 const ThemeContext = createContext(null)
 
@@ -19,10 +19,9 @@ export const ThemeProvider = ({ children }) => {
   const toggleTheme = async () => {
     const next = theme === 'light' ? 'dark' : 'light'
     setTheme(next)
-    // Sync with backend (non-blocking)
     try {
-      await api.patch('/users/me/theme', { ui_theme: next })
-    } catch { /* ignore — local state still updated */ }
+      await userService.updateTheme(next)
+    } catch { /* ignore */ }
   }
 
   const applyTheme = (t) => {
