@@ -124,7 +124,7 @@ if (process.env.NODE_ENV !== 'test') {
     try {
       await sequelize.authenticate();
       logger.info('✅ Database connection established');
-      await sequelize.sync({ alter: true });
+      await sequelize.sync();
       logger.info('✅ Database synced');
       cronService.start();
       
