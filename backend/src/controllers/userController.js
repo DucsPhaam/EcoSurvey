@@ -77,7 +77,9 @@ exports.getPointHistory = async (req, res) => {
       order: [['created_at', 'DESC']],
       limit: 50
     });
-    res.json({ logs });
+    const totalResult = await PointLog.sum('points', { where: { user_id: req.user.id } });
+    const total = totalResult || 0;
+    res.json({ logs, total });
   } catch (err) {
     logger.error('getPointHistory error:', err);
     res.status(500).json({ message: 'Failed to fetch point history.' });
