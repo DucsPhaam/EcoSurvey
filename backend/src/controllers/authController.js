@@ -204,7 +204,8 @@ exports.forgotPassword = async (req, res) => {
       reset_password_expires: expires,
     });
 
-    const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:8080'}/reset-password?token=${rawToken}&email=${encodeURIComponent(email)}`;
+    const clientUrl = (process.env.CLIENT_URL || 'http://localhost:8080').replace(/\/+$/, '');
+    const resetUrl = `${clientUrl}/reset-password?token=${rawToken}&email=${encodeURIComponent(email)}`;
     emailService.sendForgotPasswordEmail(email, user.full_name, resetUrl).catch(logger.error);
 
     res.json({ message: 'Nếu email tồn tại, chúng tôi đã gửi liên kết đặt lại mật khẩu.' });
@@ -263,7 +264,8 @@ exports.sendVerificationEmail = async (req, res) => {
     const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
     await user.update({ email_verify_token: tokenHash });
 
-    const verifyUrl = `${process.env.CLIENT_URL || 'http://localhost:8080'}/verify-email?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
+    const clientUrl = (process.env.CLIENT_URL || 'http://localhost:8080').replace(/\/+$/, '');
+    const verifyUrl = `${clientUrl}/verify-email?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
     emailService.sendEmailVerificationEmail(user.email, user.full_name, verifyUrl).catch(logger.error);
 
     res.json({ message: 'Email xác minh đã được gửi.' });
