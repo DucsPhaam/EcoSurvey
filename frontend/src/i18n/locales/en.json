@@ -572,7 +572,7 @@
       "points": "Points",
       "note": "Note"
     },
-    "badgesLoading": "Loading badges...",
+    "noBadges": "No badges available yet.",
     "earnedAt": "Earned at:",
     "notEarned": "Not earned",
     "rank": {
@@ -580,6 +580,38 @@
       "silver": "Silver",
       "gold": "Gold",
       "platinum": "Platinum"
+    },
+    "adminAccess": "Admin Access Level:",
+    "admin": {
+      "editBtn": "Edit",
+      "cancelBtn": "Cancel",
+      "saveBtn": "Save",
+      "accountInfo": "Account Information",
+      "fullName": "Full Name",
+      "fullNamePlaceholder": "Your full name...",
+      "email": "Email",
+      "department": "Department / Unit",
+      "departmentPlaceholder": "Department...",
+      "username": "Username",
+      "usernameReadonly": "(cannot be changed)",
+      "role": "Role",
+      "createdAt": "Account Created",
+      "security": "Account Security",
+      "password": "Password",
+      "passwordHint": "Protect your account with a strong password.",
+      "authProvider": "Login Method",
+      "authLocal": "🔑 Username & Password",
+      "authGoogle": "🔗 Google OAuth",
+      "emailVerification": "Email Verification",
+      "emailVerified": "Email verified",
+      "emailNotVerified": "Email not verified",
+      "emailNotVerifiedHint": "Please check your inbox.",
+      "accountStatus": "Account Status",
+      "avatar": "Profile Picture",
+      "updateAvatarBtn": "Update profile picture",
+      "profileUpdated": "Profile updated successfully!",
+      "profileUpdateFailed": "Update failed.",
+      "requiredFields": "Full name and email are required."
     }
   },
   "dashboard": {
@@ -775,5 +807,15 @@
     "you": "You",
     "yourPosition": "Your current position",
     "participantsRanked": "participants ranked"
+  },
+  "badgesData": {
+    "1": { "name": "First Step", "desc": "Submit your first survey" },
+    "2": { "name": "Enthusiasm", "desc": "Complete 5 surveys" },
+    "3": { "name": "Dedication", "desc": "Complete 10 surveys" },
+    "4": { "name": "Activist", "desc": "Create your first participation report" },
+    "5": { "name": "Top 10", "desc": "Enter top 10 on the leaderboard" },
+    "6": { "name": "Century", "desc": "Reach 100 points" },
+    "7": { "name": "Eco Warrior", "desc": "Complete 1 environmental survey" },
+    "8": { "name": "Critic", "desc": "Complete 2 participation reports" }
   }
 }

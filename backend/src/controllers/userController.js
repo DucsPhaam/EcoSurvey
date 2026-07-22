@@ -2,6 +2,37 @@ const bcrypt = require('bcrypt');
 const { User } = require('../models');
 const logger = require('../utils/logger');
 
+// PATCH /api/users/me/profile
+exports.updateProfile = async (req, res) => {
+  try {
+    const { full_name, email, department } = req.body;
+    const updates = {};
+    if (full_name !== undefined) updates.full_name = full_name.trim();
+    if (email !== undefined) {
+      // Check email uniqueness
+      const existing = await User.findOne({ where: { email: email.trim() } });
+      if (existing && existing.id !== req.user.id) {
+        return res.status(409).json({ message: 'Email is already in use by another account.' });
+      }
+      updates.email = email.trim();
+    }
+    if (department !== undefined) updates.department = department.trim();
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ message: 'No valid fields to update.' });
+    }
+
+    await User.update(updates, { where: { id: req.user.id } });
+    const updatedUser = await User.findByPk(req.user.id, {
+      attributes: { exclude: ['password_hash', 'reset_password_token', 'reset_password_expires', 'email_verify_token'] }
+    });
+    res.json({ message: 'Profile updated successfully.', user: updatedUser });
+  } catch (err) {
+    logger.error('updateProfile error:', err);
+    res.status(500).json({ message: 'Failed to update profile.' });
+  }
+};
+
 // PATCH /api/users/me/password
 exports.changePassword = async (req, res) => {
   try {

@@ -4,9 +4,9 @@ const rateLimit = require('express-rate-limit');
  * Strict rate limit for login endpoint — anti brute-force
  */
 const loginLimiter = rateLimit({
-  windowMs: parseInt(process.env.LOGIN_RATE_LIMIT_WINDOW_MS || '900000', 10), // 15 min
+  windowMs: parseInt(process.env.LOGIN_RATE_LIMIT_WINDOW_MS || '60000', 10), // 1 min
   max: parseInt(process.env.LOGIN_RATE_LIMIT_MAX || '10', 10),
-  message: { message: 'Quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau 15 phút.' },
+  message: { message: 'Quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau 1 phút.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -27,9 +27,9 @@ const aiLimiter = rateLimit({
  * General API limiter
  */
 const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 min
+  windowMs: 60 * 1000, // 1 min
   max: 300,
-  message: { message: 'Quá nhiều yêu cầu, vui lòng thử lại sau.' },
+  message: { message: 'Quá nhiều yêu cầu, vui lòng thử lại sau 1 phút.' },
   standardHeaders: true,
   legacyHeaders: false,
 });

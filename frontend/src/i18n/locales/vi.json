@@ -573,7 +573,7 @@
       "points": "Điểm",
       "note": "Ghi chú"
     },
-    "badgesLoading": "Hệ thống đang tải danh hiệu...",
+    "noBadges": "Chưa có danh hiệu nào được tạo trong hệ thống.",
     "earnedAt": "Đạt lúc:",
     "notEarned": "Chưa đạt",
     "rank": {
@@ -581,6 +581,38 @@
       "silver": "Bạc",
       "gold": "Vàng",
       "platinum": "Bạch kim"
+    },
+    "adminAccess": "Quyền hạn của Admin:",
+    "admin": {
+      "editBtn": "Chỉnh sửa",
+      "cancelBtn": "Hủy",
+      "saveBtn": "Lưu",
+      "accountInfo": "Thông tin tài khoản",
+      "fullName": "Họ và tên",
+      "fullNamePlaceholder": "Họ và tên của bạn...",
+      "email": "Email",
+      "department": "Phòng ban / Đơn vị",
+      "departmentPlaceholder": "Phòng/Ban...",
+      "username": "Tên đăng nhập",
+      "usernameReadonly": "(không thể thay đổi)",
+      "role": "Vai trò",
+      "createdAt": "Ngày tạo tài khoản",
+      "security": "Bảo mật tài khoản",
+      "password": "Mật khẩu",
+      "passwordHint": "Bảo vệ tài khoản bằng mật khẩu mạnh.",
+      "authProvider": "Phương thức đăng nhập",
+      "authLocal": "🔑 Tên đăng nhập & Mật khẩu",
+      "authGoogle": "🔗 Google OAuth",
+      "emailVerification": "Xác thực Email",
+      "emailVerified": "Email đã được xác thực",
+      "emailNotVerified": "Email chưa xác thực",
+      "emailNotVerifiedHint": "Vui lòng kiểm tra hộp thư.",
+      "accountStatus": "Trạng thái tài khoản",
+      "avatar": "Ảnh đại diện",
+      "updateAvatarBtn": "Cập nhật ảnh đại diện",
+      "profileUpdated": "Cập nhật hồ sơ thành công!",
+      "profileUpdateFailed": "Cập nhật thất bại.",
+      "requiredFields": "Họ tên và Email không được để trống."
     }
   },
   "dashboard": {
@@ -776,5 +808,15 @@
     "you": "Bạn",
     "yourPosition": "Vị trí hiện tại",
     "participantsRanked": "người xếp hạng"
+  },
+  "badgesData": {
+    "1": { "name": "Bước đầu tiên", "desc": "Nộp survey đầu tiên" },
+    "2": { "name": "Nhiệt huyết", "desc": "Hoàn thành 5 surveys" },
+    "3": { "name": "Cống hiến", "desc": "Hoàn thành 10 surveys" },
+    "4": { "name": "Hoạt động viên", "desc": "Tạo participation đầu tiên" },
+    "5": { "name": "Top 10", "desc": "Vào top 10 leaderboard" },
+    "6": { "name": "Thế kỷ", "desc": "Đạt 100 điểm" },
+    "7": { "name": "Eco Warrior", "desc": "Hoàn thành 1 survey môi trường (quy đổi 15 điểm)" },
+    "8": { "name": "Nhà phê bình", "desc": "Hoàn thành 2 participation" }
   }
 }

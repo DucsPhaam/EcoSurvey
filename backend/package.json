@@ -9,7 +9,10 @@
     "lint": "eslint src/**/*.js",
     "test": "jest --forceExit",
     "test:watch": "jest --watch --forceExit",
-    "test:coverage": "jest --coverage --forceExit"
+    "test:coverage": "jest --coverage --forceExit",
+    "db:migrate": "sequelize-cli db:migrate",
+    "db:seed": "sequelize-cli db:seed:all",
+    "db:reset": "sequelize-cli db:drop && sequelize-cli db:create && sequelize-cli db:migrate && sequelize-cli db:seed:all"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
@@ -41,6 +44,7 @@
     "eslint": "^9.11.1",
     "jest": "^30.4.2",
     "nodemon": "^3.1.7",
+    "sequelize-cli": "^6.6.5",
     "sequelize-mock": "^0.10.2",
     "sqlite3": "^6.0.1",
     "supertest": "^7.2.2"

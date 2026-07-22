@@ -35,7 +35,13 @@ export default function LoginPage() {
       const loggedUser = await login(form.login, form.password, captchaToken)
       applyTheme(loggedUser.ui_theme)
       toast.success(`${t('auth:toast.welcomeBack')}, ${loggedUser.full_name}!`)
-      const dest = from || (loggedUser.role === 'Admin' ? '/admin' : '/dashboard')
+      // Admin always goes to /admin; student/staff use saved `from` only if it's not an admin route
+      let dest
+      if (loggedUser.role === 'Admin') {
+        dest = (from && from.startsWith('/admin')) ? from : '/admin'
+      } else {
+        dest = (from && !from.startsWith('/admin')) ? from : '/dashboard'
+      }
       navigate(dest, { replace: true })
     } catch (err) {
       toast.error(err.response?.data?.message || t('auth:toast.loginFailed'))

@@ -8,9 +8,11 @@ A full-stack web application for managing environmental awareness surveys, track
 
 | Feature | Description |
 |---|---|
-| 🔐 **Advanced Security** | JWT Auth, Cloudflare Turnstile CAPTCHA, Redis Rate Limiting, Helmet CSP |
+| 🔐 **Advanced Security** | JWT Auth, Cloudflare Turnstile CAPTCHA, Redis Rate Limiting (1-min windows), Helmet CSP |
+| 🛡️ **Admin Security Center** | Dedicated profile panel for Admin with account info, password management, and auth method status |
 | 🔑 **Google OAuth** | Seamless login with Google accounts |
-| 🌐 **Multi-language (i18n)** | Full English & Vietnamese translation support across the platform |
+| 🌐 **Multi-language (i18n)** | Full English & Vietnamese translation support across the platform (synced across all new features) |
+| 🗄️ **Database Migrations** | Robust schema management using Sequelize CLI migrations |
 | ✉️ **Account Recovery** | Forgot Password flow & Email Verification upon registration |
 | 📋 **Survey System** | Create surveys with Text, Single-Choice, Multi-Choice questions |
 | 📊 **Survey Analytics** | Per-question visual analytics & charts using **Recharts** |

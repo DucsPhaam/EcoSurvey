@@ -6,17 +6,17 @@ const authCtrl = require('../controllers/authController');
 
 // Strict limiter for sensitive auth endpoints
 const forgotPasswordLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
+  windowMs: 60 * 1000, // 1 min
   max: 5,
-  message: { message: 'Quá nhiều yêu cầu đặt lại mật khẩu. Vui lòng thử lại sau 1 giờ.' },
+  message: { message: 'Quá nhiều yêu cầu đặt lại mật khẩu. Vui lòng thử lại sau 1 phút.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
 const registerLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
+  windowMs: 60 * 1000, // 1 min
   max: 10,
-  message: { message: 'Quá nhiều tài khoản được tạo từ IP này. Vui lòng thử lại sau.' },
+  message: { message: 'Quá nhiều tài khoản được tạo từ IP này. Vui lòng thử lại sau 1 phút.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
