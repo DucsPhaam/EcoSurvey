@@ -1,0 +1,37 @@
+name: ecosurvey-dev
+
+# Docker Compose override for development
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# This file mounts source code as volumes and runs in development mode.
+
+services:
+  backend:
+    build:
+      target: builder  # ignored for now, kept for future multi-target builds
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./backend/src:/app/src:ro
+    command: node --watch src/server.js
+
+  frontend:
+    build:
+      target: builder
+    volumes:
+      - ./frontend/src:/app/src:ro
+      - ./frontend/index.html:/app/index.html:ro
+      - ./frontend/nginx.conf:/app/nginx.conf:ro
+    environment:
+      NODE_ENV: development
+
+  db:
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_dev_data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  db_dev_data:
+    name: ecosurvey_dev_db_data

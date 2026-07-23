@@ -1,0 +1,38 @@
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom'
+import { Toaster } from 'react-hot-toast'
+import App from './App'
+import { AuthProvider } from './contexts/AuthContext'
+import { ThemeProvider } from './contexts/ThemeContext'
+import { SocketProvider } from './contexts/SocketContext'
+import './index.css'
+import './i18n' // Import i18n configuration
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <ThemeProvider>
+        <AuthProvider>
+          <SocketProvider>
+            <App />
+          </SocketProvider>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '14px',
+                borderRadius: '12px',
+                padding: '12px 16px',
+              },
+              success: { iconTheme: { primary: '#708238', secondary: '#fff' } },
+              error:   { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
+            }}
+          />
+        </AuthProvider>
+      </ThemeProvider>
+    </BrowserRouter>
+  </React.StrictMode>
+)

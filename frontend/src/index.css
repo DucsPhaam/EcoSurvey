@@ -1,0 +1,314 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   CSS CUSTOM PROPERTIES — Light theme (default)
+   ============================================================ */
+:root {
+  --color-sand:       #D9C9A8;
+  --color-beige:      #E8DCC0;
+  --color-cream:      #F2EAD3;
+  --color-clay:       #B07D52;
+  --color-terracotta: #A85B3E;
+  --color-moss:       #7A8B5C;
+  --color-forest:     #3E5240;
+  --color-ink:        #1A1A1A;
+  --color-paper:      #FAF6E9;
+}
+
+/* ============================================================
+   CSS CUSTOM PROPERTIES — Dark theme overrides
+   ============================================================ */
+.dark {
+  --color-sand:       #3A3020;
+  --color-beige:      #2C2518;
+  --color-cream:      #252018;
+  --color-clay:       #C99A6E;
+  --color-terracotta: #C97A60;
+  --color-moss:       #8FAF6A;
+  --color-forest:     #6A9E72;
+  --color-ink:        #E8DEC8;
+  --color-paper:      #1A160E;
+}
+
+/* ============================================================
+   GLOBAL FONT ENFORCEMENT
+   Using system fonts - no external dependency!
+   ============================================================ */
+*, *::before, *::after {
+  font-family: 
+    'Segoe UI', 
+    'Roboto', 
+    'Helvetica Neue', 
+    Arial, 
+    'Noto Sans Vietnamese', 
+    'Noto Sans', 
+    sans-serif !important;
+}
+
+/* ============================================================
+   BASE STYLES
+   ============================================================ */
+@layer base {
+  * { @apply border-earth-ink; }
+
+  html, body {
+    font-family: 
+      'Segoe UI', 
+      'Roboto', 
+      'Helvetica Neue', 
+      Arial, 
+      'Noto Sans Vietnamese', 
+      'Noto Sans', 
+      sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply text-earth-ink antialiased bg-earth-paper;
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(26, 26, 26, 0.08) 1px, transparent 0);
+    background-size: 24px 24px;
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+
+  .dark body {
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(232, 222, 200, 0.05) 1px, transparent 0);
+    background-size: 24px 24px;
+  }
+
+  /* Headings - use serif for display */
+  h1, h2, h3, h4 {
+    font-family: 
+      Georgia, 
+      'Times New Roman', 
+      'Segoe UI', 
+      serif;
+    font-weight: 400;
+  }
+
+  /* All text elements */
+  p, li, td, th, label, span, div, a, button, input, textarea, select {
+    font-family: inherit;
+  }
+
+  /* Display font class */
+  .font-display {
+    font-family: 
+      Georgia, 
+      'Times New Roman', 
+      'Segoe UI', 
+      serif;
+  }
+
+  /* UI titles, labels, badges */
+  .ui-title, .label, .badge {
+    font-family: 
+      'Segoe UI', 
+      'Roboto', 
+      'Helvetica Neue', 
+      Arial, 
+      sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+  }
+
+  /* Monospace */
+  .font-mono, code, pre {
+    font-family: 
+      'Cascadia Code', 
+      'JetBrains Mono', 
+      Consolas, 
+      'Courier New', 
+      monospace;
+  }
+
+  /* Table header and cell */
+  .table-header {
+    font-family: 
+      'Segoe UI', 
+      'Roboto', 
+      'Helvetica Neue', 
+      Arial, 
+      sans-serif;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .table-cell {
+    font-family: 
+      'Segoe UI', 
+      'Roboto', 
+      'Helvetica Neue', 
+      Arial, 
+      sans-serif;
+    padding: 0.75rem;
+    vertical-align: middle;
+  }
+
+  /* ── Accessibility: Focus-visible ring ─────────────────────── */
+  :focus-visible {
+    outline: 3px solid var(--color-forest);
+    outline-offset: 2px;
+  }
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* ── Accessibility: Skip-to-content link ───────────────────── */
+  .skip-link {
+    @apply absolute -top-full left-4 z-[100] bg-earth-forest text-earth-cream px-4 py-2
+           ui-title border-[3px] border-earth-ink;
+  }
+  .skip-link:focus {
+    @apply top-4;
+  }
+
+  /* ── Screen reader only utility ────────────────────────────── */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+}
+
+/* ============================================================
+   COMPONENT STYLES
+   ============================================================ */
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 bg-earth-forest text-earth-cream
+           ui-title border-[3px] border-earth-ink shadow-brutal
+           hover:shadow-brutal-sm hover:translate-x-[2px] hover:translate-y-[2px]
+           transition-all duration-100 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 bg-earth-paper text-earth-ink
+           ui-title border-[3px] border-earth-ink shadow-brutal-sm
+           hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]
+           transition-all duration-100;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 bg-earth-terracotta text-earth-paper
+           ui-title border-[3px] border-earth-ink shadow-brutal
+           hover:shadow-brutal-sm hover:translate-x-[2px] hover:translate-y-[2px]
+           transition-all duration-100;
+  }
+  .card {
+    @apply bg-earth-paper border-[3px] border-earth-ink shadow-brutal;
+  }
+  .card-hover {
+    @apply card hover:shadow-brutal-sm hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-100 cursor-pointer;
+  }
+  .input {
+    @apply w-full px-4 py-3 bg-earth-paper border-[3px] border-earth-ink text-earth-ink
+           focus:outline-none focus:bg-earth-cream
+           transition-colors duration-100 font-sans;
+  }
+  .input::placeholder {
+    color: var(--color-ink);
+    opacity: 0.4;
+  }
+  .label {
+    @apply block text-xs ui-title tracking-wider text-earth-ink mb-2;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 border-2 border-earth-ink text-xs ui-title;
+  }
+  .badge-pending  { @apply badge bg-earth-sand text-earth-ink; }
+  .badge-approved { @apply badge bg-earth-moss text-earth-paper; }
+  .badge-rejected { @apply badge bg-earth-terracotta text-earth-paper; }
+  .badge-draft    { @apply badge bg-earth-paper text-earth-ink; }
+  .badge-published{ @apply badge bg-earth-forest text-earth-paper; }
+  .badge-closed   { @apply badge bg-earth-clay text-earth-paper; }
+  .stat-block {
+    @apply bg-earth-cream border-[3px] border-earth-ink shadow-brutal p-6;
+  }
+  .page-header { @apply mb-10; }
+  .page-title  { @apply text-4xl md:text-5xl font-display uppercase text-earth-ink; }
+  .page-subtitle {
+    @apply mt-2 font-mono text-sm uppercase tracking-widest;
+    color: var(--color-ink);
+    opacity: 0.7;
+  }
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-3 text-sm ui-title
+           hover:bg-earth-cream hover:text-earth-ink border-l-[3px] border-transparent
+           transition-colors;
+    color: color-mix(in srgb, var(--color-ink) 70%, transparent);
+  }
+  .sidebar-link-active {
+    @apply flex items-center gap-3 px-4 py-3 text-sm ui-title
+           bg-earth-forest text-earth-paper border-l-[3px] border-earth-ink;
+  }
+  .divider-thick {
+    @apply h-[3px] bg-earth-ink w-full;
+  }
+  .impact-num {
+    @apply font-display text-5xl md:text-6xl text-earth-forest leading-none;
+  }
+  /* Body text style — easier to read */
+  .body-text {
+    @apply text-base leading-relaxed;
+    color: color-mix(in srgb, var(--color-ink) 85%, transparent);
+  }
+  .heading-hero { @apply font-display text-5xl md:text-7xl leading-[1.05]; }
+  .heading-section { @apply font-display text-3xl md:text-5xl leading-tight; }
+  .heading-card { @apply font-sans font-bold text-lg uppercase tracking-wide leading-snug; }
+}
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--color-paper); }
+::-webkit-scrollbar-thumb { background: var(--color-ink); }
+
+/* ============================================================
+   MISC UTILITIES
+   ============================================================ */
+.bg-paper-warm {
+  background-color: var(--color-paper);
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 23px, rgba(26,26,26,0.04) 23px, rgba(26,26,26,0.04) 24px);
+}
+.dark .bg-paper-warm {
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 23px, rgba(232,222,200,0.04) 23px, rgba(232,222,200,0.04) 24px);
+}
+
+.tape {
+  @apply absolute px-3 py-1 bg-earth-cream border-2 border-earth-ink ui-title text-xs;
+}
+
+.stamp {
+  @apply absolute px-3 py-1.5 border-[3px] border-earth-ink ui-title text-xs rotate-[-8deg] animate-stamp;
+}
+
+/* ============================================================
+   SMOOTH THEME TRANSITION
+   ============================================================ */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 200ms;
+  transition-timing-function: ease;
+}
+/* Don't animate transforms and opacity globally — breaks animations */
+.animate-fade-in, .animate-slide-up, .animate-marquee, .animate-stamp,
+.btn-primary, .btn-secondary, .btn-danger, .card-hover {
+  transition-property: all;
+}

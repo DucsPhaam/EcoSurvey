@@ -1,0 +1,118 @@
+========================================================================
+TỔNG QUAN HỆ THỐNG ECOSURVEY - ĐÁNH GIÁ CHỨC NĂNG VÀ PHÂN TÍCH KỸ THUẬT SÂU
+========================================================================
+
+1. KIẾN TRÚC TỔNG THỂ (ARCHITECTURE)
+- Frontend: React 18 (Vite), Tailwind CSS, Recharts (Vẽ biểu đồ), Socket.io-client, i18next (Đa ngôn ngữ).
+- Backend: Node.js, Express.js, Sequelize ORM.
+- Database & Cache: MySQL 8.0 (Lưu trữ chính), Redis (Rate Limiting).
+- Tích hợp bên thứ ba: 
+  + Cloudinary (Lưu trữ ảnh/file).
+  + Cloudflare Turnstile (CAPTCHA chống spam).
+  + OpenRouter (Gemini-2.5-flash AI).
+  + Google OAuth 2.0 (Đăng nhập Google).
+
+========================================================================
+2. PHÂN TÍCH CHUYÊN SÂU CÁC LUỒNG HOẠT ĐỘNG (DEEP DIVE WORKFLOWS)
+========================================================================
+
+A. Authentication & Security (Xác thực và Bảo mật)
+- Luồng Local Login/Register:
+  + Frontend gửi form (kèm Turnstile CAPTCHA token).
+  + Backend verify CAPTCHA qua Cloudflare. Nếu hợp lệ, mã hóa password bằng `bcrypt`.
+  + Trả về Access Token (JWT, sống 15 phút) qua JSON payload và Refresh Token (JWT, sống 7 ngày) được gài vào HTTP-Only Cookie. Frontend lưu Access Token vào bộ nhớ tạm (Context/Zustand) để gắn vào Header `Authorization: Bearer <token>` cho các request sau.
+- Luồng Google OAuth:
+  + Sử dụng `Passport.js`. Frontend redirect user sang màn hình Google Consent.
+  + Google trả về profile. Backend kiểm tra email trong DB. 
+  + Nếu user chưa tồn tại, backend gán cờ `isNewGoogleUser=true` để Frontend redirect sang form đăng ký bổ sung mật khẩu. Nếu đã tồn tại, cấp phát JWT và cookie như bình thường.
+- Security Headers & Rate Limit:
+  + Backend dùng `helmet` để thiết lập Content Security Policy (CSP), chống XSS.
+  + Dùng `express-rate-limit` kết hợp Redis Store để giới hạn số lượng request, chống Brute-force vào API login (ví dụ: 5 request/phút).
+
+B. Real-time Push Notifications (Thông báo đẩy bằng Socket.io)
+- Cách thiết lập: 
+  + File `socketService.js` khởi tạo WebSockets instance trên cùng HTTP server của Express.
+  + Middleware của Socket.io yêu cầu Frontend gửi JWT Token lên qua `handshake.auth.token` để xác thực danh tính kết nối.
+- Cách quản lý kết nối:
+  + Sau khi xác thực, backend đọc `userId` từ token và đưa Socket của user đó vào một Room riêng tư (vd: `socket.join('user_1')`).
+- Cách phát sự kiện (Emit):
+  + Khi có hành động nghiệp vụ xảy ra (vd: Admin duyệt báo cáo của Sinh viên, cấp 50 điểm), backend sẽ gọi `io.to('user_1').emit('new_notification')`.
+  + Lúc này Frontend đang lắng nghe (`socket.on('new_notification')`) sẽ lập tức hiển thị thông báo popup Toast và cập nhật icon Quả chuông (tăng số lượng chưa đọc) mà KHÔNG cần reload trang.
+
+C. Gamification: Points & Badges (Hệ thống Điểm & Danh hiệu)
+- Luồng tích điểm:
+  + Bảng `PointLog` đóng vai trò như một Sổ cái (Ledger), ghi nhận mọi giao dịch điểm với `action_type` (Survey_Completion, Event_Report, Bonus) và `reference_id` trỏ đến ID của bản ghi nguồn để dễ truy vết.
+- Trigger tự động cấp Badge (`badgeService.js`):
+  + Bất cứ khi nào điểm hoặc số lượng khảo sát của user tăng lên, hàm `checkAndAwardBadges(userId)` sẽ được gọi.
+  + Backend sẽ lấy tất cả danh hiệu user chưa có (từ bảng `Badge`) và so sánh điều kiện (`condition_type` như `TOTAL_POINTS` hoặc `SURVEY_COUNT`).
+  + Nếu đạt, backend insert vào `UserBadge` và lập tức bắn Socket.io event `new_badge` về cho Frontend hiển thị pháo hoa chúc mừng.
+
+D. Cron Jobs (Tác vụ nền chạy ngầm)
+- Hệ thống sử dụng thư viện `node-cron` chạy các hàm định kỳ trong `cronService.js`:
+  + Job 1 (Chạy mỗi giờ): Quét các bài Khảo sát (Survey) đang ở trạng thái Publish nhưng `end_date` đã trôi qua so với thời gian hiện tại -> Tự động chuyển status sang `Closed`.
+  + Job 2 (Chạy mỗi giờ): Query Top 10 user có tổng điểm cao nhất. Nếu user nằm trong Top 10 mà chưa có huy hiệu "Top 10", hệ thống sẽ tự động cấp huy hiệu này và bắn thông báo.
+
+E. AI Integration (Tích hợp Trí tuệ nhân tạo)
+- `aiService.js` chịu trách nhiệm gọi API tới OpenRouter.
+- Fallback Mechanism (Cơ chế dự phòng): Nếu hệ thống không có `OPENROUTER_API_KEY` (hết tiền hoặc quên cấu hình), backend sẽ dùng logic Regex/Match từ khóa (Mock Data) để tự động trả về câu trả lời giả lập thay vì crash server.
+- Ứng dụng: Chatbot ở Landing Page giúp tự động trả lời câu hỏi FAQ của user dựa trên data text, hoặc tính năng tóm tắt nội dung báo cáo ngoại khoá dài thành 2-3 câu ngắn gọn cho Admin dễ đọc.
+
+F. File Uploads (Xử lý đa phương tiện)
+- Khi user nộp báo cáo có đính kèm ảnh (Image/PDF):
+  + File upload từ client sẽ được xử lý vào bộ nhớ RAM tạm thông qua `multer` (`storageService.js`).
+  + Backend sử dụng `cloudinary.uploader.upload_stream` để đẩy trực tiếp buffer data đó lên máy chủ Cloudinary một cách an toàn.
+  + Cloudinary trả về 1 URL tĩnh (secure_url). Backend sẽ lưu URL này vào MySQL thay vì lưu file vật lý trên ổ cứng server, giúp giảm tải dung lượng ổ cứng.
+
+G. Survey System (Hệ thống Khảo sát & Phân tích)
+- Quản lý vòng đời (Lifecycle): 
+  + Admin tạo Survey, định nghĩa start_date và end_date. Khi status là 'Published', survey hiển thị trên Dashboard của đối tượng được nhắm mục tiêu (Student/Staff hoặc All).
+  + Mỗi Survey chứa nhiều Question (One-to-Many). Các loại câu hỏi hỗ trợ: Text (Văn bản), Single_Choice (Chọn một), Multiple_Choice (Chọn nhiều).
+- Bảo mật nộp bài chống IDOR (Insecure Direct Object Reference): 
+  + Backend kiểm tra chặt chẽ mảng `answers` gửi lên, xây dựng một Set validation để đảm bảo 100% các `question_id` đều thuộc đúng bài khảo sát mà user đang nộp.
+- Survey Analytics (Phân tích dữ liệu kết quả & Biểu đồ Recharts):
+  + Admin vào màn hình Analytics, frontend gọi API `/api/admin/surveys/:id/analytics`.
+  + Backend dùng thuật toán vòng lặp gộp (aggregate) các options đã chọn. Đối với câu hỏi `Single_Choice`, nó đếm số lần xuất hiện của mỗi option. Đối với `Multiple_Choice` (nơi các lựa chọn của user được lưu gộp cách nhau bằng chuỗi phân cách `|||`), backend sẽ split chuỗi ra và đếm tần suất độc lập cho từng lựa chọn.
+  + Dữ liệu trả về Frontend dưới dạng mảng JSON đếm số lượng (ví dụ: `[{ name: 'Option A', count: 5 }]`). 
+  + Thư viện `Recharts` ở Frontend (`SurveyAnalytics.jsx`) sẽ map dữ liệu này vào component `<BarChart data={chartData} layout="vertical">`. Nó tự động scale trục giá trị (XAxis type="number") và vẽ các thanh `<Bar>` ngang có màu sắc luân phiên (sử dụng mảng `COLORS` và `<Cell>`). 
+  + Đối với câu trả lời dạng văn bản (`Text`), Frontend render dưới dạng một danh sách cuộn dọc (scrollable list) trực quan thay vì vẽ biểu đồ.
+- Chấm điểm ẩn danh (Anonymous Grading):
+  + Khi Admin duyệt các câu trả lời tự luận (Text) của user để cho điểm thưởng thêm (Bonus score), API trả về danh sách Response nhưng cố tình che giấu toàn bộ thông tin định danh (Tên, Email). Thay vào đó, API trả về nhãn giả danh như "Ẩn danh #1", "Ẩn danh #2". Điều này giúp quá trình chấm điểm công bằng và không bị thiên vị.
+
+H. Extracurricular Participation (Báo cáo hoạt động ngoại khoá)
+- Validation & Anti-Spam (Chống rác dữ liệu):
+  + Backend có Guard giới hạn: Không cho phép 1 user có quá 3 báo cáo ở trạng thái "Pending" cùng lúc. Ngăn chặn việc bấm nộp điên cuồng làm đầy ổ cứng.
+  + Trùng lặp sự kiện: User không thể nộp lại 1 sự kiện có cùng tên đã được "Approved" trong vòng 30 ngày qua.
+- Transaction Review Flow:
+  + Quá trình Admin phê duyệt (Approve) một báo cáo được bọc trong Database Transaction (`sequelize.transaction`).
+  + Quy trình diễn ra: (1) Cập nhật trạng thái báo cáo -> (2) Tạo bản ghi `PointLog` để cộng 50 điểm -> (3) Tạo `Notification` trong DB -> (4) Bắn Socket.io -> (5) Check Badge.
+  + Lợi ích: Nếu có bất kỳ khâu nào (như lỗi mạng DB) khiến việc cộng điểm bị rớt, mọi thay đổi (kể cả việc chuyển status) sẽ bị `Rollback` lại như cũ. Đảm bảo dữ liệu không bị hiện tượng "Báo cáo duyệt rồi nhưng điểm không có".
+
+I. Database Schema & ERD (Mô hình Cơ sở dữ liệu cốt lõi)
+- `User`: Lưu thông tin tài khoản, auth, roles.
+- Bảng nghiệp vụ Khảo sát: `Survey` (1) - (n) `Question` (1) - (n) `SurveyAnswer` (n) - (1) `SurveyResponse` (n) - (1) `User`. (Đảm bảo bằng UNIQUE Constraint `uq_survey_user` để 1 user chỉ làm 1 lần).
+- Bảng nghiệp vụ Ngoại khoá: `Participation` (1) - (n) `ParticipationFile`.
+- Bảng Lịch sử & Gamification: `PointLog` (Lịch sử điểm), `Badge`, `UserBadge` (Bảng trung gian N-N lưu thời điểm đạt danh hiệu). `Notification` (Lưu thông báo).
+
+J. Đa ngôn ngữ (i18n - Internationalization)
+- Cấu hình (Setup): 
+  + Hệ thống sử dụng thư viện `i18next` và `react-i18next`. Cấu hình khởi tạo nằm ở `frontend/src/i18n/index.js`.
+  + Tích hợp plugin `i18next-browser-languagedetector` để tự động phát hiện ngôn ngữ mà trình duyệt của user đang sử dụng và thiết lập làm ngôn ngữ mặc định (ngôn ngữ dự phòng fallbackLng là `vi` - Tiếng Việt).
+- Phân tách Namespace (Tối ưu hóa quản lý): 
+  + Dữ liệu từ điển được lưu trong các file JSON thuần (`en.json`, `vi.json`).
+  + Để tránh file JSON bị phình to và lộn xộn, JSON được chia thành nhiều nhánh (Namespace) như: `common`, `admin`, `survey`, `participation`, `auth`, `profile`, `nav`, v.v. 
+  + Trong cấu hình `i18n/index.js`, hệ thống import và ánh xạ các nhánh này vào object `resources`.
+- Luồng hoạt động ở Component: 
+  + Các Component ở Frontend sẽ gọi Hook `const { t } = useTranslation('namespace_name')`.
+  + Khi render văn bản tĩnh, thay vì viết hardcode (vd: `<h1>Đăng nhập</h1>`), lập trình viên sẽ viết `<h1>{t('auth.login')}</h1>`.
+  + Khi user nhấn nút đổi ngôn ngữ (EN/VI) trên thanh Navbar ở góc trên cùng, hàm `i18n.changeLanguage('en')` được kích hoạt. Trạng thái toàn cục thay đổi làm cho React tự động re-render lại toàn bộ các component đang ngầm đăng ký với hook `useTranslation`, từ đó hiển thị từ vựng mới ngay lập tức, vô cùng mượt mà không cần reload trang.
+
+========================================================================
+3. ĐÁNH GIÁ CHẤT LƯỢNG VÀ KIẾN TRÚC
+========================================================================
+- Ưu điểm:
+  + Kiến trúc chia lớp (Layered Architecture): Các Service (aiService, badgeService, socketService) được tách biệt hoàn toàn khỏi Controller.
+  + Chống lỗi đồng bộ (Data Integrity): Sử dụng Transactions rất chuẩn mực ở các API thay đổi tài chính/điểm số (`reviewParticipation`, `submitSurvey`).
+  + Tối ưu UX/UI vượt trội: Sử dụng WebSockets kết hợp Gamification tạo cảm giác "Real-time" như một app native.
+  + Bảo mật chuyên sâu: Rate Limiter + Cloudflare Turnstile CAPTCHA chặn đứng Botnet. Phân tích quyền sở hữu (Role-based & Ownership checks) rõ ràng ở mọi API.
+- Hạn chế nhỏ:
+  + Chưa áp dụng Message Queue (như RabbitMQ/BullMQ) cho các tác vụ nặng (như gửi hàng loạt email Notification khi publish survey, hay resize ảnh), điều này có thể gây thắt nút cổ chai (bottleneck) nếu lượng user lớn. Cần đưa vào kế hoạch nâng cấp Phase 7.

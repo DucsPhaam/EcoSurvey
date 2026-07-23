@@ -1,0 +1,13 @@
+node_modules/
+.env
+dist/
+uploads/
+*.log
+logs/
+.DS_Store
+Thumbs.db
+
+# Understand Anything plugin
+.ua/
+.ua.zip
+review_graph.py
