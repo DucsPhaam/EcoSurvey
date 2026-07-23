@@ -77,8 +77,8 @@ export default function ParticipationReview() {
       <div className="flex gap-2 mb-6 flex-wrap">
         {['Pending', 'Approved', 'Rejected', ''].map((s) => (
           <button key={s} onClick={() => { setFilter(s); setPage(1) }}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-              filter === s ? 'bg-brand-600 text-white shadow-glow-sm' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-brand-400'}`}>
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                filter === s ? 'bg-earth-forest text-white border-[2px] border-earth-ink shadow-brutal-sm' : 'bg-earth-paper text-earth-ink/70 border-[2px] border-earth-ink/20 hover:border-earth-ink hover:text-earth-ink'}`}>
             {s || 'All'}
           </button>
         ))}

@@ -68,7 +68,7 @@ export default function LoginPage() {
 
         <div className="relative space-y-8">
           <div>
-            <p className="font-mono text-xs uppercase tracking-widest mb-3 opacity-80">// {t('auth:leftPanel.accessPortal')}</p>
+            <p className="font-mono text-sm uppercase tracking-widest mb-3 opacity-80">{t('auth:leftPanel.accessPortal')}</p>
             <h1 className="font-display text-6xl uppercase leading-none">{t('auth:leftPanel.welcomeBack1')}<br />{t('auth:leftPanel.welcomeBack2')}</h1>
           </div>
           <p className="max-w-md text-lg opacity-90">
@@ -89,7 +89,7 @@ export default function LoginPage() {
           </div>
 
           <div className="border-[3px] border-earth-paper p-5 bg-earth-forest">
-            <p className="font-mono text-xs uppercase tracking-widest opacity-80 mb-1">// {t('auth:leftPanel.didYouKnow')}</p>
+            <p className="font-mono text-sm uppercase tracking-widest opacity-80 mb-1">{t('auth:leftPanel.didYouKnow')}</p>
             <p className="font-display text-lg">{t('auth:leftPanel.fact')}</p>
           </div>
         </div>
@@ -114,7 +114,7 @@ export default function LoginPage() {
               <span className="bg-earth-forest text-earth-paper px-2 py-0.5 font-mono text-xs uppercase tracking-widest">{t('auth:login')}</span>
             </div>
             <h2 className="font-display text-3xl uppercase mt-2">{t('auth:loginNow')}</h2>
-            <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60 mt-2">/ {t('auth:welcomeBack')}</p>
+            <p className="font-mono text-sm uppercase tracking-widest text-earth-ink/60 mt-2">{t('auth:welcomeBack')}</p>
 
             <form onSubmit={handleSubmit} className="mt-8 space-y-5">
               <div>

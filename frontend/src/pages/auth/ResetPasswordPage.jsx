@@ -85,7 +85,7 @@ export default function ResetPasswordPage() {
           ) : (
             <>
               <div className="mb-6">
-                <span className="font-mono text-xs uppercase tracking-widest text-earth-ink/50">/ auth</span>
+                <span className="font-mono text-sm uppercase tracking-widest text-earth-ink/50">auth</span>
                 <h2 className="font-display text-3xl uppercase mt-1">{t('resetPasswordPage.title')}</h2>
                 <p className="text-sm text-earth-ink/60 mt-2">
                   {t('resetPasswordPage.desc1')} <strong>{email}</strong>

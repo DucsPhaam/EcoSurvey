@@ -53,16 +53,16 @@ export default function MyDashboard() {
       {/* Header */}
       <div className="card p-6 md:p-8 relative">
         <div className="stamp top-4 right-4 bg-earth-terracotta text-earth-paper">Live</div>
-        <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60">// Dashboard</p>
+        <p className="font-mono text-sm uppercase tracking-widest text-earth-ink/60">Dashboard</p>
         <h1 className="page-title mt-2">{t('dashboard.welcome')}, {user?.full_name?.split(' ')[0]}.</h1>
-        <p className="page-subtitle">/ {t('dashboard.yourImpact')}</p>
+        <p className="page-subtitle">{t('dashboard.yourImpact')}</p>
       </div>
 
       {/* Personal Impact Numbers */}
       <section>
         <div className="flex items-end justify-between mb-4">
           <div>
-            <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60">// {t('dashboard.yourImpact')}</p>
+            <p className="font-mono text-sm uppercase tracking-widest text-earth-ink/60">{t('dashboard.yourImpact')}</p>
             <h2 className="font-display text-3xl uppercase mt-1">{t('dashboard.personalNumbers')}</h2>
           </div>
           <Link to="/leaderboard" className="hidden sm:inline-flex ui-title text-sm border-b-[3px] border-earth-ink pb-0.5 hover:text-earth-forest">
@@ -86,7 +86,7 @@ export default function MyDashboard() {
         <div className="relative">
           <div className="flex items-center gap-2 mb-2">
             <Leaf className="w-5 h-5 text-earth-cream" />
-            <p className="font-mono text-xs uppercase tracking-widest opacity-90">// {t('dashboard.estimatedFootprint')}</p>
+            <p className="font-mono text-sm uppercase tracking-widest opacity-90">{t('dashboard.estimatedFootprint')}</p>
           </div>
           <h2 className="font-display text-3xl md:text-4xl uppercase">{t('dashboard.environmentalImpact')}</h2>
           <p className="font-mono text-sm opacity-80 mt-2 max-w-2xl">

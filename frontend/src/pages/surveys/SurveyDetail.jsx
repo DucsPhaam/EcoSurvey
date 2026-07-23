@@ -20,7 +20,7 @@ function QuestionItem({ question, answer, onChange }) {
             {question_text}
             {is_required && <span className="text-earth-terracotta ml-1">*</span>}
           </p>
-          <p className="font-mono text-[10px] uppercase tracking-widest text-earth-ink/60 mt-1">/ {type.replace('_', ' ')}</p>
+          <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60 mt-1">{type.replace('_', ' ')}</p>
         </div>
       </div>
 
@@ -148,6 +148,7 @@ export default function SurveyDetail() {
   if (!survey) return null
 
   const daysLeft  = Math.ceil((new Date(survey.end_date) - new Date()) / 86400000)
+  const isNotOpen = new Date(survey.start_date) > new Date()
   const questions = [...(survey.questions || [])].sort((a, b) => a.order_num - b.order_num)
   const requiredCount = questions.filter((q) => q.is_required).length
   const answeredCount = questions.filter((q) => {
@@ -198,6 +199,20 @@ export default function SurveyDetail() {
           <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60">{t('statusLabel')}</p>
           <h2 className="font-display text-3xl uppercase mt-2">{t('surveyCompleted')}</h2>
           <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60 mt-2">{t('alreadySubmitted')}</p>
+          <button onClick={() => navigate('/surveys')} className="btn-primary mt-6">
+            {t('backToBoard')} <ClipboardList className="w-4 h-4" />
+          </button>
+        </div>
+      ) : isNotOpen ? (
+        <div className="card p-10 text-center">
+          <div className="w-20 h-20 mx-auto mb-4 bg-earth-terracotta border-[3px] border-earth-ink flex items-center justify-center shadow-brutal">
+            <Clock className="w-10 h-10 text-earth-paper" />
+          </div>
+          <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60">{t('statusLabel')}</p>
+          <h2 className="font-display text-3xl uppercase mt-2">{t('notOpen')}</h2>
+          <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60 mt-2">
+            {t('opensAt')} {new Date(survey.start_date).toLocaleString()}
+          </p>
           <button onClick={() => navigate('/surveys')} className="btn-primary mt-6">
             {t('backToBoard')} <ClipboardList className="w-4 h-4" />
           </button>

@@ -79,7 +79,7 @@ export default function Navbar() {
   }
 
   const navLinks = isAdmin
-    ? [{ to: '/admin', label: t('nav.dashboard') }, { to: '/admin/users', label: t('nav.users') }, { to: '/admin/surveys', label: t('nav.surveys') }, { to: '/admin/participations', label: t('nav.participations') }]
+    ? [{ to: '/admin', label: t('nav.dashboard') }, { to: '/admin/users', label: t('nav.users') }, { to: '/admin/surveys', label: t('nav.surveys') }, { to: '/admin/participations', label: t('nav.participations') }, { to: '/admin/faqs', label: t('nav.faqs') }]
     : [{ to: '/dashboard', label: t('nav.dashboard') }, { to: '/surveys', label: t('nav.surveys') }, { to: '/participations', label: t('nav.participations') }, { to: '/leaderboard', label: t('nav.leaderboard') }]
 
   return (

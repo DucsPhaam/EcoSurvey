@@ -58,7 +58,11 @@ function SurveyCard({ survey, index }) {
 
       {!survey.is_completed && (
         <div className="mt-4 flex items-center gap-1 ui-title text-sm border-t-[2px] border-earth-ink pt-3">
-          {t('takeSurvey')} <ArrowRight className="w-4 h-4" />
+          {new Date(survey.start_date) > new Date() ? (
+            <span className="text-earth-ink/50">{t('notOpen')}</span>
+          ) : (
+            <>{t('takeSurvey')} <ArrowRight className="w-4 h-4" /></>
+          )}
         </div>
       )}
     </Link>
@@ -117,14 +121,14 @@ export default function SurveyBoard() {
       {/* Header */}
       <div className="card p-6 md:p-8 relative">
         <div className="stamp top-4 right-4 bg-earth-forest text-earth-paper">{t('survey:open')}</div>
-        <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60">{t('survey:boardHeader')}</p>
+        <p className="font-mono text-sm uppercase tracking-widest text-earth-ink/60">{t('survey:boardHeader')}</p>
         <h1 className="page-title mt-2">{t('survey:title')}</h1>
         <p className="page-subtitle">{t('survey:subtitle')}</p>
       </div>
 
       {/* Impact numbers */}
       <section>
-        <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60 mb-3">{t('survey:impactHeader')}</p>
+        <p className="font-mono text-sm uppercase tracking-widest text-earth-ink/60 mb-3">{t('survey:impactHeader')}</p>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <ImpactStat label={t('survey:totalSurveys')}  value={total} />
           <ImpactStat label={t('survey:availableNow')}  value={available} sub={t('survey:availableSub')} />

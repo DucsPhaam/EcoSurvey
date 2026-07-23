@@ -46,11 +46,27 @@ export default function SurveyManagement() {
 
   const handleSearch = (e) => { e.preventDefault(); setPage(1); fetch(1) }
 
+  const toUTCIso = (localStr) => {
+    if (!localStr) return ''
+    const [datePart, timePart] = localStr.split('T')
+    if (!datePart || !timePart) return ''
+    const [y, m, d] = datePart.split('-').map(Number)
+    const [h, min] = timePart.split(':').map(Number)
+    const dateObj = new Date(y, m - 1, d, h, min)
+    if (isNaN(dateObj.getTime())) return ''
+    return dateObj.toISOString()
+  }
+
   const createSurvey = async () => {
     if (!form.title || !form.start_date || !form.end_date) { toast.error(t('surveyManagement.reqFields')); return }
     setActionLoading(true)
     try {
-      await adminService.createSurvey(form)
+      const payload = {
+        ...form,
+        start_date: toUTCIso(form.start_date),
+        end_date: toUTCIso(form.end_date)
+      }
+      await adminService.createSurvey(payload)
       toast.success(t('surveyManagement.created'))
       setCreateModal(false)
       setForm({ title: '', description: '', target_role: 'All', start_date: '', end_date: '', status: 'Draft' })

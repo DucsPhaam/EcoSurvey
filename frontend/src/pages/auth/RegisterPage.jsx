@@ -140,7 +140,7 @@ export default function RegisterPage() {
             <span className="font-display text-2xl uppercase">EcoSurvey</span>
           </Link>
           <h1 className="font-display text-4xl md:text-5xl uppercase mt-6">{t('auth:registerPage.title')}</h1>
-          <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60 mt-2">// {t('auth:registerPage.joinMovement')}</p>
+          <p className="font-mono text-sm uppercase tracking-widest text-earth-ink/60 mt-2">{t('auth:registerPage.joinMovement')}</p>
         </div>
 
         <div className="card p-8">
@@ -159,7 +159,7 @@ export default function RegisterPage() {
                   {availability.username === true  && <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-forest" />}
                   {availability.username === false && <X    className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-terracotta" />}
                 </div>
-                {availability.username === false && <p className="text-earth-terracotta font-mono text-xs uppercase tracking-wider mt-1" role="alert">/ {t('auth:registerPage.usernameTaken')}</p>}
+                {availability.username === false && <p className="text-earth-terracotta font-mono text-sm uppercase tracking-wider mt-1" role="alert">{t('auth:registerPage.usernameTaken')}</p>}
               </div>
 
               <div>
@@ -173,7 +173,7 @@ export default function RegisterPage() {
                   {availability.email === true  && <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-forest" />}
                   {availability.email === false && <X    className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-terracotta" />}
                 </div>
-                {availability.email === false && <p className="text-earth-terracotta font-mono text-xs uppercase tracking-wider mt-1" role="alert">/ {t('auth:registerPage.emailTaken')}</p>}
+                {availability.email === false && <p className="text-earth-terracotta font-mono text-sm uppercase tracking-wider mt-1" role="alert">{t('auth:registerPage.emailTaken')}</p>}
               </div>
 
               <div>
@@ -200,7 +200,7 @@ export default function RegisterPage() {
                     className={`input pl-10 ${form.confirm_password && form.password !== form.confirm_password ? 'border-earth-terracotta' : ''}`} />
                 </div>
                 {form.confirm_password && form.password !== form.confirm_password && (
-                  <p className="text-earth-terracotta font-mono text-xs uppercase tracking-wider mt-1">/ {t('auth:registerPage.passwordMismatch')}</p>
+                  <p className="text-earth-terracotta font-mono text-sm uppercase tracking-wider mt-1">{t('auth:registerPage.passwordMismatch')}</p>
                 )}
               </div>
             </div>
@@ -271,7 +271,7 @@ export default function RegisterPage() {
 
           {step === 2 && (
             <div className="space-y-3 animate-fade-in">
-              <p className="font-mono text-xs uppercase tracking-widest text-earth-ink/60">/ {t('auth:registerPage.confirmSubmit')}</p>
+              <p className="font-mono text-sm uppercase tracking-widest text-earth-ink/60">{t('auth:registerPage.confirmSubmit')}</p>
               <div className="space-y-0">
                 {[
                   [t('auth:username'),    form.username],

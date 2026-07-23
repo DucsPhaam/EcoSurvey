@@ -57,8 +57,8 @@ export default function MyParticipations() {
           <button key={s.key} onClick={() => { setFilter(s.key); setPage(1); fetch(1, s.key) }}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
               filter === s.key
-                ? 'bg-brand-600 text-white shadow-glow-sm'
-                : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-brand-400'
+                ? 'bg-earth-forest text-white border-[2px] border-earth-ink shadow-brutal-sm'
+                : 'bg-earth-paper text-earth-ink/70 border-[2px] border-earth-ink/20 hover:border-earth-ink hover:text-earth-ink'
             }`}>
             {s.label}
           </button>

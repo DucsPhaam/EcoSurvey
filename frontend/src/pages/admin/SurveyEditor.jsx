@@ -103,10 +103,13 @@ export default function SurveyEditor() {
   // We interpret it as local time and convert to UTC.
   const toUTCIso = (localStr) => {
     if (!localStr) return ''
-    // Treat as local time by constructing a Date from local parts
-    const d = new Date(localStr)   // JS interprets YYYY-MM-DDTHH:mm as LOCAL time
-    if (isNaN(d.getTime())) return ''
-    return d.toISOString()         // Always UTC ISO 8601
+    const [datePart, timePart] = localStr.split('T')
+    if (!datePart || !timePart) return ''
+    const [y, m, d] = datePart.split('-').map(Number)
+    const [h, min] = timePart.split(':').map(Number)
+    const dateObj = new Date(y, m - 1, d, h, min)
+    if (isNaN(dateObj.getTime())) return ''
+    return dateObj.toISOString()
   }
 
 

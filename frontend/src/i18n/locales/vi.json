@@ -240,9 +240,9 @@
     "title": "Danh sách Khảo sát",
     "takeSurvey": "Làm khảo sát",
     "open": "Đang mở",
-    "subtitle": "// hoàn thành khảo sát, tích lũy điểm, theo dõi tác động",
-    "impactHeader": "// Tóm tắt tác động",
-    "boardHeader": "// Bảng khảo sát",
+    "subtitle": "hoàn thành khảo sát, tích lũy điểm, theo dõi tác động",
+    "impactHeader": "Tóm tắt tác động",
+    "boardHeader": "Bảng khảo sát",
     "totalSurveys": "Tổng số khảo sát",
     "availableNow": "Đang có sẵn",
     "availableSub": "sẵn sàng thực hiện",
@@ -279,7 +279,10 @@
     "pleaseAnswer": "Vui lòng trả lời:",
     "completeCaptcha": "Vui lòng hoàn thành CAPTCHA.",
     "submitSuccess": "Đã nộp khảo sát! Bạn nhận được 10 điểm.",
-    "submitFailed": "Nộp khảo sát thất bại."
+    "submitFailed": "Nộp khảo sát thất bại.",
+    "notOpen": "Khảo sát chưa mở",
+    "notOpenSub": "Bài khảo sát này hiện tại chưa nhận phản hồi.",
+    "opensAt": "Mở lúc"
   },
   "admin": {
     "dashboard": {
@@ -810,13 +813,37 @@
     "participantsRanked": "người xếp hạng"
   },
   "badgesData": {
-    "1": { "name": "Bước đầu tiên", "desc": "Nộp survey đầu tiên" },
-    "2": { "name": "Nhiệt huyết", "desc": "Hoàn thành 5 surveys" },
-    "3": { "name": "Cống hiến", "desc": "Hoàn thành 10 surveys" },
-    "4": { "name": "Hoạt động viên", "desc": "Tạo participation đầu tiên" },
-    "5": { "name": "Top 10", "desc": "Vào top 10 leaderboard" },
-    "6": { "name": "Thế kỷ", "desc": "Đạt 100 điểm" },
-    "7": { "name": "Eco Warrior", "desc": "Hoàn thành 1 survey môi trường (quy đổi 15 điểm)" },
-    "8": { "name": "Nhà phê bình", "desc": "Hoàn thành 2 participation" }
+    "1": {
+      "name": "Bước đầu tiên",
+      "desc": "Nộp survey đầu tiên"
+    },
+    "2": {
+      "name": "Nhiệt huyết",
+      "desc": "Hoàn thành 5 surveys"
+    },
+    "3": {
+      "name": "Cống hiến",
+      "desc": "Hoàn thành 10 surveys"
+    },
+    "4": {
+      "name": "Hoạt động viên",
+      "desc": "Tạo participation đầu tiên"
+    },
+    "5": {
+      "name": "Top 10",
+      "desc": "Vào top 10 leaderboard"
+    },
+    "6": {
+      "name": "Thế kỷ",
+      "desc": "Đạt 100 điểm"
+    },
+    "7": {
+      "name": "Eco Warrior",
+      "desc": "Hoàn thành 1 survey môi trường (quy đổi 15 điểm)"
+    },
+    "8": {
+      "name": "Nhà phê bình",
+      "desc": "Hoàn thành 2 participation"
+    }
   }
 }

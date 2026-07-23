@@ -239,9 +239,9 @@
     "title": "Surveys",
     "takeSurvey": "Take Survey",
     "open": "Open",
-    "subtitle": "/ complete surveys, earn points, track impact",
-    "impactHeader": "// impact at a glance",
-    "boardHeader": "// Survey board",
+    "subtitle": "complete surveys, earn points, track impact",
+    "impactHeader": "impact at a glance",
+    "boardHeader": "Survey board",
     "totalSurveys": "Total Surveys",
     "availableNow": "Available Now",
     "availableSub": "ready to take",
@@ -278,7 +278,10 @@
     "pleaseAnswer": "Please answer:",
     "completeCaptcha": "Please complete the CAPTCHA.",
     "submitSuccess": "Survey submitted! You earned 10 points.",
-    "submitFailed": "Submission failed."
+    "submitFailed": "Submission failed.",
+    "notOpen": "Survey Not Open Yet",
+    "notOpenSub": "This survey is not accepting responses at this time.",
+    "opensAt": "Opens at"
   },
   "admin": {
     "dashboard": {
@@ -809,13 +812,37 @@
     "participantsRanked": "participants ranked"
   },
   "badgesData": {
-    "1": { "name": "First Step", "desc": "Submit your first survey" },
-    "2": { "name": "Enthusiasm", "desc": "Complete 5 surveys" },
-    "3": { "name": "Dedication", "desc": "Complete 10 surveys" },
-    "4": { "name": "Activist", "desc": "Create your first participation report" },
-    "5": { "name": "Top 10", "desc": "Enter top 10 on the leaderboard" },
-    "6": { "name": "Century", "desc": "Reach 100 points" },
-    "7": { "name": "Eco Warrior", "desc": "Complete 1 environmental survey" },
-    "8": { "name": "Critic", "desc": "Complete 2 participation reports" }
+    "1": {
+      "name": "First Step",
+      "desc": "Submit your first survey"
+    },
+    "2": {
+      "name": "Enthusiasm",
+      "desc": "Complete 5 surveys"
+    },
+    "3": {
+      "name": "Dedication",
+      "desc": "Complete 10 surveys"
+    },
+    "4": {
+      "name": "Activist",
+      "desc": "Create your first participation report"
+    },
+    "5": {
+      "name": "Top 10",
+      "desc": "Enter top 10 on the leaderboard"
+    },
+    "6": {
+      "name": "Century",
+      "desc": "Reach 100 points"
+    },
+    "7": {
+      "name": "Eco Warrior",
+      "desc": "Complete 1 environmental survey"
+    },
+    "8": {
+      "name": "Critic",
+      "desc": "Complete 2 participation reports"
+    }
   }
 }
