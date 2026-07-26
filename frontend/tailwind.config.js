@@ -22,7 +22,7 @@ export default {
       },
       fontFamily: {
         sans:    ['Inter', 'system-ui', 'sans-serif'],
-        display: ['"DM Serif Display"', 'Georgia', 'serif'],
+        display: ['"DM Serif Display"', '"Playfair Display"', 'Georgia', 'serif'],
         mono:    ['JetBrains Mono', 'monospace'],
       },
       animation: {

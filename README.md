@@ -4,17 +4,40 @@ A full-stack web application for managing environmental awareness surveys, track
 
 ---
 
-## ✨ Features (Updated for v2.0)
+## ✨ Recent Major Updates & Improvements (v2.2)
+
+### 🎨 1. Landing Page Refactoring & Componentization
+- **Modular Component Architecture**: Extracted repetitive blocks into reusable subcomponents (`SectionHeader`, `FeatureCard`, `TrendingSurveyCard`, `StepCard`, `FaqItem`).
+- **Brutalist Hover Animations**: Added interactive hover states (`card-hover`) with brutalist shadow shifts and micro-translations across all cards (Trending Surveys, Features, Steps, and Live Feed).
+- **Repeatable Animations**: Configured scroll-triggered animations (`useInView`) to smoothly replay when scrolling up/down.
+- **CTA & Layout Fixes**: Fixed section spacing (`py-14 sm:py-20`), eliminated div overlaps, and wrapped CTA title badges into distinct inline-blocks.
+
+### 📱 2. Responsive Design & Mobile Drawer Navigation
+- **Hamburger Mobile Menu**: Added an interactive mobile navigation drawer (`Menu` / `X` toggle) to both `Navbar` and `LandingPage` headers for mobile/tablet devices.
+- **Language Switch Fixes**: Fixed layout breaking when switching between English and Vietnamese (`i18n`). Added `.no-scrollbar` utility to eliminate dark browser OS scrollbars on navigation containers.
+
+### 🛡️ 3. Admin Navigation & Dashboard Enhancement
+- **Exact Path Matching**: Added `end={true}` to `NavLink` in `Navbar` so `/admin` is only active when at exact Dashboard URL, fixing persistent green active indicators on sub-routes.
+- **EcoTheme StatCard Icons**: Updated Admin Dashboard `StatCard` icon badges to use EcoTheme colors (`bg-earth-forest`, `bg-earth-terracotta`, `bg-earth-moss`, `bg-earth-clay`) for clear visibility in both Light & Dark modes.
+- **Admin Security Center**: Dedicated profile panel for Admin users with account details, email verification status, auth method indicators, and password change modal.
+
+### 🔤 4. Vietnamese Diacritics & Font Support
+- **Playfair Display Integration**: Included `Playfair Display` with `vietnamese` subset in Google Fonts to ensure complete diacritic rendering for uppercase Vietnamese headings (e.g., "KHẢO SÁT").
+
+---
+
+## 🌟 Core Features
 
 | Feature | Description |
 |---|---|
 | 🔐 **Advanced Security** | JWT Auth, Cloudflare Turnstile CAPTCHA, Redis Rate Limiting (1-min windows), Helmet CSP |
 | 🛡️ **Admin Security Center** | Dedicated profile panel for Admin with account info, password management, and auth method status |
 | 🔑 **Google OAuth** | Seamless login with Google accounts |
-| 🌐 **Multi-language (i18n)** | Full English & Vietnamese translation support across the platform (synced across all new features) |
+| 🌐 **Multi-language (i18n)** | Full English & Vietnamese translation support across the platform |
+| 📱 **Responsive & Mobile Menu** | Mobile hamburger drawer navigation & flexible brutalist layouts |
 | 🗄️ **Database Migrations** | Robust schema management using Sequelize CLI migrations |
 | ✉️ **Account Recovery** | Forgot Password flow & Email Verification upon registration |
-| 📋 **Survey System** | Create surveys with Text, Single-Choice, Multi-Choice questions |
+| 📋 **Survey System** | Create surveys with Text, Single-Choice, Multi-Choice questions & strict access controls |
 | 📊 **Survey Analytics** | Per-question visual analytics & charts using **Recharts** |
 | 📁 **Participation Reports** | Submit activity reports with file evidence (image/PDF) |
 | 🔔 **Realtime Notifications** | Instant alerts via **Socket.io** when reports are graded or surveys published |
@@ -22,7 +45,6 @@ A full-stack web application for managing environmental awareness surveys, track
 | 🤖 **AI Assistant** | Gemini-powered FAQ chatbot (mock fallback when no API key) |
 | 📤 **Export** | Excel (.xlsx) for survey results, PDF for participation reports |
 | 🌙 **Dark Mode** | Full dark/light theme with user preference persistence |
-| 📧 **Email Notifications** | Account, recovery & report status emails |
 | 🐳 **Docker** | Full Docker Compose setup with MySQL + Redis + Backend + Frontend |
 | 🧪 **Automated Testing** | Comprehensive test coverage using **Jest**, **Supertest**, **Vitest**, & **RTL** |
 
@@ -158,13 +180,6 @@ Tests cover: AuthContext, ProtectedRoutes, Form rendering, and Interactions.
 | **Student** | Take surveys, submit activity reports, view leaderboard & personal dashboard |
 | **Staff** | Same as Student |
 
-### Registration Flow
-1. User registers & completes Cloudflare Turnstile CAPTCHA.
-2. User receives an Email Verification link and verifies email.
-3. Account status becomes **Pending**.
-4. Admin reviews and **Approves** or **Rejects**.
-5. Approved users receive an email notification and can log in.
-
 ---
 
 ## 🏆 Points System
@@ -177,29 +192,6 @@ Tests cover: AuthContext, ProtectedRoutes, Form rendering, and Interactions.
 
 ---
 
-## 🔧 Environment Variables (Root `.env`)
-
-When using Docker Compose, place the `.env` at the root folder:
-
-| Variable | Description |
-|---|---|
-| `DB_HOST` | MySQL host (use `db` in Docker) |
-| `DB_NAME` | Database name |
-| `MYSQL_ROOT_PASSWORD` | Root password for MySQL |
-| `JWT_SECRET` | JWT signing secret |
-| `JWT_REFRESH_SECRET` | Refresh token secret |
-| `OPENROUTER_API_KEY` | OpenRouter API key (optional) |
-| `SMTP_HOST` | Email server host (for real emails) |
-| `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile Backend Secret Key |
-| `VITE_TURNSTILE_SITE_KEY` | Cloudflare Turnstile Frontend Site Key |
-| `GOOGLE_CLIENT_ID` | Google OAuth Client ID |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret |
-| `CLIENT_URL` | Frontend URL for Google OAuth callback redirect (e.g. `http://localhost:8080`) |
-
----
-
 ## 📄 License
 
 This project is developed for educational purposes as part of an eProject assignment.
-
-## đây là PE chính

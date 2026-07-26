@@ -21,16 +21,21 @@ const downloadFile = async (fn, filename, t) => {
 }
 
 function StatCard({ icon: Icon, label, value, sub, color }) {
-  const colors = { green: 'from-brand-500 to-brand-600', amber: 'from-amber-400 to-orange-500', blue: 'from-blue-500 to-cyan-500', purple: 'from-purple-500 to-pink-500' }
+  const colors = {
+    green: 'bg-earth-forest text-earth-cream',
+    amber: 'bg-earth-terracotta text-earth-paper',
+    blue: 'bg-earth-moss text-earth-paper',
+    purple: 'bg-earth-clay text-earth-paper',
+  }
   return (
-    <div className="card p-5 flex items-center gap-4 hover:shadow-card-hover transition-all duration-300">
-      <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${colors[color] || colors.green} flex items-center justify-center shadow-lg flex-shrink-0`}>
-        <Icon className="w-6 h-6 text-white" />
+    <div className="card p-5 flex items-center gap-4 hover:shadow-brutal-sm transition-all duration-300">
+      <div className={`w-12 h-12 border-[3px] border-earth-ink ${colors[color] || colors.green} flex items-center justify-center shadow-brutal-sm flex-shrink-0`}>
+        <Icon className="w-6 h-6" />
       </div>
       <div>
-        <p className="text-2xl font-display font-bold text-gray-900 dark:text-white">{value}</p>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
-        {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+        <p className="text-2xl font-display font-bold text-earth-ink">{value}</p>
+        <p className="text-sm text-earth-ink/70">{label}</p>
+        {sub && <p className="text-xs font-mono uppercase tracking-widest text-earth-ink/50 mt-0.5">{sub}</p>}
       </div>
     </div>
   )
@@ -90,11 +95,11 @@ export default function AdminDashboard() {
       <div className="grid lg:grid-cols-3 gap-6 mb-6">
         {/* Line chart */}
         <div className="lg:col-span-2 card p-6">
-          <h2 className="font-display font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <BarChart2 className="w-5 h-5 text-brand-500" /> {t('dashboard.surveyResponses')}
+          <h2 className="font-display font-bold text-earth-ink mb-4 flex items-center gap-2">
+            <BarChart2 className="w-5 h-5 text-earth-forest" /> {t('dashboard.surveyResponses')}
           </h2>
           {chartData.length === 0 ? (
-            <div className="h-48 flex items-center justify-center text-gray-400 text-sm">{t('dashboard.noData')}</div>
+            <div className="h-48 flex items-center justify-center text-earth-ink/50 text-sm">{t('dashboard.noData')}</div>
           ) : (
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={chartData}>
@@ -102,7 +107,7 @@ export default function AdminDashboard() {
                 <XAxis dataKey="date" tick={{ fontSize: 12 }} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
                 <Tooltip />
-                <Line type="monotone" dataKey="responses" stroke="#1a7f4b" strokeWidth={2.5} dot={{ fill: '#1a7f4b', r: 4 }} activeDot={{ r: 6 }} />
+                <Line type="monotone" dataKey="responses" stroke="#3E5240" strokeWidth={2.5} dot={{ fill: '#3E5240', r: 4 }} activeDot={{ r: 6 }} />
               </LineChart>
             </ResponsiveContainer>
           )}
@@ -110,7 +115,7 @@ export default function AdminDashboard() {
 
         {/* Pie chart: users by role */}
         <div className="card p-6">
-          <h2 className="font-display font-bold text-gray-900 dark:text-white mb-4">{t('dashboard.usersByRole')}</h2>
+          <h2 className="font-display font-bold text-earth-ink mb-4">{t('dashboard.usersByRole')}</h2>
           <ResponsiveContainer width="100%" height={180}>
             <PieChart>
               <Pie data={roleData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} dataKey="value" nameKey="name">
@@ -127,21 +132,21 @@ export default function AdminDashboard() {
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Bar chart: surveys by status */}
         <div className="card p-6">
-          <h2 className="font-display font-bold text-gray-900 dark:text-white mb-4">{t('dashboard.surveysByStatus')}</h2>
+          <h2 className="font-display font-bold text-earth-ink mb-4">{t('dashboard.surveysByStatus')}</h2>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={surveys.map((s) => ({ status: s.status, count: parseInt(s.count) }))}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis dataKey="status" tick={{ fontSize: 12 }} />
               <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
               <Tooltip />
-              <Bar dataKey="count" fill="#1a7f4b" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="count" fill="#3E5240" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         {/* Quick admin actions */}
         <div className="card p-6">
-          <h2 className="font-display font-bold text-gray-900 dark:text-white mb-4">{t('dashboard.quickActions')}</h2>
+          <h2 className="font-display font-bold text-earth-ink mb-4">{t('dashboard.quickActions')}</h2>
           <div className="space-y-2">
             {[
               { to: '/admin/users?status=Pending', label: t('dashboard.reviewPendingAccounts'), icon: Users, badge: statuses.find((s) => s.status === 'Pending')?.count },
@@ -150,11 +155,11 @@ export default function AdminDashboard() {
               { to: '/admin/faqs',           label: t('dashboard.manageFaqs'),        icon: AlertCircle },
             ].map(({ to, label, icon: Icon, badge }) => (
               <Link key={to} to={to}
-                className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group">
-                <div className="w-8 h-8 rounded-lg bg-brand-50 dark:bg-brand-900/20 flex items-center justify-center group-hover:bg-brand-100 transition-colors">
-                  <Icon className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+                className="flex items-center gap-3 p-3 border-2 border-transparent hover:border-earth-ink hover:bg-earth-cream transition-all group">
+                <div className="w-8 h-8 bg-earth-cream border-2 border-earth-ink flex items-center justify-center group-hover:bg-earth-forest transition-colors">
+                  <Icon className="w-4 h-4 text-earth-ink group-hover:text-earth-cream transition-colors" />
                 </div>
-                <span className="flex-1 text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
+                <span className="flex-1 text-sm font-medium text-earth-ink">{label}</span>
                 {badge > 0 && <span className="badge-pending">{badge}</span>}
               </Link>
             ))}

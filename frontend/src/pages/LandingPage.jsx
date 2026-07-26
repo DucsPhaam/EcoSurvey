@@ -2,11 +2,16 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Leaf, ArrowRight, ArrowUpRight, CheckCircle2, BarChart3, Trophy,
-  MessageCircle, Shield, Zap, Sparkles, ChevronDown, Mail, Loader2, CheckCheck,
-  Users, Clock, GraduationCap, Briefcase,
+  MessageCircle, Shield, Zap, Sparkles, Mail, Loader2, CheckCheck,
+  Users, Clock, GraduationCap, Briefcase, Menu, X,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import LandingChatWidget from '../components/features/LandingChatWidget'
+import SectionHeader from '../components/landing/SectionHeader'
+import FeatureCard from '../components/landing/FeatureCard'
+import TrendingSurveyCard from '../components/landing/TrendingSurveyCard'
+import StepCard from '../components/landing/StepCard'
+import FaqItem from '../components/landing/FaqItem'
 import { homepageService } from '../services/homepageService'
 import { faqService } from '../services/faqService'
 import { newsletterService } from '../services/newsletterService'
@@ -61,38 +66,15 @@ function timeAgo(d) {
 
 const AVATAR_PALETTE = ['bg-earth-forest', 'bg-earth-moss', 'bg-earth-terracotta', 'bg-earth-clay', 'bg-earth-ink']
 
-function FaqItem({ q, a, defaultOpen = false }) {
-  const [open, setOpen] = useState(defaultOpen)
-  return (
-    <div className="border-b-[2px] border-earth-ink/20 last:border-0 group">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="w-full flex items-center justify-between gap-4 py-4 text-left transition-colors duration-300 hover:text-earth-forest"
-      >
-        <span className="font-display text-lg md:text-xl uppercase pr-2">
-          {q}
-        </span>
-        <ChevronDown
-          className={`w-5 h-5 shrink-0 transition-transform duration-300 ${open ? 'rotate-180 text-earth-forest' : ''}`}
-        />
-      </button>
-      <div className={`overflow-hidden transition-all duration-300 ease-out ${open ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
-        <p className="pb-4 text-earth-ink/80 leading-relaxed">{a}</p>
-      </div>
-    </div>
-  )
-}
-
 export default function LandingPage() {
-  const { t } = useTranslation('landing')
+  const { t, i18n } = useTranslation('landing')
   const [stats, setStats]             = useState(null)
   const [topSurveys, setTopSurveys]   = useState([])
   const [faqs, setFaqs]               = useState([])
   const [statsErr, setStatsErr]       = useState(false)
   const [respondents, setRespondents] = useState([])
   const [respondentsErr, setRespondentsErr] = useState(false)
+  const [mobileNavOpen, setMobileNavOpen]   = useState(false)
 
   // newsletter form state
   const [email, setEmail]             = useState('')
@@ -153,9 +135,9 @@ export default function LandingPage() {
     <div className="min-h-screen bg-earth-paper text-earth-ink">
       {/* Marquee bar */}
       <div className="bg-earth-ink text-earth-cream overflow-hidden border-b-[3px] border-earth-ink">
-        <div className="flex whitespace-nowrap py-2 animate-marquee ui-title text-sm">
+        <div className="flex whitespace-nowrap py-2 animate-marquee ui-title text-xs sm:text-sm">
           {[...Array(2)].map((_, i) => (
-            <div key={i} className="flex items-center gap-8 px-4">
+            <div key={i} className="flex items-center gap-6 sm:gap-8 px-4">
               <span>{t('marquee.item1')}</span>
               <span>{t('marquee.item2')}</span>
               <span>{t('marquee.item3')}</span>
@@ -170,52 +152,89 @@ export default function LandingPage() {
       {/* Header */}
       <header className="border-b-[3px] border-earth-ink bg-earth-paper/95 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3 group cursor-pointer">
-            <div className="w-12 h-12 bg-earth-forest border-[3px] border-earth-ink flex items-center justify-center shadow-brutal-sm transition-shadow duration-300 group-hover:shadow-brutal">
-              <Leaf className="w-6 h-6 text-earth-cream transition-transform duration-300 group-hover:rotate-12" />
+          <Link to="/" className="flex items-center gap-3 group cursor-pointer">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-earth-forest border-[3px] border-earth-ink flex items-center justify-center shadow-brutal-sm transition-shadow duration-300 group-hover:shadow-brutal">
+              <Leaf className="w-5 h-5 sm:w-6 sm:h-6 text-earth-cream transition-transform duration-300 group-hover:rotate-12" />
             </div>
             <div>
-              <p className="font-display text-xl uppercase leading-none">EcoSurvey</p>
-              <p className="font-mono text-sm uppercase tracking-widest mt-0.5">{t('header.subtitle')}</p>
+              <p className="font-display text-lg sm:text-xl uppercase leading-none">EcoSurvey</p>
+              <p className="font-mono text-xs sm:text-sm uppercase tracking-widest mt-0.5">{t('header.subtitle')}</p>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link to="/login" className="hidden sm:inline-block ui-title text-sm px-4 py-2 hover:bg-earth-cream hover:border-earth-ink transition-all duration-300 border-2 border-transparent">
+          </Link>
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => i18n.changeLanguage(i18n.language === 'vi' ? 'en' : 'vi')}
+              className="p-2 border-2 border-transparent text-earth-ink hover:border-earth-ink hover:bg-earth-cream transition-colors font-bold text-xs sm:text-sm uppercase"
+              title="Change Language"
+            >
+              {i18n.language === 'vi' ? 'VI' : 'EN'}
+            </button>
+
+            <Link to="/login" className="hidden sm:inline-block ui-title text-xs sm:text-sm px-4 py-2 hover:bg-earth-cream hover:border-earth-ink transition-all duration-300 border-2 border-transparent">
               {t('header.signIn')}
             </Link>
-            <Link to="/register" className="btn-primary text-sm py-2 px-5 transition-all duration-300 hover:-translate-y-0.5">
-              {t('header.getStarted')} <ArrowRight className="w-4 h-4" />
+            <Link to="/register" className="btn-primary text-xs sm:text-sm py-2 px-3 sm:px-5 transition-all duration-300 hover:-translate-y-0.5">
+              {t('header.getStarted')} <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </Link>
+
+            <button
+              onClick={() => setMobileNavOpen((o) => !o)}
+              className="sm:hidden p-2 border-2 border-earth-ink bg-earth-paper text-earth-ink hover:bg-earth-cream"
+              aria-label="Toggle navigation"
+            >
+              {mobileNavOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile menu dropdown */}
+        {mobileNavOpen && (
+          <nav className="sm:hidden px-4 py-3 border-t-[2px] border-earth-ink/20 flex flex-col gap-2 animate-slide-up bg-earth-paper">
+            <Link
+              to="/login"
+              onClick={() => setMobileNavOpen(false)}
+              className="btn-secondary text-xs py-2 px-4 text-center justify-center"
+            >
+              {t('header.signIn')}
+            </Link>
+            <Link
+              to="/register"
+              onClick={() => setMobileNavOpen(false)}
+              className="btn-primary text-xs py-2 px-4 text-center justify-center"
+            >
+              {t('header.getStarted')}
+            </Link>
+          </nav>
+        )}
       </header>
 
       {/* Hero */}
       <section className="border-b-[3px] border-earth-ink relative overflow-hidden">
         <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #2d6a4f 0%, transparent 50%), radial-gradient(circle at 80% 50%, #bc6c25 0%, transparent 50%)' }} />
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-20 grid lg:grid-cols-12 gap-8 relative z-10">
-          <div className="lg:col-span-8 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-12 sm:py-20 grid lg:grid-cols-12 gap-8 relative z-10">
+          <div className="lg:col-span-8 relative pt-4 sm:pt-0">
             <div className="tape -top-2 left-0 z-10 opacity-0 animate-fade-in">{t('hero.tag')}</div>
-            <h1 className="font-display text-6xl sm:text-8xl leading-[0.9] uppercase tracking-tight opacity-0 animate-fade-in-up">
+            <h1 className="font-display text-4xl sm:text-7xl lg:text-8xl leading-[0.95] sm:leading-[0.9] uppercase tracking-tight opacity-0 animate-fade-in-up mt-2">
               {t('hero.title1')}<br />
               {t('hero.title2')}<br />
               <span className="inline-block bg-earth-forest text-earth-cream px-3 py-1 mt-2 opacity-0 animate-soft-bounce" style={{ animationDelay: '0.3s' }}>{t('hero.title3')}</span>{' '}
               {t('hero.title4')}
             </h1>
-            <p className="mt-8 max-w-xl text-lg leading-relaxed opacity-0 animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
+            <p className="mt-6 sm:mt-8 max-w-xl text-base sm:text-lg leading-relaxed opacity-0 animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
               {t('hero.desc')}
             </p>
-            <div className="mt-8 flex flex-wrap gap-4 opacity-0 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-              <Link to="/register" className="btn-primary text-base px-8 py-3 transition-all duration-300 hover:-translate-y-0.5">
+            <div className="mt-6 sm:mt-8 flex flex-wrap gap-4 opacity-0 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+              <Link to="/register" className="btn-primary text-sm sm:text-base px-6 sm:px-8 py-3 transition-all duration-300 hover:-translate-y-0.5">
                 {t('hero.startSurveying')} <ArrowRight className="w-5 h-5" />
               </Link>
-              <Link to="/login" className="btn-secondary text-base px-8 py-3 transition-all duration-300 hover:-translate-y-0.5">
+              <Link to="/login" className="btn-secondary text-sm sm:text-base px-6 sm:px-8 py-3 transition-all duration-300 hover:-translate-y-0.5">
                 {t('hero.haveAccount')} <ArrowUpRight className="w-5 h-5" />
               </Link>
             </div>
           </div>
 
-          <aside className="lg:col-span-4 relative">
+          <aside className="lg:col-span-4 relative mt-4 lg:mt-0">
             <div className="bg-earth-cream border-[3px] border-earth-ink shadow-brutal-lg p-6 relative opacity-0 animate-fade-in-right" style={{ animationDelay: '0.2s' }}>
               <div className="stamp -top-3 -right-3 bg-earth-terracotta text-earth-paper opacity-0 animate-soft-bounce" style={{ animationDelay: '0.5s' }}>{t('liveStats.live')}</div>
               <p className="font-mono text-sm uppercase tracking-widest mb-3">{t('liveStats.impactTracker')}</p>
@@ -254,12 +273,12 @@ export default function LandingPage() {
 
       {/* Impact strip — driven by /homepage/stats */}
       <section ref={impactRef} className="border-b-[3px] border-earth-ink bg-earth-forest text-earth-paper overflow-hidden">
-        <div className={`max-w-7xl mx-auto px-4 sm:px-8 py-12 grid grid-cols-2 md:grid-cols-4 gap-8 transition-all duration-700 ${impactInView ? 'opacity-100' : 'opacity-0 translate-y-8'}`}>
+        <div className={`max-w-7xl mx-auto px-4 sm:px-8 py-10 sm:py-12 grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 transition-all duration-700 ${impactInView ? 'opacity-100' : 'opacity-0 translate-y-8'}`}>
           {liveStats ? (
             liveStats.map(({ value, label }, index) => (
               <div key={label} className={`border-l-[3px] border-earth-paper pl-4 transition-all duration-700 ${impactInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: impactInView ? `${index * 100}ms` : '0ms' }}>
-                <p className="font-display text-4xl md:text-5xl">{value}</p>
-                <p className="font-mono text-sm uppercase tracking-widest mt-2 opacity-90">{label}</p>
+                <p className="font-display text-3xl sm:text-4xl md:text-5xl">{value}</p>
+                <p className="font-mono text-xs sm:text-sm uppercase tracking-widest mt-2 opacity-90">{label}</p>
               </div>
             ))
           ) : (
@@ -275,16 +294,13 @@ export default function LandingPage() {
 
       {/* Recent Respondents — live feed of who just took a survey */}
       <section ref={liveFeedRef} className="border-b-[3px] border-earth-ink">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-20">
-          <div className={`flex items-end justify-between mb-12 flex-wrap gap-4 transition-all duration-700 ${liveFeedInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            <div>
-              <p className="font-mono text-sm uppercase tracking-widest mb-2">{t('liveFeed.tag')}</p>
-              <h2 className="font-display text-5xl md:text-6xl uppercase">{t('liveFeed.title')}</h2>
-            </div>
-            <p className="max-w-md text-earth-ink/70">
-              {t('liveFeed.desc')}
-            </p>
-          </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-14 sm:py-20">
+          <SectionHeader
+            tag={t('liveFeed.tag')}
+            title={t('liveFeed.title')}
+            desc={t('liveFeed.desc')}
+            className={`transition-all duration-700 ${liveFeedInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+          />
 
           {respondents.length === 0 ? (
             <div className={`card p-10 text-center transition-all duration-700 ${liveFeedInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: '100ms' }}>
@@ -311,7 +327,7 @@ export default function LandingPage() {
                 return (
                   <article
                     key={r.response_id}
-                    className={`card p-5 hover:bg-earth-cream transition-all duration-300 flex gap-4 ${liveFeedInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                    className={`card card-hover p-5 transition-all duration-300 flex gap-4 ${liveFeedInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
                     style={{ transitionDelay: liveFeedInView ? `${idx * 80}ms` : '0ms' }}
                   >
                     <div
@@ -352,16 +368,13 @@ export default function LandingPage() {
 
       {/* Top Surveys */}
       <section ref={trendingRef} className="border-b-[3px] border-earth-ink">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-20">
-          <div className={`flex items-end justify-between mb-12 flex-wrap gap-4 transition-all duration-700 ${trendingInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            <div>
-              <p className="font-mono text-sm uppercase tracking-widest mb-2">{t('trending.tag')}</p>
-              <h2 className="font-display text-5xl md:text-6xl uppercase">{t('trending.title')}</h2>
-            </div>
-            <p className="max-w-md text-earth-ink/70">
-              {t('trending.desc')}
-            </p>
-          </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-14 sm:py-20">
+          <SectionHeader
+            tag={t('trending.tag')}
+            title={t('trending.title')}
+            desc={t('trending.desc')}
+            className={`transition-all duration-700 ${trendingInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+          />
 
           {topSurveys.length === 0 ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -378,39 +391,20 @@ export default function LandingPage() {
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {topSurveys.map((s, idx) => (
-                <article key={s.id} 
-                  className={`card p-6 group transition-all duration-500 ${trendingInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
-                  style={{ transitionDelay: trendingInView ? `${idx * 100}ms` : '0ms' }}>
-                  <div className="flex items-start justify-between mb-4">
-                    <span className="badge badge-published">
-                      /{String(idx + 1).padStart(2, '0')} Trending
-                    </span>
-                    <span className="font-mono text-2xl text-earth-ink/40">
-                      {s.response_count}
-                    </span>
-                  </div>
-                  <h3 className="font-display text-xl uppercase mb-2 leading-tight">
-                    {s.title}
-                  </h3>
-                  <p className="text-sm text-earth-ink/70 leading-relaxed line-clamp-3 flex-1">
-                    {s.description || t('trending.noDesc')}
-                  </p>
-                  <div className="mt-6 flex items-center justify-between border-t-[2px] border-earth-ink/20 pt-4">
-                    <div className="font-mono text-[10px] uppercase tracking-widest text-earth-ink/60">
-                      {t('trending.by')} {s.creator_name}
-                      {s.end_date && <> · {t('trending.closes')} {formatDate(s.end_date)}</>}
-                    </div>
-                    <Link to="/login" className="ui-title text-sm flex items-center gap-1 group-hover:text-earth-forest transition-colors duration-300">
-                      {t('trending.takeIt')} <ArrowUpRight className="w-3.5 h-3.5" />
-                    </Link>
-                  </div>
-                </article>
+                <TrendingSurveyCard
+                  key={s.id}
+                  survey={s}
+                  idx={idx}
+                  inView={trendingInView}
+                  formatDate={formatDate}
+                  t={t}
+                />
               ))}
             </div>
           )}
 
           {stats && (
-            <p className="mt-8 font-mono text-sm uppercase tracking-widest text-earth-ink/50 text-center">
+            <p className="mt-8 font-mono text-xs sm:text-sm uppercase tracking-widest text-earth-ink/50 text-center">
               {t('trending.lastUpdated')} {new Date(stats.updated_at).toLocaleString()}
             </p>
           )}
@@ -419,31 +413,25 @@ export default function LandingPage() {
 
       {/* Features */}
       <section ref={featuresRef} className="border-b-[3px] border-earth-ink">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-20">
-          <div className={`flex items-end justify-between mb-12 flex-wrap gap-4 transition-all duration-700 ${featuresInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            <div>
-              <p className="font-mono text-sm uppercase tracking-widest mb-2">{t('features.tag')}</p>
-              <h2 className="font-display text-5xl md:text-6xl uppercase whitespace-pre-line">{t('features.title')}</h2>
-            </div>
-            <p className="max-w-md text-earth-ink/70">
-              {t('features.desc')}
-            </p>
-          </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-14 sm:py-20">
+          <SectionHeader
+            tag={t('features.tag')}
+            title={t('features.title')}
+            desc={t('features.desc')}
+            className={`transition-all duration-700 ${featuresInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+          />
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map(({ icon: Icon, title, desc, num }, idx) => (
-              <div key={title} 
-                className={`card p-6 group transition-all duration-500 ${featuresInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
-                style={{ transitionDelay: featuresInView ? `${idx * 100}ms` : '0ms' }}>
-                <div className="flex items-start justify-between mb-6">
-                  <div className="w-14 h-14 bg-earth-forest border-[3px] border-earth-ink flex items-center justify-center transition-all duration-300 group-hover:bg-earth-terracotta">
-                    <Icon className="w-6 h-6 text-earth-cream" />
-                  </div>
-                  <span className="font-mono text-2xl text-earth-ink/40 group-hover:text-earth-forest transition-colors duration-300">/{num}</span>
-                </div>
-                <h3 className="font-display text-xl uppercase mb-2 transition-colors duration-300 group-hover:text-earth-forest">{t(`features.f${num.replace(/^0+/, '')}`)}</h3>
-                <p className="text-sm text-earth-ink/70 leading-relaxed">{t(`features.f${num.replace(/^0+/, '')}d`)}</p>
-              </div>
+              <FeatureCard
+                key={title}
+                icon={Icon}
+                title={t(`features.f${num.replace(/^0+/, '')}`)}
+                desc={t(`features.f${num.replace(/^0+/, '')}d`)}
+                num={num}
+                inView={featuresInView}
+                idx={idx}
+              />
             ))}
           </div>
         </div>
@@ -451,25 +439,22 @@ export default function LandingPage() {
 
       {/* How it works */}
       <section ref={howItWorksRef} className="border-b-[3px] border-earth-ink bg-earth-cream">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-14 sm:py-20">
           <div className={`transition-all duration-700 ${howInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
             <p className="font-mono text-sm uppercase tracking-widest mb-2">{t('howItWorks.tag')}</p>
-            <h2 className="font-display text-5xl md:text-6xl uppercase mb-12">{t('howItWorks.title')}</h2>
+            <h2 className="font-display text-4xl sm:text-5xl md:text-6xl uppercase mb-10 sm:mb-12">{t('howItWorks.title')}</h2>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
-            {steps.map(({ n, t: defaultTitle, d }, i) => (
-              <div key={n} className={`relative transition-all duration-500 ${howInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`} style={{ transitionDelay: howInView ? `${i * 150}ms` : '0ms' }}>
-                <div className="card p-8 h-full">
-                  <p className="font-display text-7xl text-earth-ink/20">{n}</p>
-                  <h3 className="font-display text-2xl uppercase mt-2">{t(`howItWorks.s${n.replace(/^0+/, '')}`)}</h3>
-                  <p className="mt-3 text-earth-ink/70">{t(`howItWorks.s${n.replace(/^0+/, '')}d`)}</p>
-                </div>
-                {i < 2 && (
-                  <div className="hidden md:block absolute top-1/2 -right-3 -translate-y-1/2 z-10 text-earth-ink">
-                    <ArrowRight className="w-6 h-6" />
-                  </div>
-                )}
-              </div>
+            {steps.map(({ n }, i) => (
+              <StepCard
+                key={n}
+                n={n}
+                title={t(`howItWorks.s${n.replace(/^0+/, '')}`)}
+                desc={t(`howItWorks.s${n.replace(/^0+/, '')}d`)}
+                idx={i}
+                isLast={i === steps.length - 1}
+                inView={howInView}
+              />
             ))}
           </div>
         </div>
@@ -477,10 +462,10 @@ export default function LandingPage() {
 
       {/* FAQ */}
       <section ref={faqRef} className="border-b-[3px] border-earth-ink">
-        <div className="max-w-5xl mx-auto px-4 sm:px-8 py-20">
+        <div className="max-w-5xl mx-auto px-4 sm:px-8 py-14 sm:py-20">
           <div className={`transition-all duration-700 ${faqInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
             <p className="font-mono text-sm uppercase tracking-widest mb-2">{t('faq.tag')}</p>
-            <h2 className="font-display text-5xl md:text-6xl uppercase mb-10">{t('faq.title')}</h2>
+            <h2 className="font-display text-4xl sm:text-5xl md:text-6xl uppercase mb-8 sm:mb-10">{t('faq.title')}</h2>
           </div>
           <div className={`card p-6 md:p-10 transition-all duration-700 ${faqInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: faqInView ? '150ms' : '0ms' }}>
             {faqs.length === 0 ? (
@@ -501,15 +486,15 @@ export default function LandingPage() {
       {/* Newsletter */}
       <section ref={newsletterRef} className="border-b-[3px] border-earth-ink bg-earth-sand relative overflow-hidden">
         <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(46,125,50,0.5) 35px, rgba(46,125,50,0.5) 70px)' }} />
-        <div className="max-w-5xl mx-auto px-4 sm:px-8 py-20 text-center relative z-10">
-          <div className={`inline-flex items-center justify-center w-16 h-16 bg-earth-forest border-[3px] border-earth-ink mb-6 shadow-brutal-sm transition-all duration-700 ${newsletterInView ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
-            <Mail className="w-7 h-7 text-earth-cream" />
+        <div className="max-w-5xl mx-auto px-4 sm:px-8 py-14 sm:py-20 text-center relative z-10">
+          <div className={`inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-earth-forest border-[3px] border-earth-ink mb-6 shadow-brutal-sm transition-all duration-700 ${newsletterInView ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
+            <Mail className="w-6 h-6 sm:w-7 sm:h-7 text-earth-cream" />
           </div>
           <p className={`font-mono text-sm uppercase tracking-widest mb-2 transition-all duration-700 ${newsletterInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>{t('newsletter.tag')}</p>
-          <h2 className={`font-display text-5xl md:text-6xl uppercase leading-tight transition-all duration-700 ${newsletterInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: newsletterInView ? '100ms' : '0ms' }}>
+          <h2 className={`font-display text-4xl sm:text-5xl md:text-6xl uppercase leading-tight transition-all duration-700 ${newsletterInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: newsletterInView ? '100ms' : '0ms' }}>
             {t('newsletter.title1')}<br/>{t('newsletter.title2')}
           </h2>
-          <p className={`mt-4 max-w-xl mx-auto text-earth-ink/70 transition-all duration-700 ${newsletterInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: newsletterInView ? '200ms' : '0ms' }}>
+          <p className={`mt-4 max-w-xl mx-auto text-sm sm:text-base text-earth-ink/70 transition-all duration-700 ${newsletterInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: newsletterInView ? '200ms' : '0ms' }}>
             {t('newsletter.desc')}
           </p>
 
@@ -527,12 +512,12 @@ export default function LandingPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={t('newsletter.placeholder')}
-              className="input flex-1 transition-all duration-300 focus:border-earth-forest focus:shadow-soft"
+              className="input flex-1 transition-all duration-300 focus:border-earth-forest focus:shadow-soft text-sm sm:text-base"
               disabled={subState.status === 'loading'}
             />
             <button
               type="submit"
-              className="btn-primary whitespace-nowrap transition-all duration-300"
+              className="btn-primary whitespace-nowrap transition-all duration-300 text-sm sm:text-base"
               disabled={subState.status === 'loading'}
             >
               {subState.status === 'loading' ? (
@@ -566,15 +551,19 @@ export default function LandingPage() {
       {/* CTA */}
       <section ref={ctaRef} className="border-b-[3px] border-earth-ink bg-gradient-to-br from-earth-cream to-earth-sand relative overflow-hidden">
         <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'radial-gradient(circle at 30% 70%, #2d6a4f 0%, transparent 40%), radial-gradient(circle at 70% 30%, #bc6c25 0%, transparent 40%)' }} />
-        <div className="max-w-5xl mx-auto px-4 sm:px-8 py-24 text-center relative z-10">
-          <h2 className={`font-display text-5xl md:text-7xl uppercase leading-tight transition-all duration-700 ${ctaInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            {t('cta.title1')}<br/>{t('cta.title2')} <span className="bg-earth-terracotta text-earth-paper px-2">{t('cta.title3')}</span>
+        <div className="max-w-5xl mx-auto px-4 sm:px-8 py-16 sm:py-24 text-center relative z-10">
+          <h2 className={`font-display text-3xl sm:text-6xl md:text-7xl uppercase leading-snug transition-all duration-700 ${ctaInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+            {t('cta.title1')}
+            <br />
+            <span className="inline-block mt-2 sm:mt-3 px-3 py-1 bg-earth-terracotta text-earth-paper border-[3px] border-earth-ink shadow-brutal-sm">
+              {t('cta.title2')} {t('cta.title3')}
+            </span>
           </h2>
-          <p className={`mt-6 max-w-xl mx-auto text-lg transition-all duration-700 ${ctaInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: ctaInView ? '150ms' : '0ms' }}>
+          <p className={`mt-6 max-w-xl mx-auto text-base sm:text-lg transition-all duration-700 ${ctaInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: ctaInView ? '150ms' : '0ms' }}>
             {t('cta.desc')}
           </p>
-          <div className={`mt-10 flex justify-center transition-all duration-700 ${ctaInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: ctaInView ? '300ms' : '0ms' }}>
-            <Link to="/register" className="btn-primary text-base px-10 py-4 transition-all duration-300 hover:-translate-y-0.5">
+          <div className={`mt-8 sm:mt-10 flex justify-center transition-all duration-700 ${ctaInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: ctaInView ? '300ms' : '0ms' }}>
+            <Link to="/register" className="btn-primary text-sm sm:text-base px-8 sm:px-10 py-3 sm:py-4 transition-all duration-300 hover:-translate-y-0.5">
               {t('cta.btn')} <ArrowRight className="w-5 h-5" />
             </Link>
           </div>
@@ -591,22 +580,22 @@ export default function LandingPage() {
               </div>
               <p className="font-display text-lg uppercase transition-colors duration-300 group-hover:text-earth-moss">EcoSurvey</p>
             </div>
-            <p className="font-mono text-sm uppercase tracking-widest opacity-70">{t('footer.builtFor')}</p>
+            <p className="font-mono text-xs sm:text-sm uppercase tracking-widest opacity-70">{t('footer.builtFor')}</p>
           </div>
           <div>
-            <p className="ui-title mb-3">{t('footer.explore')}</p>
+            <p className="ui-title mb-3 text-sm">{t('footer.explore')}</p>
             <ul className="space-y-1 text-sm opacity-80">
               <li><Link to="/login" className="hover:text-earth-moss transition-colors duration-300 inline-block">{t('header.signIn')}</Link></li>
               <li><Link to="/register" className="hover:text-earth-moss transition-colors duration-300 inline-block">{t('howItWorks.s1')}</Link></li>
             </ul>
           </div>
           <div>
-            <p className="ui-title mb-3">{t('footer.contact')}</p>
+            <p className="ui-title mb-3 text-sm">{t('footer.contact')}</p>
             <p className="text-sm opacity-80 transition-colors duration-300 hover:text-earth-moss">support@ecosurvey.edu</p>
           </div>
         </div>
         <div className="border-t border-earth-paper/30">
-          <div className="max-w-7xl mx-auto px-4 sm:px-8 py-4 flex justify-between items-center text-sm font-mono uppercase tracking-widest opacity-70">
+          <div className="max-w-7xl mx-auto px-4 sm:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs sm:text-sm font-mono uppercase tracking-widest opacity-70">
             <span>© {new Date().getFullYear()} EcoSurvey</span>
             <span>Environmental Survey Portal</span>
           </div>
