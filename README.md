@@ -127,7 +127,7 @@ cp backend/.env.example .env
 # VITE_TURNSTILE_SITE_KEY=...
 
 # Build and start all services
-docker-compose up --build -d
+docker compose up --build -d
 ```
 
 Services:

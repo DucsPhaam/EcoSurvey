@@ -25,7 +25,9 @@ CREATE TABLE `users` (
   `full_name`        VARCHAR(150)    COLLATE utf8mb4_unicode_ci NOT NULL,
   `username`         VARCHAR(80)     COLLATE utf8mb4_unicode_ci NOT NULL,
   `email`            VARCHAR(191)    COLLATE utf8mb4_unicode_ci NOT NULL,
-  `password_hash`    VARCHAR(255)    COLLATE utf8mb4_unicode_ci NOT NULL,
+  `password_hash`    VARCHAR(255)    COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `auth_provider`    ENUM('local','google') COLLATE utf8mb4_unicode_ci DEFAULT 'local',
+  `google_id`        VARCHAR(255)    COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `role`             ENUM('Student','Staff','Admin')
                                      COLLATE utf8mb4_unicode_ci DEFAULT 'Student',
   `status`           ENUM('Pending','Approved','Rejected','Deactivated')
@@ -38,11 +40,16 @@ CREATE TABLE `users` (
                                      COLLATE utf8mb4_unicode_ci DEFAULT 'light',
   `avatar_url`       VARCHAR(500)    COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `reject_reason`    TEXT            COLLATE utf8mb4_unicode_ci,
+  `email_verified`   TINYINT(1)      DEFAULT 0,
+  `email_verify_token` VARCHAR(255)  COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `reset_password_token` VARCHAR(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `reset_password_expires` DATETIME  DEFAULT NULL,
   `created_at`       DATETIME        NOT NULL,
   `updated_at`       DATETIME        NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_username` (`username`),
   UNIQUE KEY `uq_email`    (`email`),
+  UNIQUE KEY `uq_google_id` (`google_id`),
   KEY `idx_users_role`   (`role`),
   KEY `idx_users_status` (`status`)
 ) ENGINE=InnoDB AUTO_INCREMENT=16
