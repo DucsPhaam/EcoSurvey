@@ -34,19 +34,26 @@ exports.getRecentRespondents = async (req, res) => {
   try {
     const recent = await SurveyResponse.findAll({
       order: [['submitted_at', 'DESC']],
-      limit: 5,
-      include: [{ model: User, as: 'user', attributes: ['id', 'full_name', 'role', 'avatar_url'] }]
+      limit: 6,
+      include: [
+        { model: User, as: 'user', attributes: ['id', 'full_name', 'role', 'department', 'avatar_url'] },
+        { model: Survey, as: 'survey', attributes: ['id', 'title'] }
+      ]
     });
     const formatted = recent.map(p => ({
-      id: p.user.id,
-      full_name: p.user.full_name,
-      role: p.user.role,
-      avatar_url: p.user.avatar_url,
-      points: 0
+      response_id: p.id,
+      user_id: p.user?.id,
+      full_name: p.user?.full_name || 'Anonymous',
+      role: p.user?.role || 'Student',
+      department: p.user?.department,
+      avatar_url: p.user?.avatar_url,
+      survey_title: p.survey?.title || 'Eco Survey',
+      submitted_at: p.submitted_at
     }));
-    res.json({ recent: formatted });
+    res.json({ respondents: formatted, recent: formatted });
   } catch (err) {
     logger.error('homepage getRecentRespondents error:', err);
     res.status(500).json({ message: 'Error fetching recent respondents' });
   }
 };
+

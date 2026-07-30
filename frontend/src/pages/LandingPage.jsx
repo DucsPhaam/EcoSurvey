@@ -99,7 +99,7 @@ export default function LandingPage() {
       .then((r) => { if (alive) setTopSurveys(r.data?.surveys || []) })
       .catch(() => { if (alive) setTopSurveys([]) })
     homepageService.getRecentRespondents()
-      .then((r) => { if (alive) setRespondents(r.data?.respondents || []) })
+      .then((r) => { if (alive) setRespondents(r.data?.respondents || r.data?.recent || []) })
       .catch(() => { if (alive) { setRespondents([]); setRespondentsErr(true) } })
     faqService.getPublicFAQs()
       .then((r) => { if (alive) setFaqs(r.data?.faqs || []) })
