@@ -443,6 +443,8 @@
       "loadFailed": "Không thể tải danh sách bài làm.",
       "saveSuccess": "✅ Đã lưu {{score}}/10 điểm.",
       "saveFailed": "Lưu điểm thất bại.",
+      "editScore": "✏️ Sửa điểm",
+      "cancelScore": "Hủy",
       "back": "Quay lại",
       "gradingOpinion": "Chấm điểm ý kiến cá nhân",
       "totalResponses": "Tổng bài làm",

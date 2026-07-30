@@ -611,33 +611,54 @@ exports.gradeOpinion = async (req, res) => {
     // Cập nhật điểm trên bản ghi response
     await response.update({ opinion_score: score }, { transaction: t });
 
-    // Tìm PointLog Bonus hiện có (nếu đã chấm lần trước)
-    const existingLog = await PointLog.findOne({
+    const numericResponseId = parseInt(id, 10);
+
+    // Tìm tất cả PointLog Bonus hiện có cho bài trả lời này
+    const existingLogs = await PointLog.findAll({
       where: {
-        user_id: response.user_id,
-        action_type: 'Bonus',
-        reference_id: response.id,
+        reference_id: numericResponseId,
         reference_type: 'opinion_score',
       },
       transaction: t,
     });
 
-    if (existingLog) {
-      // Cập nhật điểm cũ → điểm mới
-      await existingLog.update({ points: score, note: `Điểm ý kiến cá nhân bài khảo sát (survey_response #${id})` }, { transaction: t });
+    if (existingLogs.length > 0) {
+      // Cập nhật bản ghi đầu tiên với điểm số mới
+      const primaryLog = existingLogs[0];
+      await primaryLog.update({
+        user_id: response.user_id,
+        action_type: 'Bonus',
+        points: score,
+        note: `Điểm ý kiến cá nhân bài khảo sát (survey_response #${id})`,
+      }, { transaction: t });
+
+      // Nếu có bất kỳ bản ghi trùng lặp nào, xóa để tránh cộng dồn điểm
+      if (existingLogs.length > 1) {
+        const duplicateIds = existingLogs.slice(1).map(l => l.id);
+        await PointLog.destroy({
+          where: { id: duplicateIds },
+          transaction: t,
+        });
+      }
     } else {
-      // Tạo mới PointLog
+      // Tạo mới PointLog nếu chưa có
       await PointLog.create({
         user_id: response.user_id,
         action_type: 'Bonus',
         points: score,
-        reference_id: response.id,
+        reference_id: numericResponseId,
         reference_type: 'opinion_score',
         note: `Điểm ý kiến cá nhân bài khảo sát (survey_response #${id})`,
       }, { transaction: t });
     }
 
     await t.commit();
+
+    // Trigger kiểm tra danh hiệu cho học sinh sau khi điểm được cập nhật
+    badgeService.checkAndAwardBadges(response.user_id).catch(err => {
+      logger.error(`Error checking badges for user ${response.user_id} after grading opinion:`, err);
+    });
+
     res.json({
       message: `Đã chấm ${score}/10 điểm cho bài làm #${id}.`,
       previous_score: previousScore,

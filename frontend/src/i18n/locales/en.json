@@ -442,6 +442,8 @@
       "loadFailed": "Failed to load responses.",
       "saveSuccess": "✅ Saved {{score}}/10 points.",
       "saveFailed": "Failed to save score.",
+      "editScore": "✏️ Edit score",
+      "cancelScore": "Cancel",
       "back": "Back",
       "gradingOpinion": "Grading Personal Opinion",
       "totalResponses": "Total responses",

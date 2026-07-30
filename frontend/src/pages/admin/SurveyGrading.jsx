@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Star, Users, Award, CheckCircle, Clock } from 'lucide-react'
+import { ArrowLeft, Star, Users, Award, CheckCircle, Clock, Edit2 } from 'lucide-react'
 import { adminService } from '../../services/adminService'
 import { SpinnerPage } from '../../components/ui/Spinner'
 import Pagination from '../../components/ui/Pagination'
@@ -9,32 +9,30 @@ import { useTranslation } from 'react-i18next'
 
 // ── Helpers ────────────────────────────────────────────────────
 const scoreColor = (score) => {
-  if (score === null || score === undefined) return 'text-gray-400'
-  if (score <= 3) return 'text-red-500 dark:text-red-400'
-  if (score <= 5) return 'text-amber-500 dark:text-amber-400'
-  if (score <= 7) return 'text-emerald-500 dark:text-emerald-400'
-  return 'text-blue-500 dark:text-blue-400'
+  if (score === null || score === undefined) return 'text-earth-ink/40'
+  if (score <= 3) return 'text-earth-terracotta'
+  if (score <= 5) return 'text-earth-clay'
+  if (score <= 7) return 'text-earth-moss'
+  return 'text-earth-forest'
 }
 
 const scoreBadge = (score) => {
   if (score === null || score === undefined)
-    return 'bg-gray-100 dark:bg-gray-800 text-gray-400'
+    return 'badge-draft'
   if (score <= 3)
-    return 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+    return 'badge-rejected'
   if (score <= 5)
-    return 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400'
+    return 'badge-pending'
   if (score <= 7)
-    return 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400'
-  return 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+    return 'badge-approved'
+  return 'badge-published'
 }
 
 const ROLE_BADGE = {
-  Student: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300',
-  Staff:   'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300',
-  Unknown: 'bg-gray-100 dark:bg-gray-800 text-gray-500',
+  Student: 'badge-pending',
+  Staff:   'badge-approved',
+  Unknown: 'badge-draft',
 }
-
-const SCORE_LABELS = ['Rất tệ', 'Tệ', 'Kém', 'Dưới TB', 'Trung bình', 'Khá', 'Tốt', 'Khá tốt', 'Rất tốt', 'Xuất sắc', 'Hoàn hảo']
 
 // ── Component ──────────────────────────────────────────────────
 export default function SurveyGrading() {
@@ -49,6 +47,7 @@ export default function SurveyGrading() {
   const [total,      setTotal]      = useState(0)
   const [drafts,     setDrafts]     = useState({})
   const [saving,     setSaving]     = useState({})
+  const [editing,    setEditing]    = useState({})
 
   const fetchSurvey = useCallback(async () => {
     try {
@@ -94,12 +93,26 @@ export default function SurveyGrading() {
       setResponses((prev) =>
         prev.map((r) => r.id === responseId ? { ...r, opinion_score: score } : r)
       )
+      setEditing((prev) => ({ ...prev, [responseId]: false }))
       toast.success(t('surveyGrading.saveSuccess', { score }))
     } catch (err) {
       toast.error(err.response?.data?.message || t('surveyGrading.saveFailed'))
     } finally {
       setSaving((s) => ({ ...s, [responseId]: false }))
     }
+  }
+
+  const getScoreLabel = (score) => {
+    if (score === 0) return t('surveyGrading.veryBad')
+    if (score === 1) return t('surveyGrading.bad')
+    if (score === 2) return t('surveyGrading.poor')
+    if (score === 3 || score === 4) return t('surveyGrading.belowAvg')
+    if (score === 5) return t('surveyGrading.avg')
+    if (score === 6) return t('surveyGrading.fair')
+    if (score === 7) return t('surveyGrading.good')
+    if (score === 8) return t('surveyGrading.veryGood')
+    if (score === 9) return t('surveyGrading.excellent')
+    return t('surveyGrading.perfect')
   }
 
   const gradedOnPage = responses.filter((r) => r.opinion_score !== null && r.opinion_score !== undefined).length
@@ -117,13 +130,13 @@ export default function SurveyGrading() {
       <div className="page-header flex items-start justify-between">
         <div className="flex items-start gap-3">
           <Link to="/admin/surveys"
-            className="mt-1 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            className="mt-1 p-2 rounded-xl border-2 border-transparent hover:border-earth-ink hover:bg-earth-cream text-earth-ink transition-colors"
             title={t('surveyGrading.back')}>
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
             <h1 className="page-title flex items-center gap-3">
-              <Star className="w-7 h-7 text-amber-500" />
+              <Star className="w-7 h-7 text-earth-terracotta" />
               {t('surveyGrading.gradingOpinion')}
             </h1>
             {survey && (
@@ -138,35 +151,35 @@ export default function SurveyGrading() {
       {/* Stats bar */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="card p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-900/20 flex items-center justify-center shrink-0">
-            <Users className="w-5 h-5 text-brand-600" />
+          <div className="w-10 h-10 border-2 border-earth-ink bg-earth-cream flex items-center justify-center shrink-0">
+            <Users className="w-5 h-5 text-earth-ink" />
           </div>
           <div>
-            <p className="text-xs text-gray-400">{t('surveyGrading.totalResponses')}</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-white">{total}</p>
+            <p className="text-xs font-mono uppercase text-earth-ink/60">{t('surveyGrading.totalResponses')}</p>
+            <p className="text-xl font-bold text-earth-ink">{total}</p>
           </div>
         </div>
         <div className="card p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center shrink-0">
-            <CheckCircle className="w-5 h-5 text-emerald-600" />
+          <div className="w-10 h-10 border-2 border-earth-ink bg-earth-forest text-earth-paper flex items-center justify-center shrink-0">
+            <CheckCircle className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-xs text-gray-400">{t('surveyGrading.gradedOnPage')}</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-white">
+            <p className="text-xs font-mono uppercase text-earth-ink/60">{t('surveyGrading.gradedOnPage')}</p>
+            <p className="text-xl font-bold text-earth-ink">
               {gradedOnPage}
-              <span className="text-sm font-normal text-gray-400"> / {responses.length}</span>
+              <span className="text-sm font-normal text-earth-ink/60"> / {responses.length}</span>
             </p>
           </div>
         </div>
         <div className="card p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center shrink-0">
-            <Award className="w-5 h-5 text-amber-500" />
+          <div className="w-10 h-10 border-2 border-earth-ink bg-earth-terracotta text-earth-paper flex items-center justify-center shrink-0">
+            <Award className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-xs text-gray-400">{t('surveyGrading.avgOnPage')}</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-white">
+            <p className="text-xs font-mono uppercase text-earth-ink/60">{t('surveyGrading.avgOnPage')}</p>
+            <p className="text-xl font-bold text-earth-ink">
               {avgOnPage ?? '—'}
-              {avgOnPage && <span className="text-sm font-normal text-gray-400"> /10</span>}
+              {avgOnPage && <span className="text-sm font-normal text-earth-ink/60"> /10</span>}
             </p>
           </div>
         </div>
@@ -175,8 +188,8 @@ export default function SurveyGrading() {
       {/* Content */}
       {loading ? <SpinnerPage /> : responses.length === 0 ? (
         <div className="card p-16 text-center">
-          <Clock className="w-14 h-14 text-gray-200 dark:text-gray-700 mx-auto mb-4" />
-          <p className="text-gray-400 font-medium">{t('surveyGrading.noResponses')}</p>
+          <Clock className="w-14 h-14 text-earth-ink/30 mx-auto mb-4" />
+          <p className="text-earth-ink/60 font-medium">{t('surveyGrading.noResponses')}</p>
         </div>
       ) : (
         <>
@@ -185,120 +198,140 @@ export default function SurveyGrading() {
               const draft      = drafts[r.id] ?? 5
               const savedScore = r.opinion_score
               const isSaving   = !!saving[r.id]
+              const isEditing  = !!editing[r.id]
               const opinionTxt = getOpinionText(r)
+              const hasGraded  = savedScore !== null && savedScore !== undefined
 
               return (
-                <div key={r.id} className="card p-6 transition-shadow hover:shadow-md">
+                <div key={r.id} className="card p-6 transition-all hover:shadow-brutal-sm">
                   {/* Card header */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-gray-900 dark:text-white text-sm">
+                      <span className="font-semibold text-earth-ink text-sm">
                         {r.user?.displayName}
                       </span>
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ROLE_BADGE[r.user?.role] || ROLE_BADGE.Unknown}`}>
+                      <span className={`px-2 py-0.5 text-xs font-mono uppercase ${ROLE_BADGE[r.user?.role] || ROLE_BADGE.Unknown}`}>
                         {r.user?.role}
                       </span>
-                      {savedScore !== null && savedScore !== undefined ? (
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${scoreBadge(savedScore)}`}>
-                          ✓ {savedScore}/10 · {
-                            savedScore === 0 ? t('surveyGrading.veryBad') :
-                            savedScore === 1 ? t('surveyGrading.bad') :
-                            savedScore === 2 ? t('surveyGrading.poor') :
-                            savedScore === 3 ? t('surveyGrading.belowAvg') :
-                            savedScore === 4 ? t('surveyGrading.belowAvg') :
-                            savedScore === 5 ? t('surveyGrading.avg') :
-                            savedScore === 6 ? t('surveyGrading.fair') :
-                            savedScore === 7 ? t('surveyGrading.good') :
-                            savedScore === 8 ? t('surveyGrading.veryGood') :
-                            savedScore === 9 ? t('surveyGrading.excellent') :
-                            t('surveyGrading.perfect')
-                          }
+                      {hasGraded ? (
+                        <span className={scoreBadge(savedScore)}>
+                          ✓ {savedScore}/10 · {getScoreLabel(savedScore)}
                         </span>
                       ) : (
-                        <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-400">
+                        <span className="badge-draft text-xs">
                           {t('surveyGrading.notGraded')}
                         </span>
                       )}
                     </div>
-                    <span className="text-xs text-gray-400 shrink-0 ml-2">
+                    <span className="text-xs font-mono uppercase tracking-widest text-earth-ink/50 shrink-0 ml-2">
                       {new Date(r.submitted_at).toLocaleString('vi-VN')}
                     </span>
                   </div>
 
                   {/* Opinion text */}
                   {opinionTxt ? (
-                    <div className="bg-gray-50 dark:bg-gray-800/60 rounded-xl p-4 mb-5 border-l-4 border-brand-300 dark:border-brand-600">
-                      <p className="text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">
+                    <div className="bg-earth-sand/30 border-l-[4px] border-earth-forest p-4 mb-5">
+                      <p className="text-xs font-mono font-medium text-earth-ink/60 mb-1.5 uppercase tracking-wide">
                         {t('surveyGrading.opinionText')}
                       </p>
-                      <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                      <p className="text-sm text-earth-ink leading-relaxed whitespace-pre-wrap">
                         {opinionTxt}
                       </p>
                     </div>
                   ) : (
-                    <div className="bg-gray-50 dark:bg-gray-800/40 rounded-xl p-4 mb-5 text-center">
-                      <p className="text-sm text-gray-400 italic">{t('surveyGrading.noOpinionText')}</p>
+                    <div className="bg-earth-sand/20 p-4 mb-5 text-center">
+                      <p className="text-sm text-earth-ink/50 italic">{t('surveyGrading.noOpinionText')}</p>
                     </div>
                   )}
 
-                  {/* Scoring row */}
-                  <div className="flex items-center gap-5">
-                    {/* Score display */}
-                    <div className="shrink-0 text-center min-w-[52px]">
-                      <div className={`text-4xl font-black tabular-nums leading-none ${scoreColor(draft)}`}>
-                        {draft}
+                  {/* Scoring section */}
+                  {hasGraded && !isEditing ? (
+                    /* Static display when already graded and not in edit mode */
+                    <div className="flex items-center justify-between p-4 bg-earth-cream/70 border-[2px] border-earth-ink/20 rounded-xl flex-wrap gap-3">
+                      <div className="flex items-center gap-4">
+                        <div className={`text-4xl font-display font-bold tabular-nums leading-none ${scoreColor(savedScore)}`}>
+                          {savedScore}<span className="text-sm font-sans font-normal text-earth-ink/50">/10</span>
+                        </div>
+                        <div>
+                          <span className={scoreBadge(savedScore)}>
+                            ✓ {savedScore}/10 · {getScoreLabel(savedScore)}
+                          </span>
+                          <p className="text-xs font-mono uppercase tracking-widest text-earth-ink/60 mt-1">
+                            {t('surveyGrading.saveSuccess', { score: savedScore })}
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-400 mt-0.5">/10</div>
+                      <button
+                        onClick={() => {
+                          setDrafts((prev) => ({ ...prev, [r.id]: savedScore }))
+                          setEditing((prev) => ({ ...prev, [r.id]: true }))
+                        }}
+                        className="btn-secondary text-xs py-2 px-4 flex items-center gap-1.5"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                        {t('surveyGrading.editScore')}
+                      </button>
                     </div>
+                  ) : (
+                    /* Interactive slider row when ungraded or in edit mode */
+                    <div className="p-4 bg-earth-sand/20 border-[2px] border-earth-ink/20 rounded-xl space-y-3">
+                      <div className="flex items-center gap-4 flex-wrap sm:flex-nowrap">
+                        {/* Score display */}
+                        <div className="shrink-0 text-center min-w-[52px]">
+                          <div className={`text-4xl font-display font-bold tabular-nums leading-none ${scoreColor(draft)}`}>
+                            {draft}
+                          </div>
+                          <div className="text-xs font-mono text-earth-ink/50 mt-0.5">/10</div>
+                        </div>
 
-                    {/* Slider + labels */}
-                    <div className="flex-1">
-                      <input
-                        type="range"
-                        min={0}
-                        max={10}
-                        step={1}
-                        value={draft}
-                        onChange={(e) =>
-                          setDrafts((prev) => ({ ...prev, [r.id]: parseInt(e.target.value) }))
-                        }
-                        className="w-full h-2 rounded-full appearance-none cursor-pointer accent-brand-600 bg-gray-200 dark:bg-gray-700"
-                        aria-label={t('surveyGrading.scoreAria', { name: r.user?.displayName })}
-                      />
-                      <div className="flex justify-between text-[10px] text-gray-400 mt-1 select-none px-px">
-                        {Array.from({ length: 11 }, (_, i) => (
-                          <span key={i}>{i}</span>
-                        ))}
+                        {/* Slider + labels */}
+                        <div className="flex-1 min-w-[200px]">
+                          <input
+                            type="range"
+                            min={0}
+                            max={10}
+                            step={1}
+                            value={draft}
+                            onChange={(e) =>
+                              setDrafts((prev) => ({ ...prev, [r.id]: parseInt(e.target.value) }))
+                            }
+                            className="w-full h-2 rounded-full appearance-none cursor-pointer accent-earth-forest bg-earth-ink/20"
+                            aria-label={t('surveyGrading.scoreAria', { name: r.user?.displayName })}
+                          />
+                          <div className="flex justify-between text-[10px] font-mono text-earth-ink/50 mt-1 select-none px-px">
+                            {Array.from({ length: 11 }, (_, i) => (
+                              <span key={i}>{i}</span>
+                            ))}
+                          </div>
+                          <p className={`text-xs text-center mt-1 font-semibold ${scoreColor(draft)}`}>
+                            {getScoreLabel(draft)}
+                          </p>
+                        </div>
+
+                        {/* Save & Cancel buttons */}
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            id={`save-grade-${r.id}`}
+                            onClick={() => handleSave(r.id)}
+                            disabled={isSaving}
+                            className="btn-primary text-xs py-2 px-4 flex items-center justify-center gap-2">
+                            {isSaving
+                              ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              : t('surveyGrading.saveScore')
+                            }
+                          </button>
+
+                          {hasGraded && (
+                            <button
+                              onClick={() => setEditing((prev) => ({ ...prev, [r.id]: false }))}
+                              className="btn-secondary text-xs py-2 px-3">
+                              {t('surveyGrading.cancelScore')}
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <p className={`text-xs text-center mt-1 font-semibold ${scoreColor(draft)}`}>
-                        {
-                            draft === 0 ? t('surveyGrading.veryBad') :
-                            draft === 1 ? t('surveyGrading.bad') :
-                            draft === 2 ? t('surveyGrading.poor') :
-                            draft === 3 ? t('surveyGrading.belowAvg') :
-                            draft === 4 ? t('surveyGrading.belowAvg') :
-                            draft === 5 ? t('surveyGrading.avg') :
-                            draft === 6 ? t('surveyGrading.fair') :
-                            draft === 7 ? t('surveyGrading.good') :
-                            draft === 8 ? t('surveyGrading.veryGood') :
-                            draft === 9 ? t('surveyGrading.excellent') :
-                            t('surveyGrading.perfect')
-                        }
-                      </p>
                     </div>
-
-                    {/* Save button */}
-                    <button
-                      id={`save-grade-${r.id}`}
-                      onClick={() => handleSave(r.id)}
-                      disabled={isSaving}
-                      className="btn-primary shrink-0 min-w-[100px] flex items-center justify-center gap-2 text-sm py-2.5">
-                      {isSaving
-                        ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        : t('surveyGrading.saveScore')
-                      }
-                    </button>
-                  </div>
+                  )}
                 </div>
               )
             })}
@@ -314,3 +347,4 @@ export default function SurveyGrading() {
     </div>
   )
 }
+
