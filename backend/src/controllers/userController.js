@@ -1,15 +1,43 @@
+/**
+ * @module UserController
+ * @description Controller quản lý hồ sơ thông tin cá nhân của người dùng hiện tại (Cập nhật Profile, Đổi mật khẩu, Thay đổi Giao diện Light/Dark, Xem lịch sử điểm thưởng, Tải ảnh đại diện Avatar, Xem danh sách huy hiệu).
+ * 
+ * @function updateProfile
+ * @description Cập nhật thông tin cá nhân (Họ tên, Email, Khoa/Phòng ban).
+ * 
+ * @function changePassword
+ * @description Đổi mật khẩu mới (có kiểm tra mật khẩu cũ và độ mạnh mật khẩu).
+ * 
+ * @function updateTheme
+ * @description Thay đổi cài đặt giao diện hiển thị (`light` hoặc `dark`).
+ * 
+ * @function getMe
+ * @description Lấy toàn bộ thông tin tài khoản người dùng đang đăng nhập.
+ * 
+ * @function getPointHistory
+ * @description Lấy lịch sử biến động điểm rèn luyện và tổng số điểm tích lũy.
+ * 
+ * @function uploadAvatar
+ * @description Tải ảnh đại diện Avatar lên Cloudinary và cập nhật `avatar_url`.
+ * 
+ * @function getBadges
+ * @description Lấy danh sách tất cả các huy hiệu và trạng thái đã đạt được của người dùng.
+ * 
+ * @relations
+ * - Routes: `backend/src/routes/userRoutes.js`.
+ * - Guard: `authenticate`.
+ * - Frontend UI: `Profile.jsx` (`frontend/src/pages/student/Profile.jsx`), `ChangePasswordModal.jsx`.
+ */
 const bcrypt = require('bcrypt');
 const { User } = require('../models');
 const logger = require('../utils/logger');
 
-// PATCH /api/users/me/profile
 exports.updateProfile = async (req, res) => {
   try {
     const { full_name, email, department } = req.body;
     const updates = {};
     if (full_name !== undefined) updates.full_name = full_name.trim();
     if (email !== undefined) {
-      // Check email uniqueness
       const existing = await User.findOne({ where: { email: email.trim() } });
       if (existing && existing.id !== req.user.id) {
         return res.status(409).json({ message: 'Email is already in use by another account.' });
@@ -33,7 +61,6 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
-// PATCH /api/users/me/password
 exports.changePassword = async (req, res) => {
   try {
     const { current_password, new_password, confirm_password } = req.body;
@@ -71,7 +98,6 @@ exports.changePassword = async (req, res) => {
   }
 };
 
-// PATCH /api/users/me/theme
 exports.updateTheme = async (req, res) => {
   try {
     const { ui_theme } = req.body;
@@ -86,7 +112,6 @@ exports.updateTheme = async (req, res) => {
   }
 };
 
-// GET /api/users/me
 exports.getMe = async (req, res) => {
   try {
     const user = await User.findByPk(req.user.id, {
@@ -99,7 +124,6 @@ exports.getMe = async (req, res) => {
   }
 };
 
-// GET /api/users/me/points
 exports.getPointHistory = async (req, res) => {
   try {
     const { PointLog } = require('../models');
@@ -117,7 +141,6 @@ exports.getPointHistory = async (req, res) => {
   }
 };
 
-// POST /api/users/me/avatar
 exports.uploadAvatar = async (req, res) => {
   try {
     if (!req.file) {
@@ -134,21 +157,17 @@ exports.uploadAvatar = async (req, res) => {
   }
 };
 
-// GET /api/users/me/badges
 exports.getBadges = async (req, res) => {
   try {
     const { Badge, UserBadge } = require('../models');
     
-    // Get all available badges
     const allBadges = await Badge.findAll({ order: [['id', 'ASC']] });
     
-    // Get badges earned by user
     const earnedBadges = await UserBadge.findAll({
       where: { user_id: req.user.id }
     });
     const earnedBadgeIds = new Set(earnedBadges.map(ub => ub.badge_id));
 
-    // Map to include earned status and earned_at date
     const badgesWithStatus = allBadges.map(b => {
       const earned = earnedBadges.find(ub => ub.badge_id === b.id);
       return {

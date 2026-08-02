@@ -1,3 +1,16 @@
+/**
+ * @module SequelizeConfig
+ * @description Tệp cấu hình kết nối cơ sở dữ liệu MySQL cho Sequelize CLI và Sequelize ORM theo từng môi trường.
+ * 
+ * @implementation
+ * - Bước 1: Nạp tệp cấu hình môi trường `.env` ở thư mục gốc của backend.
+ * - Bước 2: Xuất đối tượng chứa cấu hình cho 3 môi trường: `development`, `test`, và `production`.
+ * - Bước 3: Đặt các tham số kết nối mặc định (username, password, database, host, port, dialect) đi kèm cấu hình múi giờ UTC (`+00:00`).
+ * 
+ * @relations
+ * - CLI sử dụng: `.sequelizerc`, Sequelize CLI thực hiện migrations/seeders.
+ * - ORM sử dụng: `backend/src/config/database.js` và `backend/src/models/index.js`.
+ */
 require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
 
 module.exports = {

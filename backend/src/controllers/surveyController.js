@@ -1,10 +1,17 @@
+/**
+ * @module SurveyController
+ * @description Controller quản lý toàn bộ vòng đời bài khảo sát: Đăng bài, Chỉnh sửa, Quản lý câu hỏi, Phân tích thống kê kết quả, Người dùng làm khảo sát và Admin chấm điểm ý kiến cá nhân.
+ */
 const { Op, literal } = require('sequelize');
 const { sequelize } = require('../config/database');
 const { Survey, Question, SurveyResponse, SurveyAnswer, PointLog, Notification, User } = require('../models');
 const logger = require('../utils/logger');
 const badgeService = require('../services/badgeService');
 
-// ── GET /api/surveys — for students/staff ────────────────────
+/**
+ * @function getSurveys
+ * @description Lấy danh sách đợt khảo sát dành cho sinh viên/cán bộ đang mở (`Published` và chưa hết hạn `end_date`).
+ */
 exports.getSurveys = async (req, res) => {
   try {
     const userRole = req.user.role;
@@ -31,7 +38,6 @@ exports.getSurveys = async (req, res) => {
       distinct: true,
     });
 
-    // Check which ones the current user has completed
     const surveyIds = surveys.map((s) => s.id);
     const completed = await SurveyResponse.findAll({
       where: { user_id: userId, survey_id: { [Op.in]: surveyIds } },
@@ -52,7 +58,10 @@ exports.getSurveys = async (req, res) => {
   }
 };
 
-// ── GET /api/surveys/:id — survey detail with questions ───────
+/**
+ * @function getSurveyDetail
+ * @description Lấy thông tin chi tiết một bài khảo sát kèm danh sách câu hỏi để sinh viên thực hiện làm bài.
+ */
 exports.getSurveyDetail = async (req, res) => {
   try {
     const { id } = req.params;
@@ -69,13 +78,11 @@ exports.getSurveyDetail = async (req, res) => {
       if (survey.status !== 'Published') {
         return res.status(403).json({ message: 'Survey is not available.' });
       }
-      // FIX #6: Kiểm tra nhất quán với getSurveys — nếu đã qua end_date thì không cho xem
       if (new Date(survey.end_date) < new Date()) {
         return res.status(403).json({ message: 'Survey has ended.' });
       }
     }
 
-    // Check if already submitted
     const existing = await SurveyResponse.findOne({
       where: { survey_id: id, user_id: req.user.id },
     });
@@ -87,22 +94,25 @@ exports.getSurveyDetail = async (req, res) => {
   }
 };
 
-// ── POST /api/surveys/:id/submit ──────────────────────────────
+/**
+ * @function submitSurvey
+ * @description Người dùng gửi câu trả lời bài khảo sát, ghi nhận kết quả và cộng 10 điểm thưởng rèn luyện trong Transaction an toàn.
+ */
 exports.submitSurvey = async (req, res) => {
   const t = await sequelize.transaction();
   try {
     const { id } = req.params;
-    const { answers } = req.body; // [{ question_id, answer_text }]
+    const { answers } = req.body;
     const userId = req.user.id;
 
     const survey = await Survey.findByPk(id, {
       include: [{ model: Question, as: 'questions' }],
     });
+
     if (!survey) { await t.rollback(); return res.status(404).json({ message: 'Survey not found.' }); }
 
     const now = new Date();
 
-    // FIX #7: Kiểm tra cả start_date — không cho submit khi survey chưa mở
     if (
       survey.status !== 'Published' ||
       now < new Date(survey.start_date) ||
@@ -112,13 +122,11 @@ exports.submitSurvey = async (req, res) => {
       return res.status(400).json({ message: 'Survey is not currently open.' });
     }
 
-    // Role check
     if (survey.target_role !== 'All' && survey.target_role !== req.user.role) {
       await t.rollback();
       return res.status(403).json({ message: 'You are not eligible for this survey.' });
     }
 
-    // Validate required questions
     const requiredIds = survey.questions.filter((q) => q.is_required).map((q) => q.id);
     const answeredIds = (answers || []).map((a) => a.question_id);
     const missing = requiredIds.filter((id) => !answeredIds.includes(id));
@@ -127,8 +135,6 @@ exports.submitSurvey = async (req, res) => {
       return res.status(400).json({ message: 'Please answer all required questions.', missing_question_ids: missing });
     }
 
-    // FIX #3: Validate tất cả question_id phải thuộc survey này
-    // Ngăn chặn attacker ghi câu trả lời vào câu hỏi của survey khác
     const validQuestionIds = new Set(survey.questions.map((q) => q.id));
     const invalidAnswers = (answers || []).filter((a) => !validQuestionIds.has(a.question_id));
     if (invalidAnswers.length > 0) {
@@ -139,7 +145,6 @@ exports.submitSurvey = async (req, res) => {
       });
     }
 
-    // Create response record (UNIQUE constraint handles double-submit)
     let response;
     try {
       response = await SurveyResponse.create({ survey_id: id, user_id: userId, submitted_at: new Date() }, { transaction: t });
@@ -148,7 +153,6 @@ exports.submitSurvey = async (req, res) => {
       return res.status(409).json({ message: 'You have already submitted this survey.' });
     }
 
-    // Insert all answers
     if (answers && answers.length > 0) {
       const answerRecords = answers.map((a) => ({
         response_id: response.id,
@@ -158,8 +162,6 @@ exports.submitSurvey = async (req, res) => {
       await SurveyAnswer.bulkCreate(answerRecords, { transaction: t });
     }
 
-    // FIX #2: Application-level guard chống duplicate điểm
-    // DB constraint uq_point_log_action cũng bảo vệ ở tầng DB.
     const existingPoint = await PointLog.findOne({
       where: { user_id: userId, action_type: 'Survey_Completion', reference_id: response.id, reference_type: 'survey_responses' },
       transaction: t,
@@ -177,7 +179,6 @@ exports.submitSurvey = async (req, res) => {
 
     await t.commit();
 
-    // Tích hợp kiểm tra Badges (Gamification Phase 5)
     badgeService.checkAndAwardBadges(userId).catch(err => {
       logger.error(`Error checking badges for user ${userId} after survey submission:`, err);
     });
@@ -190,7 +191,10 @@ exports.submitSurvey = async (req, res) => {
   }
 };
 
-// ── ADMIN: GET /api/admin/surveys ─────────────────────────────
+/**
+ * @function adminGetSurveys
+ * @description Admin xem danh sách tất cả các bài khảo sát (Bao gồm Draft, Published, Closed).
+ */
 exports.adminGetSurveys = async (req, res) => {
   try {
     const { status, search, page = 1, limit = 10 } = req.query;
@@ -225,7 +229,10 @@ exports.adminGetSurveys = async (req, res) => {
   }
 };
 
-// ── ADMIN: GET /api/admin/surveys/:id ─────────────────────────
+/**
+ * @function adminGetSurveyById
+ * @description Admin xem chi tiết bài khảo sát và danh sách câu hỏi trong trang quản trị.
+ */
 exports.adminGetSurveyById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -243,7 +250,10 @@ exports.adminGetSurveyById = async (req, res) => {
   }
 };
 
-// ── ADMIN: GET /api/admin/surveys/:id/analytics ───────────────
+/**
+ * @function adminGetAnalytics
+ * @description Tổng hợp biểu đồ phân tích tỷ lệ chọn từng phương án câu hỏi khảo sát cho Admin.
+ */
 exports.adminGetAnalytics = async (req, res) => {
   try {
     const { id } = req.params;
@@ -261,7 +271,6 @@ exports.adminGetAnalytics = async (req, res) => {
     const totalResponses = survey.responses.length;
     const responseIds = survey.responses.map(r => r.id);
 
-    // Fetch all answers for these responses
     let allAnswers = [];
     if (responseIds.length > 0) {
       allAnswers = await SurveyAnswer.findAll({
@@ -270,7 +279,6 @@ exports.adminGetAnalytics = async (req, res) => {
       });
     }
 
-    // Process analytics per question
     const questionsData = survey.questions.map(q => {
       const qAnswers = allAnswers.filter(a => a.question_id === q.id && a.answer_text);
       const answeredCount = qAnswers.length;
@@ -294,7 +302,6 @@ exports.adminGetAnalytics = async (req, res) => {
         });
         processedAnswers = counts;
       } else {
-        // Text responses
         processedAnswers = qAnswers.map(a => a.answer_text);
       }
 
@@ -324,7 +331,10 @@ exports.adminGetAnalytics = async (req, res) => {
   }
 };
 
-// ── ADMIN: POST /api/admin/surveys ────────────────────────────
+/**
+ * @function adminCreateSurvey
+ * @description Admin tạo bài khảo sát mới, tự động chèn câu hỏi "Ý kiến cá nhân" bắt buộc cuối bài.
+ */
 exports.adminCreateSurvey = async (req, res) => {
   const t = await sequelize.transaction();
   try {
@@ -345,7 +355,6 @@ exports.adminCreateSurvey = async (req, res) => {
       created_by: req.user.id,
     }, { transaction: t });
 
-    // Tự động tạo câu hỏi "Ý kiến cá nhân" — luôn xuất hiện cuối cùng
     await Question.create({
       survey_id: survey.id,
       question_text: 'Ý kiến cá nhân về bài khảo sát',
@@ -364,7 +373,10 @@ exports.adminCreateSurvey = async (req, res) => {
   }
 };
 
-// ── ADMIN: PATCH /api/admin/surveys/:id ──────────────────────
+/**
+ * @function adminUpdateSurvey
+ * @description Admin cập nhật bài khảo sát. Phát thông báo Socket.IO + Notification khi xuất bản (`Published`).
+ */
 exports.adminUpdateSurvey = async (req, res) => {
   try {
     const survey = await Survey.findByPk(req.params.id, {
@@ -372,28 +384,23 @@ exports.adminUpdateSurvey = async (req, res) => {
     });
     if (!survey) return res.status(404).json({ message: 'Survey not found.' });
 
-    // Cannot publish without questions
     if (req.body.status === 'Published' && (!survey.questions || survey.questions.length === 0)) {
       return res.status(400).json({ message: 'Survey must have at least one question before publishing.' });
     }
 
-    // FIX #5: Whitelist các fields được phép cập nhật — ngăn chặn mass assignment
     const { title, description, target_role, start_date, end_date, status } = req.body;
 
-    // Validate date range nếu có thay đổi
     const newStartDate = start_date || survey.start_date;
     const newEndDate = end_date || survey.end_date;
     if (new Date(newEndDate) <= new Date(newStartDate)) {
       return res.status(400).json({ message: 'End date must be after start date.' });
     }
 
-    // FIX #12: Khi survey được Published, gửi notification cho các user phù hợp target_role
     const wasPublished = survey.status !== 'Published' && status === 'Published';
 
     await survey.update({ title, description, target_role, start_date, end_date, status });
 
     if (wasPublished) {
-      // Gửi notification bất đồng bộ — không block response
       _notifyUsersForNewSurvey(survey).catch((err) =>
         logger.error('Failed to send new-survey notifications:', err)
       );
@@ -406,7 +413,10 @@ exports.adminUpdateSurvey = async (req, res) => {
   }
 };
 
-// Helper: Gửi thông báo cho user khi survey mới được publish (Fix #12)
+/**
+ * @function _notifyUsersForNewSurvey
+ * @description Hàm helper phát thông báo cho tất cả người dùng hợp lệ khi một khảo sát mới được xuất bản.
+ */
 async function _notifyUsersForNewSurvey(survey) {
   const roleFilter = survey.target_role === 'All'
     ? { role: { [Op.in]: ['Student', 'Staff'] } }
@@ -427,13 +437,11 @@ async function _notifyUsersForNewSurvey(survey) {
     reference_id: survey.id,
   }));
 
-  // Gửi theo batch nhỏ để tránh quá tải DB
   const BATCH_SIZE = 100;
   for (let i = 0; i < notifications.length; i += BATCH_SIZE) {
     const batch = notifications.slice(i, i + BATCH_SIZE);
     const createdNotes = await Notification.bulkCreate(batch);
     
-    // Emit real-time notification to connected users
     const socketService = require('../services/socketService');
     createdNotes.forEach(note => {
       socketService.emitToUser(note.user_id, 'new_notification', note);
@@ -443,7 +451,10 @@ async function _notifyUsersForNewSurvey(survey) {
   logger.info(`[Survey Publish] Sent notifications to ${users.length} users for survey "${survey.title}"`);
 }
 
-// ── ADMIN: DELETE /api/admin/surveys/:id ─────────────────────
+/**
+ * @function adminDeleteSurvey
+ * @description Admin xóa bài khảo sát chưa có lượt làm bài nào.
+ */
 exports.adminDeleteSurvey = async (req, res) => {
   try {
     const survey = await Survey.findByPk(req.params.id, {
@@ -463,7 +474,10 @@ exports.adminDeleteSurvey = async (req, res) => {
   }
 };
 
-// ── ADMIN: Question CRUD ───────────────────────────────────────
+/**
+ * @function getQuestions
+ * @description Lấy danh sách câu hỏi thuộc một bài khảo sát.
+ */
 exports.getQuestions = async (req, res) => {
   try {
     const questions = await Question.findAll({
@@ -476,6 +490,10 @@ exports.getQuestions = async (req, res) => {
   }
 };
 
+/**
+ * @function createQuestion
+ * @description Thêm một câu hỏi mới vào bài khảo sát.
+ */
 exports.createQuestion = async (req, res) => {
   try {
     const { question_text, question_type, options, order_num, is_required } = req.body;
@@ -498,15 +516,17 @@ exports.createQuestion = async (req, res) => {
   }
 };
 
+/**
+ * @function updateQuestion
+ * @description Chỉnh sửa nội dung câu hỏi trong bài khảo sát (Có kiểm tra bảo mật IDOR).
+ */
 exports.updateQuestion = async (req, res) => {
   try {
-    // FIX #4: Verify question thuộc đúng survey (IDOR protection)
     const question = await Question.findOne({
       where: { id: req.params.id, survey_id: req.params.surveyId },
     });
     if (!question) return res.status(404).json({ message: 'Question not found in this survey.' });
 
-    // FIX #5: Whitelist fields được phép cập nhật
     const { question_text, question_type, options, order_num, is_required } = req.body;
     await question.update({ question_text, question_type, options, order_num, is_required });
     res.json({ message: 'Question updated.', question });
@@ -515,9 +535,12 @@ exports.updateQuestion = async (req, res) => {
   }
 };
 
+/**
+ * @function deleteQuestion
+ * @description Xóa câu hỏi khỏi bài khảo sát.
+ */
 exports.deleteQuestion = async (req, res) => {
   try {
-    // FIX #4: Verify question thuộc đúng survey (IDOR protection)
     const question = await Question.findOne({
       where: { id: req.params.id, survey_id: req.params.surveyId },
     });
@@ -529,13 +552,16 @@ exports.deleteQuestion = async (req, res) => {
   }
 };
 
+/**
+ * @function reorderQuestions
+ * @description Sắp xếp lại thứ tự xuất hiện của các câu hỏi trong khảo sát.
+ */
 exports.reorderQuestions = async (req, res) => {
   try {
-    const { order } = req.body; // [{ id, order_num }]
+    const { order } = req.body;
     if (!Array.isArray(order)) return res.status(400).json({ message: 'Order must be an array.' });
 
     await Promise.all(order.map(({ id, order_num }) =>
-      // surveyId constraint đã có sẵn ở đây — đúng
       Question.update({ order_num }, { where: { id, survey_id: req.params.surveyId } })
     ));
     res.json({ message: 'Questions reordered.' });
@@ -544,8 +570,10 @@ exports.reorderQuestions = async (req, res) => {
   }
 };
 
-// ── GET /api/admin/surveys/:id/responses ─────────────────────
-// Trả về danh sách bài làm ẩn danh — Admin KHÔNG thấy tên/email người nộp.
+/**
+ * @function getSurveyResponses
+ * @description Admin xem danh sách kết quả bài làm được ẩn danh (Hiển thị "Ẩn danh #1", "Ẩn danh #2" để đảm bảo tính khách quan).
+ */
 exports.getSurveyResponses = async (req, res) => {
   try {
     const { page = 1, limit = 20 } = req.query;
@@ -554,7 +582,6 @@ exports.getSurveyResponses = async (req, res) => {
     const { count, rows } = await SurveyResponse.findAndCountAll({
       where: { survey_id: req.params.id },
       include: [
-        // Chỉ lấy role để hiển thị nhóm (Student/Staff), không lấy tên hay email
         { model: User, as: 'user', attributes: ['role'] },
         { model: SurveyAnswer, as: 'answers', include: [{ model: Question, as: 'question' }] },
       ],
@@ -563,7 +590,6 @@ exports.getSurveyResponses = async (req, res) => {
       offset,
     });
 
-    // Gán nhãn ẩn danh theo thứ tự — Admin chỉ thấy "Ẩn danh #1", "Ẩn danh #2"…
     const anonymousResponses = rows.map((r, idx) => {
       const json = r.toJSON();
       return {
@@ -581,15 +607,16 @@ exports.getSurveyResponses = async (req, res) => {
   }
 };
 
-// ── PUT /api/admin/surveys/responses/:id/score ────────────────
-// Admin chấm điểm ý kiến cá nhân (0–10). Tạo/cập nhật PointLog Bonus tương ứng.
+/**
+ * @function gradeOpinion
+ * @description Admin chấm điểm ý kiến cá nhân bài khảo sát (từ 0 đến 10 điểm), tự động cập nhật hoặc chèn bản ghi điểm thưởng `PointLog Bonus` duy nhất.
+ */
 exports.gradeOpinion = async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const { id } = req.params; // response_id
+    const { id } = req.params;
     const { opinion_score } = req.body;
 
-    // Validate điểm
     if (opinion_score === undefined || opinion_score === null) {
       await t.rollback();
       return res.status(400).json({ message: 'opinion_score is required.' });
@@ -606,14 +633,12 @@ exports.gradeOpinion = async (req, res) => {
       return res.status(404).json({ message: 'Survey response not found.' });
     }
 
-    const previousScore = response.opinion_score; // null nếu chưa chấm
+    const previousScore = response.opinion_score;
 
-    // Cập nhật điểm trên bản ghi response
     await response.update({ opinion_score: score }, { transaction: t });
 
     const numericResponseId = parseInt(id, 10);
 
-    // Tìm tất cả PointLog Bonus hiện có cho bài trả lời này
     const existingLogs = await PointLog.findAll({
       where: {
         reference_id: numericResponseId,
@@ -623,7 +648,6 @@ exports.gradeOpinion = async (req, res) => {
     });
 
     if (existingLogs.length > 0) {
-      // Cập nhật bản ghi đầu tiên với điểm số mới
       const primaryLog = existingLogs[0];
       await primaryLog.update({
         user_id: response.user_id,
@@ -632,7 +656,6 @@ exports.gradeOpinion = async (req, res) => {
         note: `Điểm ý kiến cá nhân bài khảo sát (survey_response #${id})`,
       }, { transaction: t });
 
-      // Nếu có bất kỳ bản ghi trùng lặp nào, xóa để tránh cộng dồn điểm
       if (existingLogs.length > 1) {
         const duplicateIds = existingLogs.slice(1).map(l => l.id);
         await PointLog.destroy({
@@ -641,7 +664,6 @@ exports.gradeOpinion = async (req, res) => {
         });
       }
     } else {
-      // Tạo mới PointLog nếu chưa có
       await PointLog.create({
         user_id: response.user_id,
         action_type: 'Bonus',
@@ -654,7 +676,6 @@ exports.gradeOpinion = async (req, res) => {
 
     await t.commit();
 
-    // Trigger kiểm tra danh hiệu cho học sinh sau khi điểm được cập nhật
     badgeService.checkAndAwardBadges(response.user_id).catch(err => {
       logger.error(`Error checking badges for user ${response.user_id} after grading opinion:`, err);
     });

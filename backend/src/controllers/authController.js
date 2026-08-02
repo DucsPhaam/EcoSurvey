@@ -1,3 +1,7 @@
+/**
+ * @module AuthController
+ * @description Controller quản lý các luồng xác thực người dùng: Đăng ký tài khoản, Đăng nhập, Làm mới token, Đăng xuất, Quên/Đặt lại mật khẩu, Xác minh email, và Đăng nhập bằng Google OAuth.
+ */
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
@@ -10,6 +14,12 @@ const SALT_ROUNDS = 10;
 const ACCESS_EXPIRES = process.env.JWT_EXPIRES_IN || '15m';
 const REFRESH_DAYS   = parseInt(process.env.REFRESH_TOKEN_EXPIRES_DAYS || '7', 10);
 
+/**
+ * @function signAccessToken
+ * @description Tạo chuỗi JWT Access Token chứa payload thông tin người dùng với thời hạn ngắn (15 phút).
+ * @param {Object} user - Bản ghi User từ Sequelize.
+ * @returns {string} Chuỗi JWT token mã hóa.
+ */
 const signAccessToken = (user) =>
   jwt.sign(
     { user_id: user.id, role: user.role, full_name: user.full_name },
@@ -17,6 +27,12 @@ const signAccessToken = (user) =>
     { expiresIn: ACCESS_EXPIRES }
   );
 
+/**
+ * @function createRefreshToken
+ * @description Tạo mã Refresh Token ngẫu nhiên (64 bytes), lưu dạng SHA-256 hash vào bảng `refresh_tokens` trong CSDL và trả về chuỗi token gốc.
+ * @param {number} userId - Mã ID người dùng.
+ * @returns {Promise<string>} Chuỗi token ngẫu nhiên dạng hex.
+ */
 const createRefreshToken = async (userId) => {
   const raw = crypto.randomBytes(64).toString('hex');
   const hash = crypto.createHash('sha256').update(raw).digest('hex');
@@ -25,7 +41,23 @@ const createRefreshToken = async (userId) => {
   return raw;
 };
 
-// POST /api/auth/register
+/**
+ * @function register
+ * @description Tiếp nhận yêu cầu đăng ký tài khoản sinh viên/cán bộ mới.
+ * @param {Object} req - Request chứa thông tin đăng ký trong `req.body`.
+ * @param {Object} res - Response phản hồi kết quả.
+ * 
+ * @implementation
+ * - Bước 1: Kiểm tra tính hợp lệ của dữ liệu (các trường bắt buộc, độ dài mật khẩu >= 8 gồm chữ hoa và số).
+ * - Bước 2: Kiểm tra sự tồn tại của `username` hoặc `email` trong CSDL.
+ * - Bước 3: Băm mật khẩu bằng `bcrypt.hash` và lưu người dùng ở trạng thái `status: 'Pending'`.
+ * - Bước 4: Gửi email tự động thông báo đăng ký đang chờ Admin duyệt qua `emailService.sendRegistrationEmail`.
+ * 
+ * @relations
+ * - Route: `POST /api/auth/register` trong `authRoutes.js`.
+ * - Guard: `captchaMiddleware` (Turnstile CAPTCHA).
+ * - Frontend: `authService.register` từ `RegisterPage.jsx`.
+ */
 exports.register = async (req, res) => {
   try {
     const {
@@ -61,7 +93,7 @@ exports.register = async (req, res) => {
     await User.create({
       full_name, username, email, password_hash, role,
       student_staff_id, class_name, department,
-      joined_date: joined_date || null,
+      joined_date: joined_date || null, 
       status: 'Pending',
       google_id: google_id || null,
       auth_provider: google_id ? 'google' : 'local'
@@ -76,7 +108,10 @@ exports.register = async (req, res) => {
   }
 };
 
-// GET /api/auth/check-username?username=xxx
+/**
+ * @function checkUsername
+ * @description Kiểm tra tên đăng nhập username đã tồn tại trong hệ thống chưa (dùng cho validation real-time ở form đăng ký).
+ */
 exports.checkUsername = async (req, res) => {
   const { username } = req.query;
   if (!username) return res.json({ available: false });
@@ -84,7 +119,10 @@ exports.checkUsername = async (req, res) => {
   res.json({ available: !found });
 };
 
-// GET /api/auth/check-email?email=xxx
+/**
+ * @function checkEmail
+ * @description Kiểm tra địa chỉ email đã tồn tại trong hệ thống chưa (dùng cho validation real-time ở form đăng ký).
+ */
 exports.checkEmail = async (req, res) => {
   const { email } = req.query;
   if (!email) return res.json({ available: false });
@@ -92,7 +130,23 @@ exports.checkEmail = async (req, res) => {
   res.json({ available: !found });
 };
 
-// POST /api/auth/login
+/**
+ * @function login
+ * @description Đăng nhập tài khoản bằng Username/Email và Password.
+ * @param {Object} req - Request chứa `login` (username hoặc email) và `password`.
+ * @param {Object} res - Response trả về `accessToken` và ghi cookie `refreshToken`.
+ * 
+ * @implementation
+ * - Bước 1: Tìm kiếm tài khoản theo `username` hoặc `email`.
+ * - Bước 2: So sánh mật khẩu bằng `bcrypt.compare`.
+ * - Bước 3: Kiểm tra trạng thái tài khoản (`Pending`, `Rejected`, `Deactivated`). Nếu chưa duyệt/bị từ chối thì từ chối cấp token.
+ * - Bước 4: Cấp `accessToken` và tạo `refreshToken` đặt vào Cookie HTTP-Only.
+ * 
+ * @relations
+ * - Route: `POST /api/auth/login` trong `authRoutes.js`.
+ * - Guard: `loginLimiter` (giới hạn số lần đăng nhập).
+ * - Frontend: `authService.login` từ `LoginPage.jsx`.
+ */
 exports.login = async (req, res) => {
   try {
     const { login, password } = req.body;
@@ -141,11 +195,13 @@ exports.login = async (req, res) => {
   }
 };
 
-// POST /api/auth/refresh
+/**
+ * @function refresh
+ * @description Đổi Refresh Token lấy Access Token mới để duy trì phiên đăng nhập mà không cần người dùng nhập lại mật khẩu.
+ */
 exports.refresh = async (req, res) => {
   try {
     const raw = req.cookies?.refreshToken;
-    logger.info(`[Auth Refresh] Received cookies:`, req.cookies);
     if (!raw) return res.status(401).json({ message: 'Refresh token missing.' });
 
     const hash = crypto.createHash('sha256').update(raw).digest('hex');
@@ -168,7 +224,10 @@ exports.refresh = async (req, res) => {
   }
 };
 
-// POST /api/auth/logout
+/**
+ * @function logout
+ * @description Đăng xuất tài khoản, thu hồi (revoke) Refresh Token trong CSDL và xóa cookie.
+ */
 exports.logout = async (req, res) => {
   try {
     const raw = req.cookies?.refreshToken;
@@ -184,20 +243,21 @@ exports.logout = async (req, res) => {
   }
 };
 
-// POST /api/auth/forgot-password
+/**
+ * @function forgotPassword
+ * @description Tiếp nhận yêu cầu quên mật khẩu, tạo token đặt lại mật khẩu và gửi email hướng dẫn.
+ */
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: 'Email là bắt buộc.' });
 
     const user = await User.findOne({ where: { email } });
-    // Always respond success to prevent email enumeration
     if (!user) return res.json({ message: 'Nếu email tồn tại, chúng tôi đã gửi liên kết đặt lại mật khẩu.' });
 
-    // Generate secure token
     const rawToken = crypto.randomBytes(32).toString('hex');
     const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-    const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    const expires = new Date(Date.now() + 15 * 60 * 1000);
 
     await user.update({
       reset_password_token: tokenHash,
@@ -215,7 +275,10 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
-// POST /api/auth/reset-password
+/**
+ * @function resetPassword
+ * @description Cập nhật mật khẩu mới bằng token xác thực nhận được qua email.
+ */
 exports.resetPassword = async (req, res) => {
   try {
     const { token, email, password, confirm_password } = req.body;
@@ -243,7 +306,6 @@ exports.resetPassword = async (req, res) => {
       reset_password_token: null,
       reset_password_expires: null,
     });
-    // Revoke all refresh tokens for security
     await RefreshToken.update({ revoked: true }, { where: { user_id: user.id } });
 
     res.json({ message: 'Mật khẩu đã được đặt lại thành công. Vui lòng đăng nhập lại.' });
@@ -253,7 +315,10 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-// POST /api/auth/send-verification
+/**
+ * @function sendVerificationEmail
+ * @description Gửi lại email xác minh địa chỉ email người dùng.
+ */
 exports.sendVerificationEmail = async (req, res) => {
   try {
     const user = await User.findByPk(req.user.id);
@@ -275,7 +340,10 @@ exports.sendVerificationEmail = async (req, res) => {
   }
 };
 
-// GET /api/auth/verify-email?token=xxx&email=xxx
+/**
+ * @function verifyEmail
+ * @description Xác thực liên kết xác minh địa chỉ email.
+ */
 exports.verifyEmail = async (req, res) => {
   try {
     const { token, email } = req.query;
@@ -294,14 +362,16 @@ exports.verifyEmail = async (req, res) => {
   }
 };
 
-// GET /api/auth/google/callback
+/**
+ * @function googleCallback
+ * @description Xử lý chuyển hướng sau khi hoàn tất xác thực từ Google OAuth 2.0.
+ */
 exports.googleCallback = async (req, res) => {
   try {
     const user = req.user;
     const clientUrl = (process.env.CLIENT_URL || 'http://localhost:8080').replace(/\/+$/, '');
 
     if (user.isNewGoogleUser) {
-      // Redirect to registration page with pre-filled details
       const params = new URLSearchParams({
         email: user.email || '',
         name: user.full_name || '',
@@ -310,7 +380,6 @@ exports.googleCallback = async (req, res) => {
       return res.redirect(`${clientUrl}/register?${params.toString()}`);
     }
 
-    // Account exists, check status
     if (user.status === 'Pending') {
       return res.redirect(`${clientUrl}/login?error=pending`);
     }
@@ -321,7 +390,6 @@ exports.googleCallback = async (req, res) => {
       return res.redirect(`${clientUrl}/login?error=deactivated`);
     }
 
-    // Generate tokens
     const accessToken = signAccessToken(user);
     const refreshToken = await createRefreshToken(user.id);
 
@@ -332,7 +400,6 @@ exports.googleCallback = async (req, res) => {
       maxAge: REFRESH_DAYS * 86400 * 1000,
     });
 
-    // Redirect to frontend callback to process access token
     res.redirect(`${clientUrl}/oauth/callback?accessToken=${accessToken}`);
   } catch (err) {
     logger.error('googleCallback error:', err);
@@ -340,4 +407,3 @@ exports.googleCallback = async (req, res) => {
     res.redirect(`${fallbackUrl}/login?error=server_error`);
   }
 };
-

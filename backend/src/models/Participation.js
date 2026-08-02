@@ -1,3 +1,19 @@
+/**
+ * @module ParticipationModel
+ * @description Định nghĩa lược đồ nộp minh chứng hoạt động ngoại khóa / bảo vệ môi trường (Bảng `participations`).
+ * 
+ * @implementation
+ * - Bước 1: Khai báo khóa ngoại `user_id` (người nộp minh chứng).
+ * - Bước 2: Khai báo thông tin sự kiện: `event_name`, `location`, `participant_count`, `description`.
+ * - Bước 3: Đặt trạng thái duyệt `status` ('Pending','Approved','Rejected').
+ * - Bước 4: Khai báo các cột tóm tắt AI `ai_summary`, lý do từ chối `reject_reason`, thông tin người duyệt `reviewed_by` và thời điểm duyệt `reviewed_at`.
+ * - Bước 5: Tạo chỉ mục tìm kiếm tối ưu cho `user_id` và `status`.
+ * 
+ * @relations
+ * - Controller liên quan: `participationController.js`, `adminController.js`, `aiController.js`.
+ * - Service liên quan: `aiService.js` (tự động phân tích minh chứng), `badgeService.js` (cộng điểm/trao huy hiệu khi Approved).
+ * - Các bảng liên kết: `User` (người nộp & Admin duyệt), `ParticipationFile` (danh sách tệp đính kèm).
+ */
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 

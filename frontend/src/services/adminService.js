@@ -1,7 +1,15 @@
+/**
+ * @module AdminService
+ * @description Dịch vụ API phía Frontend thực hiện các cuộc gọi HTTP tới máy chủ Backend cho chức năng Quản trị (Quản lý người dùng, Khảo sát, Câu hỏi, Minh chứng, FAQ).
+ * 
+ * @relations
+ * - Backend tương ứng: `backend/src/routes/adminRoutes.js`, `backend/src/controllers/adminController.js`, `surveyController.js`, `participationController.js`.
+ * - UI Components gọi: `UserManagement.jsx`, `SurveyManagement.jsx`, `SurveyEditor.jsx`, `SurveyAnalytics.jsx`, `SurveyGrading.jsx`, `ParticipationReview.jsx`, `FAQManagement.jsx`.
+ */
 import api from './axiosInstance'
 
 export const adminService = {
-  // Users
+  // Quản lý người dùng
   getUsers: (params) => api.get('/admin/users', { params }),
   importUsers: (formData) => api.post('/admin/users/import', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
@@ -10,7 +18,7 @@ export const adminService = {
   deleteUser: (id) => api.delete(`/admin/users/${id}`),
   getStats: () => api.get('/admin/stats'),
 
-  // Surveys
+  // Quản lý khảo sát
   getSurveys: (params) => api.get('/admin/surveys', { params }),
   getSurveyById: (id) => api.get(`/admin/surveys/${id}`),
   createSurvey: (data) => api.post('/admin/surveys', data),
@@ -21,7 +29,7 @@ export const adminService = {
   gradeOpinion: (responseId, score) =>
     api.put(`/admin/surveys/responses/${responseId}/score`, { opinion_score: score }),
 
-  // Questions
+  // Quản lý câu hỏi khảo sát
   getQuestions: (surveyId) => api.get(`/admin/surveys/${surveyId}/questions`),
   createQuestion: (surveyId, data) => api.post(`/admin/surveys/${surveyId}/questions`, data),
   updateQuestion: (surveyId, questionId, data) =>
@@ -31,14 +39,14 @@ export const adminService = {
   reorderQuestions: (surveyId, order) =>
     api.patch(`/admin/surveys/${surveyId}/questions/reorder`, { order }),
 
-  // Participations
+  // Kiểm duyệt minh chứng ngoại khóa
   getParticipations: (params) => api.get('/admin/participations', { params }),
   getParticipationById: (id) => api.get(`/admin/participations/${id}`),
   reviewParticipation: (id, data) => api.patch(`/admin/participations/${id}/review`, data),
   summarizeParticipation: (id, force = false) =>
     api.post(`/admin/participations/${id}/summarize`, null, { params: { force: force ? 'true' : undefined } }),
 
-  // FAQs
+  // Quản lý câu hỏi thường gặp FAQ
   getFAQs: () => api.get('/admin/faqs'),
   createFAQ: (data) => api.post('/admin/faqs', data),
   updateFAQ: (id, data) => api.patch(`/admin/faqs/${id}`, data),

@@ -1,3 +1,7 @@
+/**
+ * @module ParticipationController
+ * @description Controller xử lý quy trình nộp và duyệt minh chứng hoạt động ngoại khóa / bảo vệ môi trường, tải tệp ảnh minh chứng, tự động cộng điểm tích lũy và tóm tắt AI.
+ */
 const path = require('path');
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/database');
@@ -6,7 +10,10 @@ const aiService = require('../services/aiService');
 const emailService = require('../services/emailService');
 const logger = require('../utils/logger');
 
-// ── GET /api/participations — my reports ──────────────────────
+/**
+ * @function getMyParticipations
+ * @description Lấy danh sách các bài báo cáo minh chứng cá nhân sinh viên đã nộp.
+ */
 exports.getMyParticipations = async (req, res) => {
   try {
     const { page = 1, limit = 10, status } = req.query;
@@ -29,7 +36,10 @@ exports.getMyParticipations = async (req, res) => {
   }
 };
 
-// ── POST /api/participations — submit report ──────────────────
+/**
+ * @function createParticipation
+ * @description Sinh viên nộp báo cáo minh chứng ngoại khóa kèm các tệp ảnh đính kèm.
+ */
 exports.createParticipation = async (req, res) => {
   try {
     const { event_name, location, participant_count, description } = req.body;
@@ -37,7 +47,6 @@ exports.createParticipation = async (req, res) => {
       return res.status(400).json({ message: 'Event name, location, and description are required.' });
     }
 
-    // FIX #8: Giới hạn tối đa 3 báo cáo đang Pending mỗi user để tránh spam
     const pendingCount = await Participation.count({
       where: { user_id: req.user.id, status: 'Pending' },
     });
@@ -47,7 +56,6 @@ exports.createParticipation = async (req, res) => {
       });
     }
 
-    // FIX #8: Kiểm tra báo cáo trùng lặp (cùng event_name đã Approved trong 30 ngày gần đây)
     const duplicateApproved = await Participation.findOne({
       where: {
         user_id: req.user.id,
@@ -71,7 +79,6 @@ exports.createParticipation = async (req, res) => {
       status:            'Pending',
     });
 
-    // Handle uploaded files
     if (req.files && req.files.length > 0) {
       const storageService = require('../services/storageService');
       const uploadPromises = req.files.map(f => storageService.uploadBuffer(f.buffer, 'participations'));
@@ -94,7 +101,10 @@ exports.createParticipation = async (req, res) => {
   }
 };
 
-// ── GET /api/participations/:id ───────────────────────────────
+/**
+ * @function getParticipationById
+ * @description Lấy chi tiết một bài nộp minh chứng theo ID.
+ */
 exports.getParticipationById = async (req, res) => {
   try {
     const part = await Participation.findByPk(req.params.id, {
@@ -106,7 +116,6 @@ exports.getParticipationById = async (req, res) => {
     });
     if (!part) return res.status(404).json({ message: 'Report not found.' });
 
-    // Students can only view their own
     if (req.user.role !== 'Admin' && part.user_id !== req.user.id) {
       return res.status(403).json({ message: 'Access denied.' });
     }
@@ -117,14 +126,16 @@ exports.getParticipationById = async (req, res) => {
   }
 };
 
-// ── GET /api/admin/participations ────────────────────────────
+/**
+ * @function adminGetParticipations
+ * @description Admin lấy danh sách báo cáo minh chứng của tất cả sinh viên để kiểm duyệt.
+ */
 exports.adminGetParticipations = async (req, res) => {
   try {
     const { status, page = 1, limit = 10, search } = req.query;
     const where = {};
     if (status) where.status = status;
 
-    // FIX #18: Cho phép tìm kiếm theo tên sự kiện (event_name) hoặc tên người nộp
     const userWhere = {};
     const participationWhere = { ...where };
     if (search) {
@@ -142,7 +153,6 @@ exports.adminGetParticipations = async (req, res) => {
         {
           model: User, as: 'user',
           attributes: ['id', 'full_name', 'username', 'role'],
-          // FIX #18: Không dùng required:true để tránh loại bỏ kết quả khi filter event_name
           required: false,
         },
         { model: ParticipationFile, as: 'files' },
@@ -160,11 +170,11 @@ exports.adminGetParticipations = async (req, res) => {
   }
 };
 
-// ── PATCH /api/admin/participations/:id/review ────────────────
+/**
+ * @function reviewParticipation
+ * @description Admin duyệt (`Approved`) hoặc từ chối (`Rejected`) minh chứng ngoại khóa trong một DB Transaction an toàn (cộng 50 điểm rèn luyện khi Approved).
+ */
 exports.reviewParticipation = async (req, res) => {
-  // FIX #1: Bọc toàn bộ logic review trong transaction để đảm bảo tính toàn vẹn dữ liệu
-  // Nếu bất kỳ bước nào thất bại (update status, tạo PointLog, tạo Notification),
-  // toàn bộ sẽ rollback — tránh trường hợp Approved nhưng không cộng điểm.
   const t = await sequelize.transaction();
   try {
     const { status, reject_reason } = req.body;
@@ -191,7 +201,6 @@ exports.reviewParticipation = async (req, res) => {
     }, { transaction: t });
 
     if (status === 'Approved') {
-      // FIX #2: Application-level guard chống cộng điểm 2 lần cho cùng một participation
       const existingPoint = await PointLog.findOne({
         where: {
           user_id:        part.user_id,
@@ -213,7 +222,6 @@ exports.reviewParticipation = async (req, res) => {
       }
     }
 
-    // In-app notification (trong transaction để nhất quán)
     const notification = await Notification.create({
       user_id:        part.user_id,
       title:          status === 'Approved' ? 'Report Approved' : 'Report Rejected',
@@ -224,7 +232,6 @@ exports.reviewParticipation = async (req, res) => {
       reference_id:   part.id,
     }, { transaction: t });
 
-    // Emit real-time notification
     const socketService = require('../services/socketService');
     socketService.emitToUser(part.user_id, 'new_notification', notification);
 
@@ -237,7 +244,6 @@ exports.reviewParticipation = async (req, res) => {
       });
     }
 
-    // Email là non-critical — gửi sau khi commit
     emailService.sendParticipationReviewEmail(
       part.user.email, part.user.full_name, part.event_name, status, reject_reason
     ).catch(logger.error);
@@ -250,7 +256,10 @@ exports.reviewParticipation = async (req, res) => {
   }
 };
 
-// ── POST /api/admin/participations/:id/summarize ─────────────
+/**
+ * @function summarizeParticipation
+ * @description Sử dụng Gemini AI Service tạo đoạn văn tóm tắt ngắn bài báo cáo minh chứng để Admin nhanh chóng đọc duyệt.
+ */
 exports.summarizeParticipation = async (req, res) => {
   try {
     const part = await Participation.findByPk(req.params.id);

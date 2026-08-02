@@ -1,9 +1,31 @@
+/**
+ * @module AdminController
+ * @description Controller xử lý các chức năng quản trị dành cho Admin (Quản lý người dùng, Import Excel, Duyệt/Khóa tài khoản, Thống kê hệ thống, Quản lý FAQ).
+ */
 const { Op } = require('sequelize');
 const { User, Survey, SurveyResponse, Participation, Notification, FAQ } = require('../models');
 const emailService = require('../services/emailService');
 const logger = require('../utils/logger');
+const ExcelJS = require('exceljs');
+const bcrypt = require('bcrypt');
 
-// ── GET /api/admin/users ─────────────────────────────────────
+/**
+ * @function getUsers
+ * @description Lấy danh sách người dùng phân trang có hỗ trợ lọc theo vai trò (role), trạng thái (status) và tìm kiếm từ khóa.
+ * @param {Object} req - Express Request object chứa req.query (role, status, search, page, limit).
+ * @param {Object} res - Express Response object trả về danh sách users và thông tin phân trang.
+ * 
+ * @implementation
+ * - Bước 1: Trích xuất tham số `role`, `status`, `search`, `page`, `limit` từ `req.query`.
+ * - Bước 2: Tạo đối tượng lọc `where`, áp dụng `Op.like` cho full_name, username, email, student_staff_id nếu có từ khóa search.
+ * - Bước 3: Gọi `User.findAndCountAll` ẩn `password_hash`, sắp xếp giảm dần theo ngày tạo.
+ * - Bước 4: Trả về kết quả JSON với dữ liệu phân trang.
+ * 
+ * @relations
+ * - Route: `GET /api/admin/users` trong `adminRoutes.js`.
+ * - Guard: `authenticate`, `authorize('Admin')`.
+ * - Frontend: `adminService.getUsers` gọi từ trang `UserManagement.jsx`.
+ */
 exports.getUsers = async (req, res) => {
   try {
     const { role, status, search, page = 1, limit = 10 } = req.query;
@@ -18,7 +40,7 @@ exports.getUsers = async (req, res) => {
         { student_staff_id: { [Op.like]: `%${search}%` } },
       ];
     }
-
+    
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const { count, rows } = await User.findAndCountAll({
       where,
@@ -40,10 +62,24 @@ exports.getUsers = async (req, res) => {
   }
 };
 
-// ── POST /api/admin/users/import ─────────────────────────────
-const ExcelJS = require('exceljs');
-const bcrypt = require('bcrypt');
-
+/**
+ * @function importUsers
+ * @description Nhập danh sách tài khoản người dùng hàng loạt từ tệp Excel (.xlsx).
+ * @param {Object} req - Express Request object chứa tệp Excel trong `req.file.buffer`.
+ * @param {Object} res - Express Response object trả về báo cáo số bản ghi thành công/thất bại.
+ * 
+ * @implementation
+ * - Bước 1: Kiểm tra tệp đính kèm trong `req.file`. Sử dụng `exceljs` nạp dữ liệu từ buffer.
+ * - Bước 2: Duyệt từng dòng từ dòng thứ 2 (bỏ qua dòng tiêu đề).
+ * - Bước 3: Đọc các trường: FullName, Username, Email, Password, Role, ID, Class, Dept.
+ * - Bước 4: Mã hóa mật khẩu với `bcrypt.hash` và tự động cấp trạng thái `Approved`, `email_verified: true`.
+ * - Bước 5: Tạo người dùng với `User.create`. Bắt lỗi trùng lặp username/email để ghi nhận dòng thất bại.
+ * 
+ * @relations
+ * - Route: `POST /api/admin/users/import` trong `adminRoutes.js`.
+ * - Guard: `upload.single('file')`, `authenticate`, `authorize('Admin')`.
+ * - Frontend: `adminService.importUsers` từ `UserManagement.jsx`.
+ */
 exports.importUsers = async (req, res) => {
   try {
     if (!req.file) {
@@ -53,7 +89,6 @@ exports.importUsers = async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(req.file.buffer);
     
-    // Assume data is in the first worksheet
     const worksheet = workbook.worksheets[0];
     if (!worksheet) {
       return res.status(400).json({ message: 'Excel file is empty.' });
@@ -63,13 +98,10 @@ exports.importUsers = async (req, res) => {
     let failed = 0;
     const errors = [];
 
-    // Iterate starting from row 2 (assuming row 1 is headers)
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
-      // Skip empty rows
       if (!row.hasValues) continue;
 
-      // Map columns (adjust indices if needed based on plan: 1: FullName, 2: Username, 3: Email, 4: Password, 5: Role, 6: ID, 7: Class, 8: Dept)
       const full_name = row.getCell(1).text?.trim();
       const username = row.getCell(2).text?.trim();
       const email = row.getCell(3).text?.trim();
@@ -86,7 +118,7 @@ exports.importUsers = async (req, res) => {
       }
 
       if (!['Student', 'Staff', 'Admin'].includes(role)) {
-        role = 'Student'; // Default fallback
+        role = 'Student';
       }
 
       try {
@@ -97,16 +129,15 @@ exports.importUsers = async (req, res) => {
           email,
           password_hash,
           role,
-          status: 'Approved', // Auto-approve imported users
+          status: 'Approved',
           student_staff_id,
           class_name,
           department,
-          email_verified: true, // Imported users are considered verified
+          email_verified: true,
         });
         successful++;
       } catch (err) {
         failed++;
-        // likely a unique constraint error (username or email already exists)
         errors.push(`Row ${rowNumber}: ${err.errors?.[0]?.message || 'Database error'}`);
       }
     }
@@ -115,7 +146,7 @@ exports.importUsers = async (req, res) => {
       message: `Import completed. ${successful} created, ${failed} failed.`,
       successful,
       failed,
-      errors: errors.slice(0, 10), // Send only first 10 errors to avoid huge payloads
+      errors: errors.slice(0, 10),
     });
   } catch (err) {
     logger.error('importUsers error:', err);
@@ -123,7 +154,24 @@ exports.importUsers = async (req, res) => {
   }
 };
 
-// ── PATCH /api/admin/users/:id/status ─────────────────────────
+/**
+ * @function updateUserStatus
+ * @description Duyệt (`Approved`) hoặc từ chối (`Rejected`) yêu cầu đăng ký tài khoản người dùng.
+ * @param {Object} req - Express Request object chứa `req.params.id` và `req.body` (`status`, `reject_reason`).
+ * @param {Object} res - Express Response object.
+ * 
+ * @implementation
+ * - Bước 1: Kiểm tra `status` phải là 'Approved' hoặc 'Rejected'.
+ * - Bước 2: Tìm người dùng theo ID. Ngăn chặn việc thay đổi trạng thái của tài khoản Admin.
+ * - Bước 3: Cập nhật `status` và `reject_reason` trong bảng `users`.
+ * - Bước 4: Tạo thông báo trong hệ thống qua `Notification.create`.
+ * - Bước 5: Gửi email tự động thông báo kết quả cho người dùng qua `emailService.sendStatusUpdateEmail`.
+ * 
+ * @relations
+ * - Route: `PATCH /api/admin/users/:id/status` trong `adminRoutes.js`.
+ * - Service: `emailService.js`.
+ * - Frontend: `adminService.updateUserStatus` gọi từ `UserManagement.jsx`.
+ */
 exports.updateUserStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -139,7 +187,6 @@ exports.updateUserStatus = async (req, res) => {
 
     await user.update({ status, reject_reason: status === 'Rejected' ? reject_reason : null });
 
-    // Create in-app notification
     await Notification.create({
       user_id:        user.id,
       title:          status === 'Approved' ? 'Account Approved' : 'Account Rejected',
@@ -150,7 +197,6 @@ exports.updateUserStatus = async (req, res) => {
       reference_id:   user.id,
     });
 
-    // Send email (non-blocking)
     emailService.sendStatusUpdateEmail(user.email, user.full_name, status, reject_reason).catch(logger.error);
 
     res.json({ message: `Account ${status === 'Approved' ? 'approved' : 'rejected'} successfully.`, user });
@@ -160,10 +206,21 @@ exports.updateUserStatus = async (req, res) => {
   }
 };
 
-// ── DELETE /api/admin/users/:id ───────────────────────────────
-// FIX #9: Soft-delete — đặt status = 'Deactivated' thay vì xóa cứng
-// Lý do: Hard delete với ON DELETE CASCADE sẽ xóa toàn bộ lịch sử khảo sát,
-// điểm thưởng, và báo cáo hoạt động — làm sai lệch thống kê dữ liệu.
+/**
+ * @function deleteUser
+ * @description Vô hiệu hóa tài khoản người dùng (Soft-delete: chuyển `status = 'Deactivated'`) nhằm bảo toàn lịch sử dữ liệu khảo sát và điểm tích lũy.
+ * @param {Object} req - Express Request object chứa `req.params.id`.
+ * @param {Object} res - Express Response object.
+ * 
+ * @implementation
+ * - Bước 1: Kiểm tra không cho phép Admin tự vô hiệu hóa tài khoản của chính mình.
+ * - Bước 2: Tìm người dùng và kiểm tra nếu tài khoản là Admin hoặc đã bị Deactivated từ trước.
+ * - Bước 3: Cập nhật `status = 'Deactivated'`.
+ * 
+ * @relations
+ * - Route: `DELETE /api/admin/users/:id` trong `adminRoutes.js`.
+ * - Frontend: `adminService.deleteUser` từ `UserManagement.jsx`.
+ */
 exports.deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
@@ -185,7 +242,21 @@ exports.deleteUser = async (req, res) => {
   }
 };
 
-// ── GET /api/admin/stats ─────────────────────────────────────
+/**
+ * @function getStats
+ * @description Tổng hợp dữ liệu thống kê tổng quan toàn hệ thống dành cho Admin Dashboard.
+ * @param {Object} req - Express Request object.
+ * @param {Object} res - Express Response object trả về các chỉ số thống kê.
+ * 
+ * @implementation
+ * - Bước 1: Sử dụng `Promise.all` đếm song song: người dùng theo role, người dùng theo status, khảo sát theo status, và lượt làm khảo sát trong 7 ngày gần nhất.
+ * - Bước 2: Đếm số báo cáo minh chứng đang chờ duyệt (`Pending`) và tổng số người dùng.
+ * - Bước 3: Trả về kết quả JSON tổng hợp.
+ * 
+ * @relations
+ * - Route: `GET /api/admin/stats` trong `adminRoutes.js`.
+ * - Frontend: `adminService.getDashboardStats` từ `AdminDashboard.jsx`.
+ */
 exports.getStats = async (req, res) => {
   try {
     const [usersByRole, usersByStatus, surveysByStatus, recentParticipations] = await Promise.all([
@@ -221,7 +292,21 @@ exports.getStats = async (req, res) => {
   }
 };
 
-// ── GET /api/admin/pending-participations ─────────────────────
+/**
+ * @function getPendingParticipations
+ * @description Lấy danh sách các bài báo cáo minh chứng ngoại khóa đang chờ duyệt (`status = 'Pending'`).
+ * @param {Object} req - Express Request object chứa `req.query` (page, limit).
+ * @param {Object} res - Express Response object.
+ * 
+ * @implementation
+ * - Bước 1: Tính toán `offset` phân trang.
+ * - Bước 2: Gọi `Participation.findAndCountAll` điều kiện `status: 'Pending'`, bao gồm thông tin người dùng gửi (`User`).
+ * - Bước 3: Trả về danh sách và thông tin phân trang.
+ * 
+ * @relations
+ * - Route: `GET /api/admin/pending-participations` trong `adminRoutes.js`.
+ * - Frontend: `adminService.getPendingParticipations` từ `ParticipationReview.jsx`.
+ */
 exports.getPendingParticipations = async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query;
@@ -242,10 +327,12 @@ exports.getPendingParticipations = async (req, res) => {
   }
 };
 
-// ── CRUD FAQs ─────────────────────────────────────────────────
+/**
+ * @function getFAQs
+ * @description Lấy danh sách câu hỏi thường gặp FAQ đang hoạt động cho giao diện quản trị.
+ */
 exports.getFAQs = async (_req, res) => {
   try {
-    // FIX #19: Lọc theo is_active — loại bỏ FAQs đã bị vô hiệu hoá
     const faqs = await FAQ.findAll({
       where: { is_active: true },
       order: [['created_at', 'DESC']],
@@ -256,6 +343,10 @@ exports.getFAQs = async (_req, res) => {
   }
 };
 
+/**
+ * @function createFAQ
+ * @description Thêm câu hỏi thường gặp FAQ mới.
+ */
 exports.createFAQ = async (req, res) => {
   try {
     const { question, answer, category } = req.body;
@@ -267,12 +358,15 @@ exports.createFAQ = async (req, res) => {
   }
 };
 
+/**
+ * @function updateFAQ
+ * @description Chỉnh sửa nội dung câu hỏi thường gặp FAQ.
+ */
 exports.updateFAQ = async (req, res) => {
   try {
     const faq = await FAQ.findByPk(req.params.id);
     if (!faq) return res.status(404).json({ message: 'FAQ not found.' });
 
-    // FIX #5b: Whitelist fields được phép cập nhật
     const { question, answer, category, is_active } = req.body;
     await faq.update({ question, answer, category, is_active });
     res.json({ message: 'FAQ updated.', faq });
@@ -281,6 +375,10 @@ exports.updateFAQ = async (req, res) => {
   }
 };
 
+/**
+ * @function deleteFAQ
+ * @description Xóa câu hỏi thường gặp FAQ.
+ */
 exports.deleteFAQ = async (req, res) => {
   try {
     const faq = await FAQ.findByPk(req.params.id);

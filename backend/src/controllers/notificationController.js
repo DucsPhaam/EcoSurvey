@@ -1,7 +1,24 @@
+/**
+ * @module NotificationController
+ * @description Controller quản lý thông báo người dùng (Lấy danh sách thông báo phân trang, Đánh dấu 1 thông báo đã đọc, Đánh dấu tất cả là đã đọc).
+ * 
+ * @function getNotifications
+ * @description Lấy danh sách thông báo cá nhân của người dùng hiện tại kèm số lượng thông báo chưa đọc.
+ * 
+ * @function markAsRead
+ * @description Đánh dấu 1 thông báo cụ thể là đã đọc (`is_read = true`).
+ * 
+ * @function markAllAsRead
+ * @description Đánh dấu tất cả thông báo chưa đọc của người dùng là đã đọc.
+ * 
+ * @relations
+ * - Routes: `GET /api/notifications`, `PATCH /api/notifications/:id/read`, `PATCH /api/notifications/read-all` trong `notificationRoutes.js`.
+ * - Guard: `authenticate`.
+ * - Frontend UI: `Navbar.jsx` (`frontend/src/components/layout/Navbar.jsx`).
+ */
 const { Notification } = require('../models');
 const logger = require('../utils/logger');
 
-// GET /api/notifications
 exports.getNotifications = async (req, res) => {
   try {
     const { page = 1, limit = 20 } = req.query;
@@ -23,7 +40,6 @@ exports.getNotifications = async (req, res) => {
   }
 };
 
-// PATCH /api/notifications/:id/read
 exports.markAsRead = async (req, res) => {
   try {
     const notif = await Notification.findOne({ where: { id: req.params.id, user_id: req.user.id } });
@@ -35,7 +51,6 @@ exports.markAsRead = async (req, res) => {
   }
 };
 
-// PATCH /api/notifications/read-all
 exports.markAllAsRead = async (req, res) => {
   try {
     await Notification.update({ is_read: true }, { where: { user_id: req.user.id, is_read: false } });
