@@ -4,7 +4,7 @@ A full-stack web application for managing environmental awareness surveys, track
 
 ---
 
-## ✨ Recent Major Updates & Improvements (v2.2)
+## ✨ Recent Major Updates & Improvements (v2.1)
 
 ### 🎨 1. Landing Page Refactoring & Componentization
 - **Modular Component Architecture**: Extracted repetitive blocks into reusable subcomponents (`SectionHeader`, `FeatureCard`, `TrendingSurveyCard`, `StepCard`, `FaqItem`).
