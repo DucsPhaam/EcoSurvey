@@ -13,10 +13,11 @@ export default function ForgotPasswordPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!email) { toast.error(t('forgotPasswordPage.errors.emailRequired')); return }
+    const cleanEmail = email.trim()
+    if (!cleanEmail) { toast.error(t('forgotPasswordPage.errors.emailRequired')); return }
     setLoading(true)
     try {
-      await api.post('/auth/forgot-password', { email })
+      await api.post('/auth/forgot-password', { email: cleanEmail })
       setSent(true)
     } catch (err) {
       toast.error(err.response?.data?.message || t('forgotPasswordPage.errors.submitFailed'))

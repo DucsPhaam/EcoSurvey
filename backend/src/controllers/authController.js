@@ -66,7 +66,14 @@ exports.register = async (req, res) => {
       google_id
     } = req.body;
 
-    if (!full_name || !username || !email || !password || !confirm_password || !role) {
+    const cleanFullName = (full_name || '').trim();
+    const cleanUsername = (username || '').trim();
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanId = (student_staff_id || '').trim();
+    const cleanClass = (class_name || '').trim();
+    const cleanDepartment = (department || '').trim();
+
+    if (!cleanFullName || !cleanUsername || !cleanEmail || !password || !confirm_password || !role) {
       return res.status(400).json({ message: 'Please fill in all required fields.' });
     }
     if (password !== confirm_password) {
@@ -80,26 +87,32 @@ exports.register = async (req, res) => {
     }
 
     const existing = await User.findOne({
-      where: { [Op.or]: [{ username }, { email }] },
+      where: { [Op.or]: [{ username: cleanUsername }, { email: cleanEmail }] },
       attributes: ['id', 'username', 'email'],
     });
     if (existing) {
-      if (existing.username === username) return res.status(409).json({ message: 'Username already taken.' });
+      if (existing.username === cleanUsername) return res.status(409).json({ message: 'Username already taken.' });
       return res.status(409).json({ message: 'Email address already in use.' });
     }
 
     const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
 
     await User.create({
-      full_name, username, email, password_hash, role,
-      student_staff_id, class_name, department,
+      full_name: cleanFullName,
+      username: cleanUsername,
+      email: cleanEmail,
+      password_hash,
+      role,
+      student_staff_id: cleanId,
+      class_name: cleanClass,
+      department: cleanDepartment,
       joined_date: joined_date || null, 
       status: 'Pending',
       google_id: google_id || null,
       auth_provider: google_id ? 'google' : 'local'
     });
 
-    emailService.sendRegistrationEmail(email, full_name).catch(logger.error);
+    emailService.sendRegistrationEmail(cleanEmail, cleanFullName).catch(logger.error);
 
     res.status(201).json({ message: 'Registration successful! Your account is pending admin approval.' });
   } catch (err) {
@@ -113,7 +126,7 @@ exports.register = async (req, res) => {
  * @description Kiểm tra tên đăng nhập username đã tồn tại trong hệ thống chưa (dùng cho validation real-time ở form đăng ký).
  */
 exports.checkUsername = async (req, res) => {
-  const { username } = req.query;
+  const username = (req.query.username || '').trim();
   if (!username) return res.json({ available: false });
   const found = await User.findOne({ where: { username }, attributes: ['id'] });
   res.json({ available: !found });
@@ -124,7 +137,7 @@ exports.checkUsername = async (req, res) => {
  * @description Kiểm tra địa chỉ email đã tồn tại trong hệ thống chưa (dùng cho validation real-time ở form đăng ký).
  */
 exports.checkEmail = async (req, res) => {
-  const { email } = req.query;
+  const email = (req.query.email || '').trim().toLowerCase();
   if (!email) return res.json({ available: false });
   const found = await User.findOne({ where: { email }, attributes: ['id'] });
   res.json({ available: !found });
@@ -150,12 +163,13 @@ exports.checkEmail = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { login, password } = req.body;
-    if (!login || !password) {
+    const cleanLogin = (login || '').trim();
+    if (!cleanLogin || !password) {
       return res.status(400).json({ message: 'Please provide your username/email and password.' });
     }
 
     const user = await User.findOne({
-      where: { [Op.or]: [{ username: login }, { email: login }] },
+      where: { [Op.or]: [{ username: cleanLogin }, { email: cleanLogin }] },
     });
 
     if (!user) return res.status(401).json({ message: 'Invalid credentials.' });
@@ -250,9 +264,10 @@ exports.logout = async (req, res) => {
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ message: 'Email là bắt buộc.' });
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (!cleanEmail) return res.status(400).json({ message: 'Email là bắt buộc.' });
 
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({ where: { email: cleanEmail } });
     if (!user) return res.json({ message: 'Nếu email tồn tại, chúng tôi đã gửi liên kết đặt lại mật khẩu.' });
 
     const rawToken = crypto.randomBytes(32).toString('hex');

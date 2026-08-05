@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Leaf, Eye, EyeOff, ArrowRight, ArrowUpRight, Lock, User } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
@@ -19,6 +19,7 @@ export default function LoginPage() {
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
   const [captchaToken, setCaptchaToken] = useState('')
+  const turnstileRef = useRef(null)
 
   useEffect(() => {
     if (user) {
@@ -28,11 +29,12 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.login || !form.password) { toast.error(t('auth:toast.fillFields')); return }
+    const cleanLogin = form.login.trim()
+    if (!cleanLogin || !form.password) { toast.error(t('auth:toast.fillFields')); return }
     if (!captchaToken && import.meta.env.VITE_TURNSTILE_SITE_KEY) { toast.error(t('auth:toast.captcha')); return }
     setLoading(true)
     try {
-      const loggedUser = await login(form.login, form.password, captchaToken)
+      const loggedUser = await login(cleanLogin, form.password, captchaToken)
       applyTheme(loggedUser.ui_theme)
       toast.success(`${t('auth:toast.welcomeBack')}, ${loggedUser.full_name}!`)
       // Admin always goes to /admin; student/staff use saved `from` only if it's not an admin route
@@ -45,6 +47,8 @@ export default function LoginPage() {
       navigate(dest, { replace: true })
     } catch (err) {
       toast.error(err.response?.data?.message || t('auth:toast.loginFailed'))
+      setCaptchaToken('')
+      turnstileRef.current?.reset()
     } finally {
       setLoading(false)
     }
@@ -162,8 +166,11 @@ export default function LoginPage() {
               {import.meta.env.VITE_TURNSTILE_SITE_KEY && (
                 <div className="flex justify-center">
                   <Turnstile 
+                    ref={turnstileRef}
                     siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY} 
                     onSuccess={(token) => setCaptchaToken(token)} 
+                    onExpire={() => setCaptchaToken('')}
+                    onError={() => setCaptchaToken('')}
                   />
                 </div>
               )}

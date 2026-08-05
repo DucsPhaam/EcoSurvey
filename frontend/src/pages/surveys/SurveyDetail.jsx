@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ChevronLeft, ClipboardList, CheckCircle2, Send, AlertCircle, Calendar, Leaf, Clock, Trophy } from 'lucide-react'
 import { surveyService } from '../../services/surveyService'
@@ -98,6 +98,7 @@ export default function SurveyDetail() {
   const [answers, setAnswers]     = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [captchaToken, setCaptchaToken] = useState('')
+  const turnstileRef = useRef(null)
 
   useEffect(() => {
     surveyService.getSurveyDetail(id)
@@ -141,6 +142,8 @@ export default function SurveyDetail() {
       setCompleted(true)
     } catch (err) {
       toast.error(err.response?.data?.message || t('submitFailed'))
+      setCaptchaToken('')
+      turnstileRef.current?.reset()
     } finally { setSubmitting(false) }
   }
 
@@ -251,8 +254,11 @@ export default function SurveyDetail() {
               {import.meta.env.VITE_TURNSTILE_SITE_KEY && (
                 <div className="flex">
                   <Turnstile 
+                    ref={turnstileRef}
                     siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY} 
                     onSuccess={(token) => setCaptchaToken(token)} 
+                    onExpire={() => setCaptchaToken('')}
+                    onError={() => setCaptchaToken('')}
                   />
                 </div>
               )}

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useLocation, Link, useNavigate } from 'react-router-dom'
 import { Leaf, Eye, EyeOff, Check, X, ChevronRight, ChevronLeft, User, Mail, Lock, Briefcase, Calendar, ArrowRight, ArrowUpRight } from 'lucide-react'
 import { authService } from '../../services/authService'
@@ -63,6 +63,7 @@ export default function RegisterPage() {
   const [checking, setChecking] = useState({ username: false, email: false })
   const [availability, setAvailability] = useState({ username: null, email: null })
   const [captchaToken, setCaptchaToken] = useState('')
+  const turnstileRef = useRef(null)
 
   const [form, setForm] = useState({
     full_name: '', username: '', email: '', password: '', confirm_password: '',
@@ -88,12 +89,13 @@ export default function RegisterPage() {
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }))
 
   const checkField = useCallback(async (field, value) => {
-    if (!value || value.length < 3) return
+    const cleanVal = (value || '').trim()
+    if (!cleanVal || cleanVal.length < 3) return
     setChecking((c) => ({ ...c, [field]: true }))
     try {
       const res = field === 'username'
-        ? await authService.checkUsername(value)
-        : await authService.checkEmail(value)
+        ? await authService.checkUsername(cleanVal)
+        : await authService.checkEmail(cleanVal)
       setAvailability((a) => ({ ...a, [field]: res.data.available }))
     } catch { /* ignore */ } finally {
       setChecking((c) => ({ ...c, [field]: false }))
@@ -101,7 +103,7 @@ export default function RegisterPage() {
   }, [])
 
   const validateStep0 = () => {
-    if (!form.username || !form.email || !form.password || !form.confirm_password) return t('auth:registerPage.errors.fillAll')
+    if (!form.username.trim() || !form.email.trim() || !form.password || !form.confirm_password) return t('auth:registerPage.errors.fillAll')
     if (availability.username === false) return t('auth:registerPage.errors.usernameTaken')
     if (availability.email === false) return t('auth:registerPage.errors.emailTaken')
     if (form.password.length < 8 || !/[A-Z]/.test(form.password) || !/[0-9]/.test(form.password))
@@ -112,7 +114,7 @@ export default function RegisterPage() {
 
   const next = () => {
     if (step === 0) { const e = validateStep0(); if (e) { toast.error(e); return } }
-    if (step === 1) { if (!form.full_name || !form.role) { toast.error(t('auth:registerPage.errors.nameRole')); return } }
+    if (step === 1) { if (!form.full_name.trim() || !form.role) { toast.error(t('auth:registerPage.errors.nameRole')); return } }
     setStep((s) => Math.min(s + 1, 2))
   }
   const back = () => setStep((s) => Math.max(s - 1, 0))
@@ -121,11 +123,22 @@ export default function RegisterPage() {
     if (!captchaToken && import.meta.env.VITE_TURNSTILE_SITE_KEY) { toast.error(t('auth:toast.captcha')); return }
     setLoading(true)
     try {
-      await authService.register(form, captchaToken)
+      const cleanForm = {
+        ...form,
+        full_name: form.full_name.trim(),
+        username: form.username.trim(),
+        email: form.email.trim(),
+        student_staff_id: form.student_staff_id.trim(),
+        class_name: form.class_name.trim(),
+        department: form.department.trim(),
+      }
+      await authService.register(cleanForm, captchaToken)
       toast.success(t('auth:registerPage.errors.registerSuccess'))
       navigate('/login')
     } catch (err) {
       toast.error(err.response?.data?.message || t('auth:registerPage.errors.registerFailed'))
+      setCaptchaToken('')
+      turnstileRef.current?.reset()
     } finally { setLoading(false) }
   }
 
@@ -294,8 +307,11 @@ export default function RegisterPage() {
               {import.meta.env.VITE_TURNSTILE_SITE_KEY && (
                 <div className="flex justify-center mt-4">
                   <Turnstile 
+                    ref={turnstileRef}
                     siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY} 
                     onSuccess={(token) => setCaptchaToken(token)} 
+                    onExpire={() => setCaptchaToken('')}
+                    onError={() => setCaptchaToken('')}
                   />
                 </div>
               )}
