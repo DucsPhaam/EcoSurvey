@@ -7,13 +7,13 @@
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
--- ── Tạo mới database ─────────────────────────────────────────
-DROP DATABASE IF EXISTS `ecosurvey`;
-CREATE DATABASE `ecosurvey`
-  DEFAULT CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
+-- ── Xóa tất cả 14 bảng cũ nếu đã tồn tại (đúng thứ tự để tránh lỗi FK) ──
+DROP TABLE IF EXISTS `user_badges`, `notifications`, `point_logs`, `participation_files`, `participations`, `survey_answers`, `survey_responses`, `questions`, `surveys`, `refresh_tokens`, `password_resets`, `faqs`, `badges`, `users`;
 
-USE `ecosurvey`;
+-- ── Tạo mới database (Bỏ qua nếu đang dùng database có sẵn như Railway) ──
+-- DROP DATABASE IF EXISTS `ecosurvey`;
+-- CREATE DATABASE `ecosurvey` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- USE `ecosurvey`;
 
 -- ─────────────────────────────────────────────────────────────
 -- TABLE: users
@@ -357,7 +357,7 @@ INSERT INTO `badges` (`id`, `name`, `icon_emoji`, `description`, `condition_type
 -- ─────────────────────────────────────────────────────────────
 -- users (password cho tất cả tài khoản demo: Admin@123)
 -- ─────────────────────────────────────────────────────────────
-INSERT INTO `users` VALUES
+INSERT INTO `users` (`id`, `full_name`, `username`, `email`, `password_hash`, `role`, `status`, `student_staff_id`, `class_name`, `department`, `joined_date`, `ui_theme`, `avatar_url`, `reject_reason`, `created_at`, `updated_at`) VALUES
 (1,  'System Administrator', 'admin',       'admin@ecosurvey.edu.vn',          '$2b$10$wudfrdk5avOD.j.zVGA18.ZTKMLwLmpeycOnQ1dx5DWg8PUSNjK1a', 'Admin',   'Approved', NULL,        NULL,   'IT Department',           '2026-07-06', 'light', NULL, NULL, '2026-07-07 19:15:15', '2026-07-07 19:15:15'),
 (2,  'Nguyễn Văn A',         'nva_student', 'nva@student.ecosurvey.edu.vn',    '$2b$10$wudfrdk5avOD.j.zVGA18.ZTKMLwLmpeycOnQ1dx5DWg8PUSNjK1a', 'Student', 'Approved', 'SV2023001', 'IT1',  'Khoa CNTT',               '2023-09-05', 'light', NULL, NULL, '2026-07-07 20:17:35', '2026-07-07 20:17:35'),
 (3,  'Trần Thị B',           'ttb_student', 'ttb@student.ecosurvey.edu.vn',    '$2b$10$wudfrdk5avOD.j.zVGA18.ZTKMLwLmpeycOnQ1dx5DWg8PUSNjK1a', 'Student', 'Pending',  'SV2023002', 'KT1',  'Khoa Kinh tế',            '2023-09-10', 'light', NULL, NULL, '2026-07-07 20:17:35', '2026-07-07 20:17:35'),
@@ -377,7 +377,7 @@ INSERT INTO `users` VALUES
 -- ─────────────────────────────────────────────────────────────
 -- faqs (Fix #13: Chỉ 7 records — đã loại bỏ 7 bản duplicate)
 -- ─────────────────────────────────────────────────────────────
-INSERT INTO `faqs` VALUES
+INSERT INTO `faqs` (`id`, `question`, `answer`, `category`, `is_active`, `created_at`, `updated_at`) VALUES
 (1, 'Làm thế nào để tham gia khảo sát?',
     'Sau khi đăng nhập, vào mục "Bảng Khảo Sát", chọn khảo sát bạn muốn tham gia và nhấn nút "Tham Gia Ngay". Điền đầy đủ các câu hỏi và nhấn "Nộp Bài".',
     'Khảo sát', 1, '2026-07-06 19:15:15', '2026-07-06 19:15:15'),
@@ -403,7 +403,7 @@ INSERT INTO `faqs` VALUES
 -- ─────────────────────────────────────────────────────────────
 -- surveys
 -- ─────────────────────────────────────────────────────────────
-INSERT INTO `surveys` VALUES
+INSERT INTO `surveys` (`id`, `title`, `description`, `target_role`, `start_date`, `end_date`, `status`, `created_by`, `created_at`, `updated_at`) VALUES
 (1, 'Khảo sát Nhận thức Bảo vệ Môi trường 2025',
     'Khảo sát nhằm đánh giá mức độ nhận thức của sinh viên về các vấn đề môi trường hiện nay, bao gồm biến đổi khí hậu, ô nhiễm nhựa và tiết kiệm năng lượng.',
     'Student', '2026-07-07 19:15:15', '2026-08-12 19:15:15', 'Published', 1, '2026-07-07 19:15:15', '2026-07-07 19:15:15'),
@@ -426,7 +426,7 @@ INSERT INTO `surveys` VALUES
 -- ─────────────────────────────────────────────────────────────
 -- questions
 -- ─────────────────────────────────────────────────────────────
-INSERT INTO `questions` VALUES
+INSERT INTO `questions` (`id`, `survey_id`, `question_text`, `question_type`, `options`, `order_num`, `is_required`, `created_at`) VALUES
 (1,  1, 'Bạn hiểu biết về vấn đề biến đổi khí hậu ở mức nào?',                               'Single_Choice',   '["Rất hiểu biết","Hiểu biết cơ bản","Biết một chút","Chưa hiểu nhiều"]', 1, 1, '2026-07-07 19:15:15'),
 (2,  1, 'Bạn thường thực hiện những hành động nào để bảo vệ môi trường?',                     'Multiple_Choice', '["Phân loại rác tại nhà","Sử dụng túi vải thay túi nhựa","Tiết kiệm điện nước","Sử dụng phương tiện công cộng","Hạn chế dùng đồ nhựa một lần","Trồng cây xanh"]', 2, 1, '2026-07-07 19:15:15'),
 (3,  1, 'Theo bạn, vấn đề môi trường nào đáng lo ngại nhất hiện nay tại Việt Nam?',           'Single_Choice',   '["Ô nhiễm không khí","Ô nhiễm nguồn nước","Rác thải nhựa","Phá rừng","Biến đổi khí hậu"]', 3, 1, '2026-07-07 19:15:15'),
@@ -450,7 +450,7 @@ INSERT INTO `questions` VALUES
 -- ─────────────────────────────────────────────────────────────
 -- survey_responses
 -- ─────────────────────────────────────────────────────────────
-INSERT INTO `survey_responses` VALUES
+INSERT INTO `survey_responses` (`id`, `survey_id`, `user_id`, `submitted_at`, `opinion_score`) VALUES
 (1,  1, 2,  '2026-07-13 10:17:35', NULL),
 (2,  4, 5,  '2026-06-03 20:17:35', NULL),
 (3,  5, 5,  '2026-07-13 14:17:35', NULL),
@@ -469,7 +469,7 @@ INSERT INTO `survey_responses` VALUES
 -- ─────────────────────────────────────────────────────────────
 -- survey_answers
 -- ─────────────────────────────────────────────────────────────
-INSERT INTO `survey_answers` VALUES
+INSERT INTO `survey_answers` (`id`, `response_id`, `question_id`, `answer_text`) VALUES
 (1,  1,  1,  'Hiểu biết cơ bản'),
 (2,  1,  2,  '["Phân loại rác tại nhà","Tiết kiệm điện nước"]'),
 (3,  1,  3,  'Rác thải nhựa'),
@@ -520,7 +520,7 @@ INSERT INTO `survey_answers` VALUES
 -- ─────────────────────────────────────────────────────────────
 -- participations
 -- ─────────────────────────────────────────────────────────────
-INSERT INTO `participations` VALUES
+INSERT INTO `participations` (`id`, `user_id`, `event_name`, `location`, `participant_count`, `description`, `status`, `ai_summary`, `reject_reason`, `reviewed_by`, `reviewed_at`, `created_at`, `updated_at`) VALUES
 (1, 2, 'Chiến dịch dọn rác bãi biển',      'Bãi biển Đồ Sơn',  50,  'Tham gia nhặt rác nhựa dọc bờ biển cùng CLB Môi Trường trong 3 tiếng.',       'Approved', NULL, NULL,             1, '2026-07-12 20:17:35', '2026-07-11 20:17:35', '2026-07-13 10:17:35'),
 (2, 2, 'Tọa đàm lối sống Zero Waste',       'Hội trường A',     200, 'Nghe diễn giả chia sẻ về lối sống không rác thải.',                           'Pending',  NULL, NULL,             NULL, NULL,                '2026-07-13 09:17:35', '2026-07-13 10:17:35'),
 (3, 5, 'Trồng cây đầu xuân',                'Khuôn viên trường',30,  'Trồng 50 cây xanh quanh khu vực nhà xe cán bộ.',                              'Approved', NULL, NULL,             1, '2026-07-03 20:17:35', '2026-07-02 20:17:35', '2026-07-07 20:17:35'),
@@ -529,7 +529,7 @@ INSERT INTO `participations` VALUES
 -- ─────────────────────────────────────────────────────────────
 -- participation_files
 -- ─────────────────────────────────────────────────────────────
-INSERT INTO `participation_files` VALUES
+INSERT INTO `participation_files` (`id`, `participation_id`, `file_url`, `file_name`, `file_type`, `file_size`, `created_at`) VALUES
 (1, 1, '/uploads/don_rac_1.jpg',      'don_rac_1.jpg',       'image/jpeg', 1024000, '2026-07-11 20:17:35'),
 (2, 1, '/uploads/don_rac_2.jpg',      'don_rac_2.jpg',       'image/jpeg', 2048000, '2026-07-11 20:17:35'),
 (3, 2, '/uploads/toadam_checkin.png', 'toadam_checkin.png',  'image/png',  512000,  '2026-07-13 09:17:35'),
@@ -539,7 +539,7 @@ INSERT INTO `participation_files` VALUES
 -- ─────────────────────────────────────────────────────────────
 -- point_logs
 -- ─────────────────────────────────────────────────────────────
-INSERT INTO `point_logs` VALUES
+INSERT INTO `point_logs` (`id`, `user_id`, `action_type`, `points`, `reference_id`, `reference_type`, `note`, `created_at`) VALUES
 (1,  2,  'Survey_Completion', 10, 1,  'survey_responses', 'Hoàn thành Khảo sát Nhận thức Bảo vệ Môi trường 2025', '2026-07-13 10:17:35'),
 (2,  2,  'Event_Report',      50, 1,  'participations',   'Duyệt báo cáo: Chiến dịch dọn rác bãi biển',           '2026-07-12 20:17:35'),
 (3,  2,  'Bonus',             20, NULL, NULL,              'Thưởng thành viên tích cực tháng trước',               '2026-07-11 15:17:35'),
@@ -561,7 +561,7 @@ INSERT INTO `point_logs` VALUES
 -- ─────────────────────────────────────────────────────────────
 -- notifications
 -- ─────────────────────────────────────────────────────────────
-INSERT INTO `notifications` VALUES
+INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `is_read`, `reference_type`, `reference_id`, `created_at`) VALUES
 (1, 2, 'Báo cáo hoạt động được duyệt', 'Báo cáo "Chiến dịch dọn rác bãi biển" của bạn đã được Admin phê duyệt.', 1, 'participation', 1, '2026-07-12 20:17:35'),
 (2, 2, 'Điểm thưởng mới!',             'Bạn vừa nhận được 50 điểm từ hoạt động "Chiến dịch dọn rác bãi biển".', 0, 'user',          2, '2026-07-12 20:17:35'),
 (3, 2, 'Báo cáo hoạt động bị từ chối', 'Báo cáo "Thu gom pin cũ" của bạn đã bị từ chối. Lý do: Hình ảnh minh chứng quá mờ, không xác định được nội dung. Vui lòng chụp lại.', 0, 'participation', 4, '2026-07-13 08:17:35'),
