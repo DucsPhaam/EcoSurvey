@@ -7,8 +7,7 @@ COPY package*.json ./
 RUN npm ci --only=production
 
 # Copy source
-COPY src/ ./src/
-COPY .env.example ./.env.example
+COPY ..
 
 EXPOSE 5000
 
