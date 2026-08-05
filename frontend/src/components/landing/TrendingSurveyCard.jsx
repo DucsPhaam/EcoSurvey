@@ -12,7 +12,7 @@ export default function TrendingSurveyCard({ survey, idx, inView, formatDate, t 
       <div>
         <div className="flex items-start justify-between mb-4">
           <span className="badge badge-published">
-            /{String(idx + 1).padStart(2, '0')} Trending
+            {String(idx + 1).padStart(2, '0')} Trending
           </span>
           <span className="font-mono text-2xl text-earth-ink/40">
             {survey.response_count}

@@ -16,7 +16,7 @@ function SurveyCard({ survey, index }) {
     <Link to={`/surveys/${survey.id}`}
       className={`card-hover p-5 block relative overflow-hidden ${survey.is_completed ? 'opacity-70' : ''}`}>
       <div className="absolute top-0 right-0 px-2 py-1 bg-earth-paper border-l-[3px] border-b-[3px] border-earth-ink font-mono text-[10px] uppercase tracking-widest">
-        /{num}
+        {num}
       </div>
       <div className="flex items-start gap-3 mb-4">
         <div className="w-12 h-12 bg-earth-forest border-[3px] border-earth-ink flex items-center justify-center flex-shrink-0">
@@ -73,7 +73,7 @@ function ImpactStat({ label, value, sub }) {
   return (
     <div className="card p-5 relative">
       <div className="absolute top-0 right-0 px-2 py-1 bg-earth-forest text-earth-paper font-mono text-[10px] uppercase tracking-widest">
-        /counter
+        counter
       </div>
       <p className="impact-num">{value}</p>
       <p className="ui-title text-sm mt-2">{label}</p>

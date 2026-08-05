@@ -11,7 +11,7 @@ export default function FeatureCard({ icon: Icon, title, desc, num, inView, idx 
           <Icon className="w-6 h-6 text-earth-cream" />
         </div>
         <span className="font-mono text-2xl text-earth-ink/40 group-hover:text-earth-forest transition-colors duration-300">
-          /{num}
+          {num}
         </span>
       </div>
       <h3 className="font-display text-xl uppercase mb-2 transition-colors duration-300 group-hover:text-earth-forest">

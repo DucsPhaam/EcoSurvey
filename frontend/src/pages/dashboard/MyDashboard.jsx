@@ -16,7 +16,7 @@ function ImpactStat({ num, label, sub, tone = 'forest' }) {
   return (
     <div className="card p-5 relative overflow-hidden">
       <div className={`absolute top-0 right-0 px-2 py-1 ${tones[tone]} font-mono text-[10px] uppercase tracking-widest`}>
-        /stat
+        stat
       </div>
       <p className="impact-num">{num}</p>
       <p className="ui-title text-sm mt-2">{label}</p>
