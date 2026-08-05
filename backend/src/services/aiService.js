@@ -1,9 +1,34 @@
-const logger = require('../utils/logger');
-
 /**
- * AI Service — OpenRouter API integration with graceful mock fallback.
- * When OPENROUTER_API_KEY is not set, returns intelligent mock responses.
+ * @module AIService
+ * @description Tích hợp API trí tuệ nhân tạo (Gemini thông qua OpenRouter API) nhằm hỗ trợ Chatbot tư vấn FAQ và tự động tóm tắt báo cáo minh chứng ngoại khóa. Tự động fallback dữ liệu giả lập (mock) khi chưa cấu hình API Key.
+ * 
+ * @function callOpenRouter
+ * @description Gửi câu lệnh (prompt) trực tiếp tới OpenRouter API endpoint (`google/gemini-2.5-flash`).
+ * @param {string} prompt - Câu lệnh chỉ dẫn cho mô hình ngôn ngữ.
+ * @returns {Promise<string>} Chuỗi văn bản trả lời từ AI.
+ * 
+ * @function answerFAQ
+ * @description Trả lời thắc mắc của người dùng dựa trên danh sách FAQ có sẵn (Retrieval-Augmented Generation context).
+ * @param {string} userQuestion - Câu hỏi nhập từ giao diện Chatbot.
+ * @param {Array<Object>} faqs - Danh sách tất cả câu hỏi thường gặp đã kích hoạt trong hệ thống.
+ * @returns {Promise<string>} Câu trả lời phù hợp nhất.
+ * 
+ * @function summarizeReport
+ * @description Tự động tóm tắt bài báo cáo minh chứng của sinh viên thành 2-3 câu cô đọng giúp Admin nhanh chóng duyệt.
+ * @param {string} description - Nội dung mô tả chi tiết hoạt động.
+ * @param {string} eventName - Tên sự kiện hoạt động ngoại khóa.
+ * @returns {Promise<string>} Đoạn văn tóm tắt.
+ * 
+ * @implementation
+ * - Bước 1: Kiểm tra xem `OPENROUTER_API_KEY` đã được thiết lập chưa.
+ * - Bước 2: Nếu có Key, đóng gói câu hỏi kèm danh sách FAQs dạng ngữ cảnh (Context) gửi sang OpenRouter.
+ * - Bước 3: Nếu không có Key hoặc gặp lỗi mạng, kích hoạt hàm `mockFAQAnswer` (tìm kiếm từ khóa) hoặc `mockSummary` để hệ thống không bị ngắt quãng.
+ * 
+ * @relations
+ * - Controllers liên quan: `aiController.js`, `faqController.js`, `participationController.js`.
+ * - Frontend Components: `FAQChatWidget.jsx`, `LandingChatWidget.jsx`, `ParticipationReview.jsx`.
  */
+const logger = require('../utils/logger');
 
 const apiKey = process.env.OPENROUTER_API_KEY;
 
@@ -43,9 +68,6 @@ async function callOpenRouter(prompt) {
   throw new Error("Invalid response format from OpenRouter");
 }
 
-/**
- * Answer a user's FAQ question using active FAQs as context.
- */
 exports.answerFAQ = async (userQuestion, faqs) => {
   if (!apiKey) {
     return mockFAQAnswer(userQuestion, faqs);
@@ -76,9 +98,6 @@ Instructions:
   }
 };
 
-/**
- * Summarize a participation report description.
- */
 exports.summarizeReport = async (description, eventName) => {
   if (!apiKey) {
     return mockSummary(description, eventName);
@@ -99,20 +118,19 @@ Provide only the summary, no introduction or extra text.`;
   }
 };
 
-// ── Mock responses when no API key ───────────────────────────
+// ── Hàm giả lập dữ liệu trả về khi không cấu hình API Key ───
 function mockFAQAnswer(question, faqs) {
   const q = question.toLowerCase();
-  // Simple keyword match against FAQs
   for (const faq of faqs) {
     const words = faq.question.toLowerCase().split(/\s+/);
     const matchCount = words.filter((w) => w.length > 3 && q.includes(w)).length;
     if (matchCount >= 2) return faq.answer;
   }
-  return "I don't have information about that specific topic. Please contact Admin through the Support page for further assistance.";
+  return "Tôi không có thông tin về chủ đề này. Vui lòng liên hệ Quản trị viên để được hỗ trợ chi tiết hơn.";
 }
 
 function mockSummary(description, eventName) {
   const sentences = description.replace(/\s+/g, ' ').trim().split(/[.!?]+/).filter(Boolean);
   const first2 = sentences.slice(0, 2).join('. ').trim();
-  return `${first2}. This environmental activity report for "${eventName}" demonstrates active participation in sustainability initiatives.`;
+  return `${first2}. Báo cáo hoạt động môi trường cho "${eventName}" thể hiện tinh thần tham gia tích cực các sáng kiến bền vững.`;
 }

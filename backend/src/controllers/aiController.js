@@ -1,8 +1,27 @@
+/**
+ * @module AIController
+ * @description Controller tiếp nhận yêu cầu từ người dùng gửi cho AI Chatbot và sử dụng Gemini AI Service để trả lời thắc mắc.
+ * 
+ * @function askFAQ
+ * @description Tiếp nhận câu hỏi, nạp cơ sở tri thức FAQ và gửi cho `aiService.answerFAQ` xử lý.
+ * @param {Object} req - Request chứa `req.body.question`.
+ * @param {Object} res - Response chứa câu trả lời `answer`.
+ * 
+ * @implementation
+ * - Bước 1: Kiểm tra tính hợp lệ của `question`.
+ * - Bước 2: Truy vấn danh sách tất cả các FAQ đang hoạt động (`is_active: true`).
+ * - Bước 3: Gọi `aiService.answerFAQ(question, faqs)` để sinh phản hồi từ Gemini AI.
+ * - Bước 4: Trả về kết quả JSON.
+ * 
+ * @relations
+ * - Route: `POST /api/ai/faqs` trong `aiRoutes.js`.
+ * - Service: `aiService.js` (`backend/src/services/aiService.js`).
+ * - Frontend UI: `FAQChatWidget.jsx`, `LandingChatWidget.jsx`.
+ */
 const { FAQ } = require('../models');
 const aiService = require('../services/aiService');
 const logger = require('../utils/logger');
 
-// POST /api/ai/faqs
 exports.askFAQ = async (req, res) => {
   try {
     const { question } = req.body;
@@ -10,7 +29,6 @@ exports.askFAQ = async (req, res) => {
       return res.status(400).json({ message: 'Please provide a valid question.' });
     }
 
-    // Fetch active FAQs as context
     const faqs = await FAQ.findAll({
       where: { is_active: true },
       attributes: ['question', 'answer', 'category'],

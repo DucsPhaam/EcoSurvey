@@ -1,3 +1,11 @@
+/**
+ * @module AuthServiceFrontend
+ * @description Dịch vụ API phía Frontend thực hiện Đăng nhập, Đăng ký, Đăng xuất, Làm mới token và kiểm tra trùng lặp tài khoản.
+ * 
+ * @relations
+ * - Backend: `backend/src/routes/authRoutes.js`, `backend/src/controllers/authController.js`.
+ * - Context & Pages: `AuthContext.jsx`, `LoginPage.jsx`, `RegisterPage.jsx`.
+ */
 import api from './axiosInstance'
 
 export const authService = {

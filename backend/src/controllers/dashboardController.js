@@ -1,9 +1,23 @@
+/**
+ * @module DashboardController
+ * @description Controller tổng hợp dữ liệu thống kê cho trang Dashboard cá nhân của sinh viên/cán bộ và Admin.
+ * 
+ * @function getDashboard
+ * @description Trả về thống kê tổng quan cá nhân: số bài khảo sát đã hoàn thành, điểm rèn luyện, thứ hạng Bảng xếp hạng và hoạt động gần đây.
+ * 
+ * @function getAdminDashboard
+ * @description Trả về biểu đồ và chỉ số điều hành tổng quan dành cho tài khoản Admin.
+ * 
+ * @relations
+ * - Route: `GET /api/dashboard` trong `dashboardRoutes.js`.
+ * - Guard: `authenticate`.
+ * - Frontend: `dashboardService.getDashboard` gọi từ `MyDashboard.jsx` và `AdminDashboard.jsx`.
+ */
 const { Op, literal, fn, col } = require('sequelize');
 const { sequelize } = require('../config/database');
 const { User, Survey, SurveyResponse, Participation, PointLog } = require('../models');
 const logger = require('../utils/logger');
 
-// GET /api/dashboard
 exports.getDashboard = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -13,25 +27,20 @@ exports.getDashboard = async (req, res) => {
       return exports.getAdminDashboard(req, res);
     }
 
-    // Student / Staff dashboard
     const [
       surveyStats,
       participationStats,
       totalPoints,
       recentActivity,
     ] = await Promise.all([
-      // Surveys completed vs available
       SurveyResponse.count({ where: { user_id: userId } }),
-      // Participation reports grouped by status
       Participation.findAll({
         where: { user_id: userId },
         attributes: ['status', [fn('COUNT', col('id')), 'count']],
         group: ['status'],
         raw: true,
       }),
-      // Total points
       PointLog.sum('points', { where: { user_id: userId } }),
-      // Recent point activity
       PointLog.findAll({
         where: { user_id: userId },
         order: [['created_at', 'DESC']],
@@ -39,8 +48,6 @@ exports.getDashboard = async (req, res) => {
       }),
     ]);
 
-    // FIX #11 & #14: Tính rank bằng SQL subquery — nhất quán với leaderboard (period=all)
-    // và không load toàn bộ bảng point_logs vào bộ nhớ
     const myPoints = totalPoints || 0;
     let rank = null;
     if (myPoints > 0) {
@@ -58,7 +65,6 @@ exports.getDashboard = async (req, res) => {
       rank = parseInt(rankResult[0]?.user_rank || 1);
     }
 
-    // Available surveys count (chỉ tính đã mở và chưa hết hạn)
     const now = new Date();
     const availableSurveys = await Survey.count({
       where: {
@@ -114,7 +120,6 @@ exports.getAdminDashboard = async (req, res) => {
       }),
       SurveyResponse.count({ where: { submitted_at: { [Op.gte]: sevenDaysAgo } } }),
       Participation.count({ where: { status: 'Pending' } }),
-      // Daily participation chart (last 7 days)
       SurveyResponse.findAll({
         attributes: [
           [fn('DATE', col('submitted_at')), 'date'],

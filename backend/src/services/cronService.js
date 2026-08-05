@@ -1,12 +1,26 @@
+/**
+ * @module CronService
+ * @description Quản lý các tác vụ lên lịch tự động (Cron Jobs) chạy ngầm hàng giờ trong hệ thống backend.
+ * 
+ * @function start
+ * @description Đăng ký và khởi chạy tất cả các lịch trình công việc:
+ * 1. Tự động chuyển trạng thái bài khảo sát sang 'Closed' khi quá ngày hết hạn (`end_date < NOW()`). Lịch chạy: mỗi giờ một lần (`0 * * * *`).
+ * 2. Tự động kiểm tra và trao huy hiệu TOP 10 sinh viên có điểm rèn luyện cao nhất (`badgeService.checkTop10Badge()`). Lịch chạy: mỗi giờ một lần (`0 * * * *`).
+ * 
+ * @implementation
+ * - Sử dụng thư viện `node-cron` lập biểu thức cron `0 * * * *`.
+ * - Thực hiện các câu lệnh `Survey.update` và `checkTop10Badge` trong khối `try...catch` để đảm bảo lỗi ngầm không làm đứt tiến trình server.
+ * 
+ * @relations
+ * - Đơn vị gọi: `server.js` (`backend/src/server.js` gọi `cronService.start()` khi khởi động server).
+ * - Service gọi: `badgeService.js` (`checkTop10Badge`).
+ * - Model tác động: `Survey` (`backend/src/models/Survey.js`).
+ */
 const cron = require('node-cron');
 const { Op } = require('sequelize');
 const { Survey } = require('../models');
 const logger = require('../utils/logger');
 
-/**
- * Cron job: Auto-close surveys that have passed their end_date.
- * Runs every hour.
- */
 const start = () => {
   cron.schedule('0 * * * *', async () => {
     try {

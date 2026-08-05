@@ -1,9 +1,36 @@
+/**
+ * @module SocketService
+ * @description Quản lý kết nối thời gian thực WebSockets (Socket.IO), xác thực client kết nối và hỗ trợ gửi thông báo tức thì (real-time notification, new_badge) tới thiết bị người dùng.
+ * 
+ * @function init
+ * @description Khởi tạo Socket.IO Server gắn với HTTP Server, cài đặt middleware xác thực JWT và quản lý danh sách socket theo `userId`.
+ * @param {Object} server - Thể hiện Node.js HTTP Server.
+ * 
+ * @function emitToUser
+ * @description Gửi sự kiện thời gian thực tới một người dùng cụ thể dựa trên `user_${userId}` room.
+ * @param {number} userId - Mã ID người dùng nhận sự kiện.
+ * @param {string} event - Tên sự kiện (ví dụ: 'new_notification', 'new_badge').
+ * @param {any} data - Dữ liệu truyền kèm theo.
+ * 
+ * @function getIo
+ * @description Trả về đối tượng `io` instance của Socket.IO Server.
+ * 
+ * @implementation
+ * - Bước 1: Khởi tạo `Server` từ `socket.io` với CORS origin từ `CLIENT_URL`.
+ * - Bước 2: Đăng ký middleware xác thực JWT token từ `socket.handshake.auth.token`.
+ * - Bước 3: Đưa socket vào phòng riêng `user_${userId}` khi kết nối thành công (`connection`).
+ * - Bước 4: Lắng nghe sự kiện `disconnect` để giải phóng socket khỏi bộ nhớ Map `userSockets`.
+ * 
+ * @relations
+ * - Đơn vị khởi tạo: `server.js` (`backend/src/server.js`).
+ * - Services & Controllers phát tin: `badgeService.js`, `adminController.js`, `participationController.js`.
+ * - Frontend Context nhận tin: `SocketContext.jsx` (`frontend/src/contexts/SocketContext.jsx`).
+ */
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const logger = require('../utils/logger');
 
 let io;
-// Map to store connected sockets: userId -> Set of socketIds
 const userSockets = new Map();
 
 exports.init = (server) => {
@@ -16,7 +43,6 @@ exports.init = (server) => {
   });
 
   io.use((socket, next) => {
-    // Authenticate socket connection
     const token = socket.handshake.auth?.token;
     if (!token) {
       return next(new Error('Authentication error'));
@@ -24,7 +50,7 @@ exports.init = (server) => {
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'change_me_in_production_very_long_secret');
-      socket.user = decoded; // { id, role, ... }
+      socket.user = decoded;
       next();
     } catch (err) {
       next(new Error('Authentication error'));
@@ -35,13 +61,11 @@ exports.init = (server) => {
     const userId = socket.user.id;
     logger.info(`🔌 Socket connected: User ${userId} (Socket ID: ${socket.id})`);
 
-    // Add socket to user's set
     if (!userSockets.has(userId)) {
       userSockets.set(userId, new Set());
     }
     userSockets.get(userId).add(socket.id);
 
-    // Join a room specifically for this user (alternative to map, but both work)
     socket.join(`user_${userId}`);
 
     socket.on('disconnect', () => {
@@ -57,15 +81,8 @@ exports.init = (server) => {
   });
 };
 
-/**
- * Emits an event to a specific user
- * @param {number} userId 
- * @param {string} event 
- * @param {any} data 
- */
 exports.emitToUser = (userId, event, data) => {
   if (!io) return;
-  // Emit to the user's room
   io.to(`user_${userId}`).emit(event, data);
 };
 

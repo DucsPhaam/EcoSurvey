@@ -1,17 +1,37 @@
+/**
+ * @module BadgeService
+ * @description Dịch vụ tự động mở khóa huy hiệu (Gamification) cho người dùng dựa trên số khảo sát hoàn thành, minh chứng được duyệt, tổng điểm rèn luyện hoặc thứ hạng Bảng xếp hạng.
+ * 
+ * @function checkAndAwardBadges
+ * @description Kiểm tra tất cả các điều kiện huy hiệu chưa mở khóa của sinh viên và tự động trao huy hiệu + phát thông báo Socket.IO khi đủ điều kiện.
+ * @param {number} userId - Mã ID người dùng cần kiểm tra.
+ * @returns {Promise<void>}
+ * 
+ * @function checkTop10Badge
+ * @description Hàm kiểm tra định kỳ mở khóa huy hiệu TOP 10 Bảng xếp hạng cho các sinh viên có điểm tích lũy cao nhất.
+ * @returns {Promise<void>}
+ * 
+ * @implementation
+ * - Bước 1: Lấy danh sách huy hiệu người dùng chưa đạt (`Op.notIn`).
+ * - Bước 2: Đếm số khảo sát đã trả lời (`SurveyResponse`), số minh chứng đã duyệt (`Participation`), và tổng điểm rèn luyện (`PointLog`).
+ * - Bước 3: Đánh giá từng điều kiện (`SURVEY_COUNT`, `PARTICIPATION_COUNT`, `TOTAL_POINTS`).
+ * - Bước 4: Tạo bản ghi trong `UserBadge`, ghi thông báo vào `Notification` và phát Socket Event `new_badge` trực tiếp đến client.
+ * 
+ * @relations
+ * - Controllers gọi: `surveyController.js` (khi nộp bài khảo sát), `participationController.js` (khi Admin duyệt minh chứng).
+ * - Service gọi: `cronService.js` (gọi `checkTop10Badge` định kỳ).
+ * - Component nhận sự kiện Socket: `Navbar.jsx`, `MyDashboard.jsx`.
+ */
 const { Badge, UserBadge, SurveyResponse, Participation, PointLog, User, Notification } = require('../models');
 const { getIo } = require('./socketService');
 const { Op } = require('sequelize');
 const logger = require('../utils/logger');
 
-/**
- * Check and award badges based on condition_type
- */
 exports.checkAndAwardBadges = async (userId) => {
   try {
     const user = await User.findByPk(userId);
     if (!user) return;
 
-    // Get all badges the user DOES NOT have yet
     const earnedBadges = await UserBadge.findAll({ where: { user_id: userId }, attributes: ['badge_id'] });
     const earnedBadgeIds = earnedBadges.map(ub => ub.badge_id);
     
@@ -21,9 +41,8 @@ exports.checkAndAwardBadges = async (userId) => {
       }
     });
 
-    if (unearnedBadges.length === 0) return; // Has all badges
+    if (unearnedBadges.length === 0) return;
 
-    // Fetch user stats
     const surveyCount = await SurveyResponse.count({ where: { user_id: userId } });
     const participationCount = await Participation.count({ where: { user_id: userId, status: 'Approved' } });
     const totalPoints = await PointLog.sum('points', { where: { user_id: userId } }) || 0;
@@ -43,7 +62,6 @@ exports.checkAndAwardBadges = async (userId) => {
         case 'TOTAL_POINTS':
           isEarned = totalPoints >= badge.condition_value;
           break;
-        // LEADERBOARD_RANK is handled by a separate cron job
         default:
           break;
       }
@@ -53,11 +71,9 @@ exports.checkAndAwardBadges = async (userId) => {
       }
     }
 
-    // Award badges
     for (const badge of newlyEarned) {
       await UserBadge.create({ user_id: userId, badge_id: badge.id });
       
-      // Create notification
       await Notification.create({
         user_id: userId,
         title: 'Bạn nhận được huy hiệu mới!',
@@ -66,13 +82,11 @@ exports.checkAndAwardBadges = async (userId) => {
         is_read: false
       });
 
-      // Emit socket event
       const io = getIo();
       if (io) {
         io.to(`user_${userId}`).emit('new_badge', {
           badge: badge
         });
-        // Also emit notification
         io.to(`user_${userId}`).emit('new_notification');
       }
       
@@ -84,16 +98,11 @@ exports.checkAndAwardBadges = async (userId) => {
   }
 };
 
-/**
- * Check and award LEADERBOARD_RANK badges
- * This should be called periodically by a cron job
- */
 exports.checkTop10Badge = async () => {
   try {
     const top10Badge = await Badge.findOne({ where: { condition_type: 'LEADERBOARD_RANK', condition_value: 10 } });
     if (!top10Badge) return;
 
-    // Get top 10 users by points
     const topUsers = await PointLog.findAll({
       attributes: ['user_id', [PointLog.sequelize.fn('SUM', PointLog.sequelize.col('points')), 'total_points']],
       group: ['user_id'],

@@ -1,10 +1,32 @@
+/**
+ * @module ExportController
+ * @description Controller xuất dữ liệu kết quả khảo sát ra bảng tính Excel (.xlsx) và xuất báo cáo minh chứng đã duyệt ra tệp PDF có hỗ trợ Font tiếng Việt (Unicode).
+ * 
+ * @function exportSurveyExcel
+ * @description Trích xuất toàn bộ kết quả trả lời của một đợt khảo sát ra file Excel.
+ * @param {Object} req - Request chứa `req.params.id` (ID khảo sát).
+ * @param {Object} res - Response stream file Excel (`.xlsx`).
+ * 
+ * @function exportParticipationsPDF
+ * @description Xuất danh sách các báo cáo minh chứng ngoại khóa đã được duyệt (`status = 'Approved'`) ra file PDF.
+ * @param {Object} req - Request object.
+ * @param {Object} res - Response stream file PDF (`.pdf`).
+ * 
+ * @implementation
+ * - `exportSurveyExcel`: Sử dụng `ExcelJS` tạo danh sách cột tương ứng với các câu hỏi và điền câu trả lời của từng tài khoản.
+ * - `exportParticipationsPDF`: Sử dụng `pdfkit` đăng ký font Roboto (hỗ trợ tiếng Việt Unicode) và ghi nội dung chi tiết bài nộp.
+ * 
+ * @relations
+ * - Routes: `GET /api/export/surveys/:id/excel` và `GET /api/export/participations/pdf` trong `exportRoutes.js`.
+ * - Guard: `authenticate`, `authorize('Admin', 'Staff')`.
+ * - Frontend: `exportService.js` gọi từ `SurveyAnalytics.jsx` và `ParticipationReview.jsx`.
+ */
 const path = require('path');
 const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
 const { Survey, SurveyResponse, SurveyAnswer, Question, User, Participation, ParticipationFile } = require('../models');
 const logger = require('../utils/logger');
 
-// GET /api/export/surveys/:id/excel
 exports.exportSurveyExcel = async (req, res) => {
   try {
     const survey = await Survey.findByPk(req.params.id, {
@@ -24,7 +46,6 @@ exports.exportSurveyExcel = async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Survey Results');
 
-    // Header row
     const headers = ['#', 'Full Name', 'Username', 'ID', 'Role', 'Submitted At',
       ...survey.questions.map((q, i) => `Q${i + 1}: ${q.question_text.substring(0, 50)}`)];
     worksheet.addRow(headers);
@@ -32,7 +53,6 @@ exports.exportSurveyExcel = async (req, res) => {
     worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1a7f4b' } };
     worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
 
-    // Data rows
     responses.forEach((resp, idx) => {
       const row = [
         idx + 1,
@@ -49,7 +69,6 @@ exports.exportSurveyExcel = async (req, res) => {
       worksheet.addRow(row);
     });
 
-    // Auto width
     worksheet.columns.forEach((col) => { col.width = Math.max(col.header?.length || 10, 15); });
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -62,7 +81,6 @@ exports.exportSurveyExcel = async (req, res) => {
   }
 };
 
-// GET /api/export/participations/pdf
 exports.exportParticipationsPDF = async (req, res) => {
   try {
     const participations = await Participation.findAll({
@@ -76,7 +94,6 @@ exports.exportParticipationsPDF = async (req, res) => {
 
     const doc = new PDFDocument({ margin: 50 });
 
-    // Register Roboto font to support Vietnamese unicode characters
     const fontRegularPath = path.join(__dirname, '../assets/fonts/Roboto-Regular.ttf');
     const fontBoldPath = path.join(__dirname, '../assets/fonts/Roboto-Bold.ttf');
     const fontItalicPath = path.join(__dirname, '../assets/fonts/Roboto-Italic.ttf');
@@ -89,7 +106,6 @@ exports.exportParticipationsPDF = async (req, res) => {
     res.setHeader('Content-Disposition', 'attachment; filename="approved_participations.pdf"');
     doc.pipe(res);
 
-    // Title
     doc.font('Roboto-Bold').fontSize(18).fillColor('#1a7f4b').text('EcoSurvey — Báo cáo hoạt động đã duyệt', { align: 'center' });
     doc.font('Roboto').fontSize(10).fillColor('#666').text(`Xuất bản: ${new Date().toLocaleString('vi-VN')}`, { align: 'center' });
     doc.moveDown(1.5);
