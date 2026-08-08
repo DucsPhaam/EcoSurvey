@@ -1,16 +1,4 @@
-/**
- * @module AIRoutes
- * @description Định nghĩa các tuyến đường giao tiếp với Gemini AI Chatbot.
- * 
- * @routes
- * - `POST /faqs`: Hỏi đáp AI có xác thực tài khoản.
- * - `POST /faqs/public`: Hỏi đáp AI công khai cho khách ghé thăm Landing Page.
- * 
- * @relations
- * - Server: Gắn tại `/api/ai` trong `server.js`.
- * - Controller: `aiController.js`.
- * - Frontend: `FAQChatWidget.jsx`, `LandingChatWidget.jsx`.
- */
+// Defines API routes for interacting with Gemini AI Chatbot.
 const router = require('express').Router();
 const { authenticate } = require('../middleware/authMiddleware');
 const { aiLimiter }    = require('../middleware/rateLimitMiddleware');

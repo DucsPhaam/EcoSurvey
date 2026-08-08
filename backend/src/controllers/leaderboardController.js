@@ -1,23 +1,4 @@
-/**
- * @module LeaderboardController
- * @description Controller tính toán và truy vấn Bảng xếp hạng điểm rèn luyện (Top 10 sinh viên, thứ hạng cá nhân, tổng điểm theo Tuần, Tháng, Tất cả).
- * 
- * @function getLeaderboard
- * @description Lấy danh sách Top 10 sinh viên xuất sắc nhất và thứ hạng của bản thân người dùng hiện tại theo khoảng thời gian (`period = week | month | all`).
- * @param {Object} req - Request chứa `req.query.period` và `req.user.id`.
- * @param {Object} res - Response chứa mảng `leaderboard`, `my_rank`, `my_points`.
- * 
- * @implementation
- * - Bước 1: Trích xuất tham số `period` ('week', 'month', 'all').
- * - Bước 2: Tính tổng điểm bằng SQL `SUM(points)` và nhóm theo `user_id`, chỉ tính tài khoản `status: 'Approved'`.
- * - Bước 3: Đếm số người dùng có điểm số cao hơn người dùng hiện tại để tính thứ hạng cá nhân (`user_rank`).
- * - Bước 4: Trả về kết quả JSON.
- * 
- * @relations
- * - Route: `GET /api/leaderboard` trong `leaderboardRoutes.js`.
- * - Guard: `authenticate`.
- * - Frontend UI: `Leaderboard.jsx` (`frontend/src/pages/Leaderboard.jsx`).
- */
+// Leaderboard controller: Calculates training point rankings (Top 10, personal rank, weekly/monthly/all-time totals).
 const { Op, fn, col, literal } = require('sequelize');
 const { sequelize } = require('../config/database');
 const { PointLog, User } = require('../models');

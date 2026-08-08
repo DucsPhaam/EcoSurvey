@@ -1,8 +1,4 @@
-/**
- * TASK 2.5 — Leaderboard + Rate limit test suite
- * TC-14: GET /api/leaderboard — returns sorted list with correct fields
- * TC-15: POST /api/auth/login — >10 rapid requests → 429 Too Many Requests
- */
+// TASK 2.5 — Leaderboard + Rate limit test suite TC-14: GET /api/leaderboard — returns sorted list with correct fields TC-15: POST /api/auth/login — >10 rapid requests → 429 Too Many Requests
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const { Sequelize, DataTypes, Op } = require('sequelize');

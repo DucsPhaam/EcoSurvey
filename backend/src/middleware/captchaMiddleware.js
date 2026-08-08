@@ -1,25 +1,4 @@
-/**
- * @module CaptchaMiddleware
- * @description Middleware xác minh mã xác nhận chống bot tự động (Cloudflare Turnstile CAPTCHA).
- * 
- * @function verifyCaptcha
- * @description Trích xuất token `cf-turnstile-response` từ body request và gửi yêu cầu xác thực sang server Cloudflare.
- * @param {Object} req - Request object từ Express.
- * @param {Object} res - Response object từ Express.
- * @param {Function} next - Callback chuyển tiếp xử lý.
- * @returns {Promise<void>}
- * 
- * @implementation
- * - Bước 1: Kiểm tra xem biến `TURNSTILE_SECRET_KEY` có được thiết lập hoặc môi trường có phải 'test' không. Nếu đúng, bỏ qua kiểm tra CAPTCHA.
- * - Bước 2: Lấy chuỗi `cf-turnstile-response` từ `req.body`. Trả về lỗi 400 nếu thiếu token.
- * - Bước 3: Gửi yêu cầu HTTP POST sang API Cloudflare Turnstile (`https://challenges.cloudflare.com/turnstile/v0/siteverify`).
- * - Bước 4: Kiểm tra cờ `data.success`. Nếu xác thực thất bại, ghi log cảnh báo và trả về lỗi 400.
- * - Bước 5: Nếu hợp lệ, gọi `next()` cho phép tiếp tục xử lý đăng ký/đăng nhập.
- * 
- * @relations
- * - Router sử dụng: `authRoutes.js` (áp dụng cho các tuyến đường Đăng ký, Đăng nhập, Quên mật khẩu).
- * - Phía Frontend: Tương ứng với các Form đăng ký/đăng nhập có nhúng Widget Cloudflare Turnstile.
- */
+// Captcha middleware: Validates Cloudflare Turnstile CAPTCHA tokens to prevent automated bots.
 const logger = require('../utils/logger');
 
 exports.verifyCaptcha = async (req, res, next) => {

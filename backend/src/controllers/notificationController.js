@@ -1,21 +1,4 @@
-/**
- * @module NotificationController
- * @description Controller quản lý thông báo người dùng (Lấy danh sách thông báo phân trang, Đánh dấu 1 thông báo đã đọc, Đánh dấu tất cả là đã đọc).
- * 
- * @function getNotifications
- * @description Lấy danh sách thông báo cá nhân của người dùng hiện tại kèm số lượng thông báo chưa đọc.
- * 
- * @function markAsRead
- * @description Đánh dấu 1 thông báo cụ thể là đã đọc (`is_read = true`).
- * 
- * @function markAllAsRead
- * @description Đánh dấu tất cả thông báo chưa đọc của người dùng là đã đọc.
- * 
- * @relations
- * - Routes: `GET /api/notifications`, `PATCH /api/notifications/:id/read`, `PATCH /api/notifications/read-all` trong `notificationRoutes.js`.
- * - Guard: `authenticate`.
- * - Frontend UI: `Navbar.jsx` (`frontend/src/components/layout/Navbar.jsx`).
- */
+// Notification controller: Manages user notifications (paginated list, mark read, mark all read).
 const { Notification } = require('../models');
 const logger = require('../utils/logger');
 

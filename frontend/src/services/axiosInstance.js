@@ -1,18 +1,4 @@
-/**
- * @module AxiosInstance
- * @description Đơn vị cấu hình HTTP Client tập trung (Axios) cho toàn bộ ứng dụng Frontend, tự động đính kèm Access Token vào Header và tự động gia hạn token khi hết hạn (JWT Auto-refresh Interceptor).
- * 
- * @constant api
- * @description Thể hiện Axios đã cấu hình `baseURL`, `withCredentials: true` (để gửi kèm cookie refreshToken) và timeout 30s.
- * 
- * @implementation
- * - **Request Interceptor**: Lấy token từ `localStorage.getItem('ecosurvey_token')` và chèn vào `Authorization: Bearer <token>`.
- * - **Response Interceptor**: Bắt lỗi HTTP 401. Nếu không phải yêu cầu đăng nhập/làm mới token, tạm dừng các request và gọi `POST /auth/refresh`. Nếu làm mới thành công, lưu token mới và thực hiện lại yêu cầu bị lỗi. Nếu thất bại, chuyển hướng người dùng về trang `/login`.
- * 
- * @relations
- * - Tất cả các frontend services (`authService.js`, `adminService.js`, `surveyService.js`, v.v.) import và sử dụng thể hiện `api` này.
- * - Backend tương ứng: `backend/src/middleware/authMiddleware.js`, `backend/src/controllers/authController.js`.
- */
+// Axios instance: Centralized HTTP Client configured with baseURL, authorization header, and auto-refresh interceptor.
 import axios from 'axios'
 
 const api = axios.create({

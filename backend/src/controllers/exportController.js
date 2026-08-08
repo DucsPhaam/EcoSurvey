@@ -1,26 +1,4 @@
-/**
- * @module ExportController
- * @description Controller xuất dữ liệu kết quả khảo sát ra bảng tính Excel (.xlsx) và xuất báo cáo minh chứng đã duyệt ra tệp PDF có hỗ trợ Font tiếng Việt (Unicode).
- * 
- * @function exportSurveyExcel
- * @description Trích xuất toàn bộ kết quả trả lời của một đợt khảo sát ra file Excel.
- * @param {Object} req - Request chứa `req.params.id` (ID khảo sát).
- * @param {Object} res - Response stream file Excel (`.xlsx`).
- * 
- * @function exportParticipationsPDF
- * @description Xuất danh sách các báo cáo minh chứng ngoại khóa đã được duyệt (`status = 'Approved'`) ra file PDF.
- * @param {Object} req - Request object.
- * @param {Object} res - Response stream file PDF (`.pdf`).
- * 
- * @implementation
- * - `exportSurveyExcel`: Sử dụng `ExcelJS` tạo danh sách cột tương ứng với các câu hỏi và điền câu trả lời của từng tài khoản.
- * - `exportParticipationsPDF`: Sử dụng `pdfkit` đăng ký font Roboto (hỗ trợ tiếng Việt Unicode) và ghi nội dung chi tiết bài nộp.
- * 
- * @relations
- * - Routes: `GET /api/export/surveys/:id/excel` và `GET /api/export/participations/pdf` trong `exportRoutes.js`.
- * - Guard: `authenticate`, `authorize('Admin', 'Staff')`.
- * - Frontend: `exportService.js` gọi từ `SurveyAnalytics.jsx` và `ParticipationReview.jsx`.
- */
+// Export controller: Exports survey results to Excel (.xlsx) and approved proof reports to PDF.
 const path = require('path');
 const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');

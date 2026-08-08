@@ -9,7 +9,6 @@ const surveyFile = files.find(f => f.includes('demo-surveys'));
 
 const code = `'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
     const [results] = await queryInterface.sequelize.query('SELECT COUNT(*) as count FROM surveys');

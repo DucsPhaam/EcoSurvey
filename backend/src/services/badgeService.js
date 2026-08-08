@@ -1,27 +1,4 @@
-/**
- * @module BadgeService
- * @description Dịch vụ tự động mở khóa huy hiệu (Gamification) cho người dùng dựa trên số khảo sát hoàn thành, minh chứng được duyệt, tổng điểm rèn luyện hoặc thứ hạng Bảng xếp hạng.
- * 
- * @function checkAndAwardBadges
- * @description Kiểm tra tất cả các điều kiện huy hiệu chưa mở khóa của sinh viên và tự động trao huy hiệu + phát thông báo Socket.IO khi đủ điều kiện.
- * @param {number} userId - Mã ID người dùng cần kiểm tra.
- * @returns {Promise<void>}
- * 
- * @function checkTop10Badge
- * @description Hàm kiểm tra định kỳ mở khóa huy hiệu TOP 10 Bảng xếp hạng cho các sinh viên có điểm tích lũy cao nhất.
- * @returns {Promise<void>}
- * 
- * @implementation
- * - Bước 1: Lấy danh sách huy hiệu người dùng chưa đạt (`Op.notIn`).
- * - Bước 2: Đếm số khảo sát đã trả lời (`SurveyResponse`), số minh chứng đã duyệt (`Participation`), và tổng điểm rèn luyện (`PointLog`).
- * - Bước 3: Đánh giá từng điều kiện (`SURVEY_COUNT`, `PARTICIPATION_COUNT`, `TOTAL_POINTS`).
- * - Bước 4: Tạo bản ghi trong `UserBadge`, ghi thông báo vào `Notification` và phát Socket Event `new_badge` trực tiếp đến client.
- * 
- * @relations
- * - Controllers gọi: `surveyController.js` (khi nộp bài khảo sát), `participationController.js` (khi Admin duyệt minh chứng).
- * - Service gọi: `cronService.js` (gọi `checkTop10Badge` định kỳ).
- * - Component nhận sự kiện Socket: `Navbar.jsx`, `MyDashboard.jsx`.
- */
+// Gamification badge service: Automatically checks user eligibility and unlocks badges based on completed surveys, approved proofs, points, or rankings.
 const { Badge, UserBadge, SurveyResponse, Participation, PointLog, User, Notification } = require('../models');
 const { getIo } = require('./socketService');
 const { Op } = require('sequelize');

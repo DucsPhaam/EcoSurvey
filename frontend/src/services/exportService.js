@@ -1,14 +1,4 @@
-/**
- * @module ExportServiceFrontend
- * @description Dịch vụ API phía Frontend tải tệp báo cáo Excel (`.xlsx`) và PDF (`.pdf`) kèm hàm trợ giúp kích hoạt tải tệp trên trình duyệt.
- * 
- * @function downloadBlob
- * @description Nhận đối tượng Blob từ API và tạo thẻ <a> ảo để tải tệp trực tiếp xuống thiết bị người dùng.
- * 
- * @relations
- * - Backend: `backend/src/routes/exportRoutes.js`, `backend/src/controllers/exportController.js`.
- * - UI Components: `SurveyAnalytics.jsx`, `ParticipationReview.jsx`.
- */
+// Frontend API service for downloading Excel (.xlsx) and PDF (.pdf) reports with browser download helpers.
 import api from './axiosInstance'
 
 export const exportService = {

@@ -1,19 +1,4 @@
-/**
- * @module SurveyModel
- * @description Định nghĩa lược đồ đợt khảo sát (Bảng `surveys`), quản lý tiêu đề, mô tả, đối tượng mục tiêu, thời hạn và trạng thái xuất bản khảo sát.
- * 
- * @implementation
- * - Bước 1: Khai báo các cột chính: `id`, `title`, `description`.
- * - Bước 2: Khai báo nhóm đối tượng mục tiêu `target_role` ('All','Student','Staff').
- * - Bước 3: Khai báo thời gian bắt đầu `start_date` và kết thúc `end_date`.
- * - Bước 4: Khai báo trạng thái vòng đời `status` ('Draft','Published','Closed') và khóa ngoại `created_by` tham chiếu đến User tạo khảo sát.
- * - Bước 5: Đặt các chỉ mục tìm kiếm tối ưu truy vấn trên `status`, `target_role`, `end_date`.
- * 
- * @relations
- * - Controller liên quan: `surveyController.js`, `adminController.js`, `exportController.js`.
- * - Service liên quan: `cronService.js` (tự động chuyển status sang Closed khi hết hạn).
- * - Các bảng liên kết: `User` (người tạo), `Question` (danh sách câu hỏi), `SurveyResponse` (kết quả trả lời).
- */
+// Survey model: Defines survey schema (surveys table), target audience, deadline, and publication status.
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 

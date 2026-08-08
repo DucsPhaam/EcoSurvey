@@ -1,33 +1,4 @@
-/**
- * @module UserController
- * @description Controller quản lý hồ sơ thông tin cá nhân của người dùng hiện tại (Cập nhật Profile, Đổi mật khẩu, Thay đổi Giao diện Light/Dark, Xem lịch sử điểm thưởng, Tải ảnh đại diện Avatar, Xem danh sách huy hiệu).
- * 
- * @function updateProfile
- * @description Cập nhật thông tin cá nhân (Họ tên, Email, Khoa/Phòng ban).
- * 
- * @function changePassword
- * @description Đổi mật khẩu mới (có kiểm tra mật khẩu cũ và độ mạnh mật khẩu).
- * 
- * @function updateTheme
- * @description Thay đổi cài đặt giao diện hiển thị (`light` hoặc `dark`).
- * 
- * @function getMe
- * @description Lấy toàn bộ thông tin tài khoản người dùng đang đăng nhập.
- * 
- * @function getPointHistory
- * @description Lấy lịch sử biến động điểm rèn luyện và tổng số điểm tích lũy.
- * 
- * @function uploadAvatar
- * @description Tải ảnh đại diện Avatar lên Cloudinary và cập nhật `avatar_url`.
- * 
- * @function getBadges
- * @description Lấy danh sách tất cả các huy hiệu và trạng thái đã đạt được của người dùng.
- * 
- * @relations
- * - Routes: `backend/src/routes/userRoutes.js`.
- * - Guard: `authenticate`.
- * - Frontend UI: `Profile.jsx` (`frontend/src/pages/student/Profile.jsx`), `ChangePasswordModal.jsx`.
- */
+// User controller: Manages user profiles, password changes, theme toggling, point history, avatar upload, and badges.
 const bcrypt = require('bcrypt');
 const { User } = require('../models');
 const logger = require('../utils/logger');

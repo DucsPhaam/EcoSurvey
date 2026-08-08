@@ -1,7 +1,4 @@
-/**
- * Test setup: creates an in-memory SQLite DB and syncs all Sequelize models.
- * This avoids touching the real MySQL database during tests.
- */
+// Test setup: creates an in-memory SQLite DB and syncs all Sequelize models. This avoids touching the real MySQL database during tests.
 const { Sequelize } = require('sequelize');
 
 // Override DB config for testing (SQLite in-memory)

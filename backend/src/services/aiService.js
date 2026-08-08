@@ -1,33 +1,4 @@
-/**
- * @module AIService
- * @description Tích hợp API trí tuệ nhân tạo (Gemini thông qua OpenRouter API) nhằm hỗ trợ Chatbot tư vấn FAQ và tự động tóm tắt báo cáo minh chứng ngoại khóa. Tự động fallback dữ liệu giả lập (mock) khi chưa cấu hình API Key.
- * 
- * @function callOpenRouter
- * @description Gửi câu lệnh (prompt) trực tiếp tới OpenRouter API endpoint (`google/gemini-2.5-flash`).
- * @param {string} prompt - Câu lệnh chỉ dẫn cho mô hình ngôn ngữ.
- * @returns {Promise<string>} Chuỗi văn bản trả lời từ AI.
- * 
- * @function answerFAQ
- * @description Trả lời thắc mắc của người dùng dựa trên danh sách FAQ có sẵn (Retrieval-Augmented Generation context).
- * @param {string} userQuestion - Câu hỏi nhập từ giao diện Chatbot.
- * @param {Array<Object>} faqs - Danh sách tất cả câu hỏi thường gặp đã kích hoạt trong hệ thống.
- * @returns {Promise<string>} Câu trả lời phù hợp nhất.
- * 
- * @function summarizeReport
- * @description Tự động tóm tắt bài báo cáo minh chứng của sinh viên thành 2-3 câu cô đọng giúp Admin nhanh chóng duyệt.
- * @param {string} description - Nội dung mô tả chi tiết hoạt động.
- * @param {string} eventName - Tên sự kiện hoạt động ngoại khóa.
- * @returns {Promise<string>} Đoạn văn tóm tắt.
- * 
- * @implementation
- * - Bước 1: Kiểm tra xem `OPENROUTER_API_KEY` đã được thiết lập chưa.
- * - Bước 2: Nếu có Key, đóng gói câu hỏi kèm danh sách FAQs dạng ngữ cảnh (Context) gửi sang OpenRouter.
- * - Bước 3: Nếu không có Key hoặc gặp lỗi mạng, kích hoạt hàm `mockFAQAnswer` (tìm kiếm từ khóa) hoặc `mockSummary` để hệ thống không bị ngắt quãng.
- * 
- * @relations
- * - Controllers liên quan: `aiController.js`, `faqController.js`, `participationController.js`.
- * - Frontend Components: `FAQChatWidget.jsx`, `LandingChatWidget.jsx`, `ParticipationReview.jsx`.
- */
+// AI service: Integrates Gemini AI API via OpenRouter for FAQ chatbot assistance and proof report summarization.
 const logger = require('../utils/logger');
 
 const apiKey = process.env.OPENROUTER_API_KEY;
@@ -118,7 +89,7 @@ Provide only the summary, no introduction or extra text.`;
   }
 };
 
-// ── Hàm giả lập dữ liệu trả về khi không cấu hình API Key ───
+// Mock data fallback function when AI API key is not configured.
 function mockFAQAnswer(question, faqs) {
   const q = question.toLowerCase();
   for (const faq of faqs) {

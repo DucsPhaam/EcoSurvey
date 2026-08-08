@@ -1,20 +1,4 @@
-/**
- * @module HomepageController
- * @description Controller cung cấp dữ liệu thống kê ấn tượng cho trang chủ (Landing Page) như số lượng khảo sát, cây xanh đã đóng góp, khảo sát nổi bật và lượt làm bài mới nhất.
- * 
- * @function getStats
- * @description Lấy các số liệu ấn tượng hiển thị trên trang chủ (Số khảo sát, Số lượt làm bài, Số người dùng kích hoạt, Số cây trồng quy đổi).
- * 
- * @function getTopSurveys
- * @description Lấy 3 đợt khảo sát mới nhất đang phát động.
- * 
- * @function getRecentRespondents
- * @description Lấy danh sách 6 lượt hoàn thành khảo sát mới nhất để hiển thị bảng vinh danh trên trang chủ.
- * 
- * @relations
- * - Routes: `GET /api/homepage/stats`, `GET /api/homepage/top-surveys`, `GET /api/homepage/recent-respondents` trong `homepageRoutes.js`.
- * - Frontend UI: `LandingPage.jsx`, `TrendingSurveyCard.jsx`.
- */
+// Homepage controller: Provides statistics, featured surveys, planted trees, and recent activity for the landing page.
 const { Survey, User, SurveyResponse } = require('../models');
 const { Op } = require('sequelize');
 const logger = require('../utils/logger');

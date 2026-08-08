@@ -1,18 +1,4 @@
-/**
- * @module NotificationModel
- * @description Định nghĩa lược đồ thông báo dành cho người dùng (Bảng `notifications`), hỗ trợ phát thông báo trực tiếp & qua Socket.IO.
- * 
- * @implementation
- * - Bước 1: Khai báo `user_id` sở hữu thông báo.
- * - Bước 2: Khai báo `title` tiêu đề và `message` nội dung thông báo.
- * - Bước 3: Đặt trạng thái đã đọc `is_read` (mặc định false).
- * - Bước 4: Khai báo tham chiếu đến nguồn phát thông báo: `reference_type` ('Survey', 'Participation', v.v.) và `reference_id`.
- * - Bước 5: Tắt `updatedAt` và chỉ mục theo `user_id`, `is_read`.
- * 
- * @relations
- * - Controller/Service liên quan: `notificationController.js`, `socketService.js`, `adminController.js`, `surveyController.js`.
- * - Các bảng liên kết: `User`.
- */
+// Notification model: Defines user notification schema (notifications table).
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 

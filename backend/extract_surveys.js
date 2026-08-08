@@ -10,7 +10,6 @@ const seederPath = fs.readdirSync('backend/src/seeders').find(f => f.includes('d
 
 const seederContent = `'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
     const [results] = await queryInterface.sequelize.query('SELECT COUNT(*) as count FROM surveys');

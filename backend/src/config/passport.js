@@ -1,21 +1,4 @@
-/**
- * @module PassportGoogleStrategy
- * @description Cấu hình Middleware Passport.js xử lý xác thực đăng nhập / liên kết tài khoản bằng Google OAuth 2.0.
- * 
- * @implementation
- * - Bước 1: Đăng ký `GoogleStrategy` vào Passport với clientID, clientSecret và callbackURL từ biến môi trường.
- * - Bước 2: Trong hàm callback xác thực `(accessToken, refreshToken, profile, done)`:
- *   - Lấy địa chỉ email từ hồ sơ Google `profile.emails`.
- *   - Tìm kiếm người dùng trong DB theo email hoặc theo `google_id`.
- *   - Nếu tìm thấy user theo email nhưng chưa gán `google_id`, tiến hành cập nhật `google_id` và lưu DB (liên kết tài khoản).
- *   - Nếu user đã tồn tại, trả về user thông qua `done(null, user)`.
- *   - Nếu user chưa tồn tại, trả về một đối tượng tạm thời `{ isNewGoogleUser: true, google_id, email, full_name }` để controller tiếp tục xử lý đăng ký.
- * 
- * @relations
- * - Route liên quan: `GET /api/auth/google` và `GET /api/auth/google/callback` trong `backend/src/routes/authRoutes.js`.
- * - Controller liên quan: `googleCallback` trong `backend/src/controllers/authController.js`.
- * - Model sử dụng: `User` model (`backend/src/models/User.js`).
- */
+// Passport config: Configures Google OAuth 2.0 authentication strategy.
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { User } = require('../models');
@@ -45,14 +28,14 @@ passport.use(
         }
 
         if (user) {
-          // Nếu người dùng đã tồn tại nhưng chưa lưu google_id, tiến hành liên kết tài khoản
+          // Link Google OAuth ID if user exists without google_id.
           if (!user.google_id) {
             user.google_id = profile.id;
             await user.save();
           }
           return done(null, user);
         } else {
-          // Người dùng chưa tồn tại trong hệ thống, trả về thông tin tạm thời để đăng ký
+          // Return temp Google profile for registration if user does not exist.
           return done(null, {
             isNewGoogleUser: true,
             google_id: profile.id,

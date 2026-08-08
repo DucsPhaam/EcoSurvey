@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next'
 
 const COLORS = ['#1a7f4b', '#34d399', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']
 
-// Fix: dùng axios (gửi Bearer token) thay vì <a href> — browser navigation không gửi auth header
+// Fix: Use axios (with Bearer token) instead of <a href> because browser navigation omits auth header.
 const downloadFile = async (fn, filename, t) => {
   try {
     const res = await fn()

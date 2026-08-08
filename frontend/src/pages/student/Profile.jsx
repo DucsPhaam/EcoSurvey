@@ -113,7 +113,7 @@ export default function Profile() {
   else if (points >= 50) rank = { nameKey: 'gold', color: 'text-yellow-500', bg: 'bg-yellow-500/10', border: 'border-yellow-500' }
   else if (points >= 30) rank = { nameKey: 'silver', color: 'text-gray-400', bg: 'bg-gray-400/10', border: 'border-gray-400' }
 
-  // ─── Admin Profile: Phương án D ──────────────────────────────────────────
+  // ─── Admin Profile Actions ──────────────────────────────────────────
   const renderAdminProfile = () => (
     <div className="space-y-6">
       {/* ─ Banner Header ─────────────────────────────────────── */}

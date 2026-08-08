@@ -37,10 +37,10 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    fallbackLng: 'vi', // Mặc định là Tiếng Việt nếu không tìm thấy
+    fallbackLng: 'vi', // Default fallback language.
     debug: false,
     interpolation: {
-      escapeValue: false // React đã tự escape chống XSS
+      escapeValue: false // React already escapes values against XSS.
     }
   });
 

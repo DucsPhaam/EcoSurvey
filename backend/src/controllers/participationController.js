@@ -1,7 +1,4 @@
-/**
- * @module ParticipationController
- * @description Controller xử lý quy trình nộp và duyệt minh chứng hoạt động ngoại khóa / bảo vệ môi trường, tải tệp ảnh minh chứng, tự động cộng điểm tích lũy và tóm tắt AI.
- */
+// Participation controller: Handles submission and approval of extracurricular proof, image upload, and point allocation.
 const path = require('path');
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/database');
@@ -10,10 +7,7 @@ const aiService = require('../services/aiService');
 const emailService = require('../services/emailService');
 const logger = require('../utils/logger');
 
-/**
- * @function getMyParticipations
- * @description Lấy danh sách các bài báo cáo minh chứng cá nhân sinh viên đã nộp.
- */
+// Retrieves list of personal proof reports submitted by student.
 exports.getMyParticipations = async (req, res) => {
   try {
     const { page = 1, limit = 10, status } = req.query;
@@ -36,10 +30,7 @@ exports.getMyParticipations = async (req, res) => {
   }
 };
 
-/**
- * @function createParticipation
- * @description Sinh viên nộp báo cáo minh chứng ngoại khóa kèm các tệp ảnh đính kèm.
- */
+// Submits extracurricular proof report.
 exports.createParticipation = async (req, res) => {
   try {
     const { event_name, location, participant_count, description } = req.body;
@@ -101,10 +92,7 @@ exports.createParticipation = async (req, res) => {
   }
 };
 
-/**
- * @function getParticipationById
- * @description Lấy chi tiết một bài nộp minh chứng theo ID.
- */
+// Retrieves proof submission details by ID.
 exports.getParticipationById = async (req, res) => {
   try {
     const part = await Participation.findByPk(req.params.id, {
@@ -126,10 +114,7 @@ exports.getParticipationById = async (req, res) => {
   }
 };
 
-/**
- * @function adminGetParticipations
- * @description Admin lấy danh sách báo cáo minh chứng của tất cả sinh viên để kiểm duyệt.
- */
+// Retrieves all student proof reports for admin verification.
 exports.adminGetParticipations = async (req, res) => {
   try {
     const { status, page = 1, limit = 10, search } = req.query;
@@ -170,10 +155,7 @@ exports.adminGetParticipations = async (req, res) => {
   }
 };
 
-/**
- * @function reviewParticipation
- * @description Admin duyệt (`Approved`) hoặc từ chối (`Rejected`) minh chứng ngoại khóa trong một DB Transaction an toàn (cộng 50 điểm rèn luyện khi Approved).
- */
+// Approves or rejects extracurricular proof submissions in a DB transaction.
 exports.reviewParticipation = async (req, res) => {
   const t = await sequelize.transaction();
   try {
@@ -256,10 +238,7 @@ exports.reviewParticipation = async (req, res) => {
   }
 };
 
-/**
- * @function summarizeParticipation
- * @description Sử dụng Gemini AI Service tạo đoạn văn tóm tắt ngắn bài báo cáo minh chứng để Admin nhanh chóng đọc duyệt.
- */
+// Uses Gemini AI Service to summarize proof submission report for quick admin review.
 exports.summarizeParticipation = async (req, res) => {
   try {
     const part = await Participation.findByPk(req.params.id);

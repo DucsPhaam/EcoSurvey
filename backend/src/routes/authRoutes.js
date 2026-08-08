@@ -1,26 +1,4 @@
-/**
- * @module AuthRoutes
- * @description Định nghĩa các tuyến đường xác thực hệ thống: Đăng ký, Đăng nhập, Làm mới Token, Quên mật khẩu, Xác minh Email và Google OAuth.
- * 
- * @routes
- * - `POST /register`: Đăng ký tài khoản (có CAPTCHA & RateLimit).
- * - `GET /check-username`: Kiểm tra Username trùng lặp.
- * - `GET /check-email`: Kiểm tra Email trùng lặp.
- * - `POST /login`: Đăng nhập (có CAPTCHA & RateLimit).
- * - `POST /refresh`: Gia hạn Access Token từ Cookie Refresh Token.
- * - `POST /logout`: Đăng xuất và xóa Refresh Token.
- * - `POST /forgot-password`: Gửi email đặt lại mật khẩu.
- * - `POST /reset-password`: Thiết lập mật khẩu mới.
- * - `POST /send-verification`: Gửi lại email xác minh địa chỉ email.
- * - `GET /verify-email`: Xác minh token email.
- * - `GET /google`: Đăng nhập qua Google OAuth.
- * - `GET /google/callback`: Callback sau khi Google xác thực thành công.
- * 
- * @relations
- * - Server: Gắn tại `/api/auth` trong `server.js`.
- * - Controller: `authController.js`.
- * - Frontend Services: `authService.js` (`frontend/src/services/authService.js`).
- */
+// Defines auth API routes: Register, Login, Refresh Token, Forgot Password, Email Verification, Google OAuth.
 const router = require('express').Router();
 const rateLimit = require('express-rate-limit');
 const { loginLimiter } = require('../middleware/rateLimitMiddleware');

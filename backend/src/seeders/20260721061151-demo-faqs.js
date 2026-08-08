@@ -1,6 +1,5 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
     const [results] = await queryInterface.sequelize.query('SELECT COUNT(*) as count FROM faqs');

@@ -1,9 +1,4 @@
-/**
- * TASK 2.3 — Survey + Submit test suite
- * TC-07: GET /api/surveys — authenticated, returns only Published surveys
- * TC-08: GET /api/surveys — unauthenticated → 401
- * TC-09: GET /api/surveys/:id — returns survey detail with questions
- */
+// TASK 2.3 — Survey + Submit test suite TC-07: GET /api/surveys — authenticated, returns only Published surveys TC-08: GET /api/surveys — unauthenticated → 401 TC-09: GET /api/surveys/:id — returns survey detail with questions
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const { Sequelize, DataTypes, Op } = require('sequelize');

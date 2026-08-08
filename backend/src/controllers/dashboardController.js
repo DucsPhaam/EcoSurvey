@@ -1,18 +1,4 @@
-/**
- * @module DashboardController
- * @description Controller tổng hợp dữ liệu thống kê cho trang Dashboard cá nhân của sinh viên/cán bộ và Admin.
- * 
- * @function getDashboard
- * @description Trả về thống kê tổng quan cá nhân: số bài khảo sát đã hoàn thành, điểm rèn luyện, thứ hạng Bảng xếp hạng và hoạt động gần đây.
- * 
- * @function getAdminDashboard
- * @description Trả về biểu đồ và chỉ số điều hành tổng quan dành cho tài khoản Admin.
- * 
- * @relations
- * - Route: `GET /api/dashboard` trong `dashboardRoutes.js`.
- * - Guard: `authenticate`.
- * - Frontend: `dashboardService.getDashboard` gọi từ `MyDashboard.jsx` và `AdminDashboard.jsx`.
- */
+// Dashboard controller: Aggregates statistics for student and staff personal dashboards.
 const { Op, literal, fn, col } = require('sequelize');
 const { sequelize } = require('../config/database');
 const { User, Survey, SurveyResponse, Participation, PointLog } = require('../models');

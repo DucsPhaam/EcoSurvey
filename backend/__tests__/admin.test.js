@@ -1,10 +1,4 @@
-/**
- * TASK 2.4 — Admin + Participation + Dashboard test suite
- * TC-10: POST /api/participations — creates participation
- * TC-11: PATCH /api/admin/users/:id/status — Admin only (403 for Student)
- * TC-12: GET /api/dashboard — returns data without SQL error (rank bug regression)
- * TC-13: PUT /api/admin/surveys/responses/:id/score — grade opinion
- */
+// TASK 2.4 — Admin + Participation + Dashboard test suite TC-10: POST /api/participations — creates participation TC-11: PATCH /api/admin/users/:id/status — Admin only (403 for Student) TC-12: GET /api/dashboard — returns data without SQL error (rank bug regression) TC-13: PUT /api/admin/surveys/responses/:id/score — grade opinion
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const { Sequelize, DataTypes, Op } = require('sequelize');

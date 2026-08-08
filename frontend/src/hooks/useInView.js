@@ -1,9 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-/**
- * Hook returns true once the element enters the viewport.
- * Works with both server-side rendering and client-side.
- */
+// Hook returns true once the element enters the viewport. Works with both server-side rendering and client-side.
 export function useInView(options = {}) {
   const ref = useRef(null)
   const [inView, setInView] = useState(false)
@@ -36,10 +33,7 @@ export function useInView(options = {}) {
   return [ref, inView]
 }
 
-/**
- * Hook for staggered children animation.
- * Returns ref and a function to reset visibility.
- */
+// Hook for staggered children animation. Returns ref and a function to reset visibility.
 export function useStaggerInView(options = {}) {
   const ref = useRef(null)
   const [visible, setVisible] = useState(false)

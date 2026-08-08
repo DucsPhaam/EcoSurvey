@@ -1,6 +1,5 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
     // Only insert if the table is empty to avoid duplicate keys

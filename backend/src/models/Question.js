@@ -1,18 +1,4 @@
-/**
- * @module QuestionModel
- * @description Định nghĩa lược đồ câu hỏi của bài khảo sát (Bảng `questions`), hỗ trợ nhiều dạng câu hỏi (Text, Single_Choice, Multiple_Choice) và lưu trữ danh sách phương án dưới dạng JSON.
- * 
- * @implementation
- * - Bước 1: Khai báo cột khóa ngoại `survey_id` liên kết với bảng `surveys`.
- * - Bước 2: Khai báo cột `question_text` nội dung câu hỏi và `question_type` quy định kiểu trả lời.
- * - Bước 3: Cột `options` lưu mảng các phương án lựa chọn theo định dạng JSON.
- * - Bước 4: Khai báo thứ tự hiển thị `order_num` và cờ bắt buộc `is_required`.
- * - Bước 5: Tắt trường `updatedAt` và thiết lập chỉ mục tìm kiếm theo `survey_id`.
- * 
- * @relations
- * - Controller liên quan: `surveyController.js`, `aiController.js` (gợi ý câu hỏi AI).
- * - Các bảng liên kết: `Survey` (thuộc về khảo sát nào), `SurveyAnswer` (chứa các câu trả lời cho câu hỏi này).
- */
+// Question model: Defines survey question schema (questions table), supporting text, single-choice, and multiple-choice types.
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 

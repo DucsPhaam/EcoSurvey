@@ -1,15 +1,4 @@
-/**
- * TASK 2.2 — Auth flows test suite (15 test cases)
- * TC-01: POST /auth/register — success (201)
- * TC-02: POST /auth/register — duplicate username (409)
- * TC-03: POST /auth/register — weak password (400)
- * TC-04: POST /auth/login — success, returns accessToken
- * TC-05: POST /auth/login — wrong password → 401
- * TC-06: POST /auth/login — pending account → 403
- *
- * Strategy: Mock db/models with jest.mock using inline factory.
- * Use a shared in-memory store to simulate DB state across tests.
- */
+// TASK 2.2 — Auth flows test suite (15 test cases) TC-01: POST /auth/register — success (201) TC-02: POST /auth/register — duplicate username (409) TC-03: POST /auth/register — weak password (400) TC-04: POST /auth/login — success, returns accessToken TC-05: POST /auth/login — wrong password → 401 TC-06: POST /auth/login — pending account → 403 Strategy: Mock db/models with jest.mock using inline factory. Use a shared in-memory store to simulate DB state across tests.
 const request = require('supertest');
 const bcrypt = require('bcrypt');
 

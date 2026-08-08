@@ -1,17 +1,11 @@
-/**
- * @module SurveyController
- * @description Controller quản lý toàn bộ vòng đời bài khảo sát: Đăng bài, Chỉnh sửa, Quản lý câu hỏi, Phân tích thống kê kết quả, Người dùng làm khảo sát và Admin chấm điểm ý kiến cá nhân.
- */
+// Survey controller: Manages survey lifecycle including creation, editing, question management, result analysis, and grading.
 const { Op, literal } = require('sequelize');
 const { sequelize } = require('../config/database');
 const { Survey, Question, SurveyResponse, SurveyAnswer, PointLog, Notification, User } = require('../models');
 const logger = require('../utils/logger');
 const badgeService = require('../services/badgeService');
 
-/**
- * @function getSurveys
- * @description Lấy danh sách đợt khảo sát dành cho sinh viên/cán bộ đang mở (`Published` và chưa hết hạn `end_date`).
- */
+// Retrieves list of open published surveys for students/staff.
 exports.getSurveys = async (req, res) => {
   try {
     const userRole = req.user.role;
@@ -58,10 +52,7 @@ exports.getSurveys = async (req, res) => {
   }
 };
 
-/**
- * @function getSurveyDetail
- * @description Lấy thông tin chi tiết một bài khảo sát kèm danh sách câu hỏi để sinh viên thực hiện làm bài.
- */
+// Retrieves survey details and question list for taking the survey.
 exports.getSurveyDetail = async (req, res) => {
   try {
     const { id } = req.params;
@@ -94,10 +85,7 @@ exports.getSurveyDetail = async (req, res) => {
   }
 };
 
-/**
- * @function submitSurvey
- * @description Người dùng gửi câu trả lời bài khảo sát, ghi nhận kết quả và cộng 10 điểm thưởng rèn luyện trong Transaction an toàn.
- */
+// Submits survey responses, records results, and awards 10 bonus points in a DB transaction.
 exports.submitSurvey = async (req, res) => {
   const t = await sequelize.transaction();
   try {
@@ -191,10 +179,7 @@ exports.submitSurvey = async (req, res) => {
   }
 };
 
-/**
- * @function adminGetSurveys
- * @description Admin xem danh sách tất cả các bài khảo sát (Bao gồm Draft, Published, Closed).
- */
+// Retrieves list of all surveys.
 exports.adminGetSurveys = async (req, res) => {
   try {
     const { status, search, page = 1, limit = 10 } = req.query;
@@ -229,10 +214,7 @@ exports.adminGetSurveys = async (req, res) => {
   }
 };
 
-/**
- * @function adminGetSurveyById
- * @description Admin xem chi tiết bài khảo sát và danh sách câu hỏi trong trang quản trị.
- */
+// Retrieves survey details and questions for admin management.
 exports.adminGetSurveyById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -250,10 +232,7 @@ exports.adminGetSurveyById = async (req, res) => {
   }
 };
 
-/**
- * @function adminGetAnalytics
- * @description Tổng hợp biểu đồ phân tích tỷ lệ chọn từng phương án câu hỏi khảo sát cho Admin.
- */
+// Aggregates survey option selection analytics.
 exports.adminGetAnalytics = async (req, res) => {
   try {
     const { id } = req.params;
@@ -331,10 +310,7 @@ exports.adminGetAnalytics = async (req, res) => {
   }
 };
 
-/**
- * @function adminCreateSurvey
- * @description Admin tạo bài khảo sát mới, tự động chèn câu hỏi "Ý kiến cá nhân" bắt buộc cuối bài.
- */
+// Creates a new survey with mandatory personal opinion question.
 exports.adminCreateSurvey = async (req, res) => {
   const t = await sequelize.transaction();
   try {
@@ -373,10 +349,7 @@ exports.adminCreateSurvey = async (req, res) => {
   }
 };
 
-/**
- * @function adminUpdateSurvey
- * @description Admin cập nhật bài khảo sát. Phát thông báo Socket.IO + Notification khi xuất bản (`Published`).
- */
+// Updates survey details and broadcasts notifications via Socket.IO.
 exports.adminUpdateSurvey = async (req, res) => {
   try {
     const survey = await Survey.findByPk(req.params.id, {
@@ -413,10 +386,7 @@ exports.adminUpdateSurvey = async (req, res) => {
   }
 };
 
-/**
- * @function _notifyUsersForNewSurvey
- * @description Hàm helper phát thông báo cho tất cả người dùng hợp lệ khi một khảo sát mới được xuất bản.
- */
+// Helper function to broadcast notification to eligible users when a new survey is published.
 async function _notifyUsersForNewSurvey(survey) {
   const roleFilter = survey.target_role === 'All'
     ? { role: { [Op.in]: ['Student', 'Staff'] } }
@@ -451,10 +421,7 @@ async function _notifyUsersForNewSurvey(survey) {
   logger.info(`[Survey Publish] Sent notifications to ${users.length} users for survey "${survey.title}"`);
 }
 
-/**
- * @function adminDeleteSurvey
- * @description Admin xóa bài khảo sát chưa có lượt làm bài nào.
- */
+// Deletes an unsubmitted survey.
 exports.adminDeleteSurvey = async (req, res) => {
   try {
     const survey = await Survey.findByPk(req.params.id, {
@@ -474,10 +441,7 @@ exports.adminDeleteSurvey = async (req, res) => {
   }
 };
 
-/**
- * @function getQuestions
- * @description Lấy danh sách câu hỏi thuộc một bài khảo sát.
- */
+// Retrieves question list for a survey.
 exports.getQuestions = async (req, res) => {
   try {
     const questions = await Question.findAll({
@@ -490,10 +454,7 @@ exports.getQuestions = async (req, res) => {
   }
 };
 
-/**
- * @function createQuestion
- * @description Thêm một câu hỏi mới vào bài khảo sát.
- */
+// Adds a new question to a survey.
 exports.createQuestion = async (req, res) => {
   try {
     const { question_text, question_type, options, order_num, is_required } = req.body;
@@ -516,10 +477,7 @@ exports.createQuestion = async (req, res) => {
   }
 };
 
-/**
- * @function updateQuestion
- * @description Chỉnh sửa nội dung câu hỏi trong bài khảo sát (Có kiểm tra bảo mật IDOR).
- */
+// Updates survey question content.
 exports.updateQuestion = async (req, res) => {
   try {
     const question = await Question.findOne({
@@ -535,10 +493,7 @@ exports.updateQuestion = async (req, res) => {
   }
 };
 
-/**
- * @function deleteQuestion
- * @description Xóa câu hỏi khỏi bài khảo sát.
- */
+// Removes a question from a survey.
 exports.deleteQuestion = async (req, res) => {
   try {
     const question = await Question.findOne({
@@ -552,10 +507,7 @@ exports.deleteQuestion = async (req, res) => {
   }
 };
 
-/**
- * @function reorderQuestions
- * @description Sắp xếp lại thứ tự xuất hiện của các câu hỏi trong khảo sát.
- */
+// Reorders questions within a survey.
 exports.reorderQuestions = async (req, res) => {
   try {
     const { order } = req.body;
@@ -570,10 +522,7 @@ exports.reorderQuestions = async (req, res) => {
   }
 };
 
-/**
- * @function getSurveyResponses
- * @description Admin xem danh sách kết quả bài làm được ẩn danh (Hiển thị "Ẩn danh #1", "Ẩn danh #2" để đảm bảo tính khách quan).
- */
+// Retrieves anonymous survey response list.
 exports.getSurveyResponses = async (req, res) => {
   try {
     const { page = 1, limit = 20 } = req.query;
@@ -607,10 +556,7 @@ exports.getSurveyResponses = async (req, res) => {
   }
 };
 
-/**
- * @function gradeOpinion
- * @description Admin chấm điểm ý kiến cá nhân bài khảo sát (từ 0 đến 10 điểm), tự động cập nhật hoặc chèn bản ghi điểm thưởng `PointLog Bonus` duy nhất.
- */
+// Grades personal opinion response (0-10) and awards bonus points.
 exports.gradeOpinion = async (req, res) => {
   const t = await sequelize.transaction();
   try {

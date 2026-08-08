@@ -1,14 +1,4 @@
-/**
- * @module FAQController
- * @description Controller phục vụ truy vấn danh sách câu hỏi thường gặp FAQ dành cho giao diện công khai (Landing Page, FAQ Section).
- * 
- * @function getPublicFAQs
- * @description Lấy tất cả các câu hỏi FAQ công khai đang hoạt động (`is_active: true`) mà không cần đăng nhập.
- * 
- * @relations
- * - Route: `GET /api/faqs/public` trong `faqPublicRoutes.js`.
- * - Frontend: `faqService.getPublicFAQs` từ `FaqItem.jsx` và `LandingPage.jsx`.
- */
+// FAQ controller: Handles FAQ queries for public and admin interfaces.
 const { FAQ } = require('../models');
 
 exports.getPublicFAQs = async (_req, res) => {

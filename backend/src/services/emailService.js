@@ -1,34 +1,4 @@
-/**
- * @module EmailService
- * @description Dịch vụ gửi thư điện tử Email tự động (Xác thực email đăng ký, Quên mật khẩu, Duyệt tài khoản, Duyệt báo cáo minh chứng) sử dụng Nodemailer. Tự động ghi log ra Console nếu chưa cấu hình máy chủ SMTP.
- * 
- * @function sendMail
- * @description Hàm tiện ích gửi email chung thông qua `transporter.sendMail()` hoặc ghi log vào console.
- * 
- * @function sendRegistrationEmail
- * @description Gửi email thông báo đã nhận đơn đăng ký tài khoản thành công và đang chờ Admin duyệt.
- * 
- * @function sendStatusUpdateEmail
- * @description Gửi email thông báo kết quả duyệt tài khoản (Approved/Rejected) từ Admin.
- * 
- * @function sendParticipationReviewEmail
- * @description Gửi email thông báo kết quả kiểm duyệt báo cáo minh chứng ngoại khóa kèm lý do từ chối hoặc số điểm thưởng đạt được.
- * 
- * @function sendForgotPasswordEmail
- * @description Gửi email chứa đường dẫn token đặt lại mật khẩu cho sinh viên (có hiệu lực 15 phút).
- * 
- * @function sendEmailVerificationEmail
- * @description Gửi email chứa đường dẫn xác thực địa chỉ email sau khi tạo tài khoản thành công (có hiệu lực 24 giờ).
- * 
- * @implementation
- * - Bước 1: Khởi tạo transporter Nodemailer với `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`.
- * - Bước 2: Đóng gói mẫu HTML Email chuẩn giao diện EcoSurvey.
- * - Bước 3: Gọi `sendMail` gửi thư tới địa chỉ người dùng.
- * 
- * @relations
- * - Controllers sử dụng: `authController.js` (đăng ký, quên/đặt lại mật khẩu, xác thực email), `adminController.js` (duyệt user, duyệt minh chứng), `participationController.js`.
- * - Pages tương ứng ở Frontend: `ResetPasswordPage.jsx`, `EmailVerificationPage.jsx`, `LoginPage.jsx`.
- */
+// Email service: Sends automated emails (registration, password reset, account approval, proof status) via Nodemailer.
 const logger = require('../utils/logger');
 
 let transporter = null;

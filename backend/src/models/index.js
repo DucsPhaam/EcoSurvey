@@ -1,18 +1,4 @@
-/**
- * @module ModelRegistry
- * @description Tệp trung tâm nạp tất cả các Sequelize Model và thiết lập mối quan hệ (associations: hasMany, belongsTo, belongsToMany) giữa các bảng trong CSDL.
- * 
- * @implementation
- * - Bước 1: Import tất cả 13 Sequelize Models trong hệ thống EcoSurvey.
- * - Bước 2: Thiết lập mối quan hệ cho `User` (với RefreshToken, Survey, SurveyResponse, Participation, PointLog, Notification và Badge thông qua UserBadge).
- * - Bước 3: Thiết lập quan hệ phân cấp Khảo sát: `Survey` -> `Question`, `Survey` -> `SurveyResponse` -> `SurveyAnswer`.
- * - Bước 4: Thiết lập quan hệ Minh chứng: `Participation` -> `User` (người nộp & người duyệt) và `Participation` -> `ParticipationFile`.
- * - Bước 5: Thiết lập quan hệ Huy hiệu: `Badge` <-> `User` (nhiều - nhiều thông qua `UserBadge`).
- * - Bước 6: Export tất cả các model để Controller và Service nạp trực tiếp qua `require('../models')`.
- * 
- * @relations
- * - Tất cả Backend Controllers (`adminController`, `authController`, `surveyController`, `participationController`, v.v.) và Services (`badgeService`, `emailService`, v.v.) import các model từ file này.
- */
+// Index model: Loads all Sequelize models and defines table associations (hasMany, belongsTo, belongsToMany).
 const User             = require('./User');
 const RefreshToken     = require('./RefreshToken');
 const Survey           = require('./Survey');
@@ -27,7 +13,7 @@ const Notification     = require('./Notification');
 const Badge            = require('./Badge');
 const UserBadge        = require('./UserBadge');
 
-// ── Quan hệ của Model User ──────────────────────────────────────
+// ── Model Associations ─────────────────────
 User.hasMany(RefreshToken,     { foreignKey: 'user_id', as: 'refreshTokens' });
 User.hasMany(Survey,           { foreignKey: 'created_by', as: 'surveys' });
 User.hasMany(SurveyResponse,   { foreignKey: 'user_id', as: 'surveyResponses' });
@@ -38,38 +24,38 @@ User.belongsToMany(Badge,      { through: UserBadge, foreignKey: 'user_id', as: 
 
 RefreshToken.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
-// ── Quan hệ của Model Survey ────────────────────────────────────
+// ── Model Associations ─────────────────────
 Survey.belongsTo(User,         { foreignKey: 'created_by', as: 'creator' });
 Survey.hasMany(Question,       { foreignKey: 'survey_id', as: 'questions' });
 Survey.hasMany(SurveyResponse, { foreignKey: 'survey_id', as: 'responses' });
 
-// ── Quan hệ của Model Question ──────────────────────────────────
+// ── Model Associations ─────────────────────
 Question.belongsTo(Survey,     { foreignKey: 'survey_id', as: 'survey' });
 Question.hasMany(SurveyAnswer, { foreignKey: 'question_id', as: 'answers' });
 
-// ── Quan hệ của Model SurveyResponse ────────────────────────────
+// ── Model Associations ─────────────────────
 SurveyResponse.belongsTo(Survey, { foreignKey: 'survey_id', as: 'survey' });
 SurveyResponse.belongsTo(User,   { foreignKey: 'user_id', as: 'user' });
 SurveyResponse.hasMany(SurveyAnswer, { foreignKey: 'response_id', as: 'answers' });
 
-// ── Quan hệ của Model SurveyAnswer ──────────────────────────────
+// ── Model Associations ─────────────────────
 SurveyAnswer.belongsTo(SurveyResponse, { foreignKey: 'response_id', as: 'response' });
 SurveyAnswer.belongsTo(Question,       { foreignKey: 'question_id', as: 'question' });
 
-// ── Quan hệ của Model Participation ─────────────────────────────
+// ── Model Associations ─────────────────────
 Participation.belongsTo(User,             { foreignKey: 'user_id', as: 'user' });
 Participation.belongsTo(User,             { foreignKey: 'reviewed_by', as: 'reviewer' });
 Participation.hasMany(ParticipationFile,  { foreignKey: 'participation_id', as: 'files' });
 
 ParticipationFile.belongsTo(Participation, { foreignKey: 'participation_id', as: 'participation' });
 
-// ── Quan hệ của Model PointLog ──────────────────────────────────
+// ── Model Associations ─────────────────────
 PointLog.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
-// ── Quan hệ của Model Notification ──────────────────────────────
+// ── Model Associations ─────────────────────
 Notification.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
-// ── Quan hệ của Model Badge ─────────────────────────────────────
+// ── Model Associations ─────────────────────
 Badge.belongsToMany(User, { through: UserBadge, foreignKey: 'badge_id', as: 'users' });
 
 UserBadge.belongsTo(User,  { foreignKey: 'user_id' });
