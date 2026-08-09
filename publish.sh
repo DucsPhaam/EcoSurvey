@@ -94,8 +94,8 @@ services:
       JWT_SECRET: \${JWT_SECRET:-change_me_in_production_very_long_secret}
       JWT_REFRESH_SECRET: \${JWT_REFRESH_SECRET:-another_refresh_secret_change_me}
       JWT_EXPIRES_IN: 15m
-      JWT_REFRESH_EXPIRES_IN: 7d
-      CLIENT_URL: \${CLIENT_URL:-http://localhost}
+      REFRESH_TOKEN_EXPIRES_DAYS: \${REFRESH_TOKEN_EXPIRES_DAYS:-30}
+      CLIENT_URLS: \${CLIENT_URLS:-http://localhost}
     ports:
       - "5000:5000"
     networks:

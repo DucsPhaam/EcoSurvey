@@ -6,24 +6,25 @@ const { Participation, ParticipationFile, PointLog, Notification, User } = requi
 const aiService = require('../services/aiService');
 const emailService = require('../services/emailService');
 const logger = require('../utils/logger');
+const { getPagination } = require('../utils/pagination');
 
 // Retrieves list of personal proof reports submitted by student.
 exports.getMyParticipations = async (req, res) => {
   try {
-    const { page = 1, limit = 10, status } = req.query;
+    const { status } = req.query;
     const where = { user_id: req.user.id };
     if (status) where.status = status;
 
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { page, limit, offset } = getPagination(req.query);
     const { count, rows } = await Participation.findAndCountAll({
       where,
       include: [{ model: ParticipationFile, as: 'files' }],
       order: [['created_at', 'DESC']],
-      limit: parseInt(limit),
+      limit,
       offset,
     });
 
-    res.json({ participations: rows, total: count, page: parseInt(page), totalPages: Math.ceil(count / parseInt(limit)) });
+    res.json({ participations: rows, total: count, page, totalPages: Math.ceil(count / limit) });
   } catch (err) {
     logger.error('getMyParticipations error:', err);
     res.status(500).json({ message: 'Failed to fetch participations.' });
@@ -117,7 +118,7 @@ exports.getParticipationById = async (req, res) => {
 // Retrieves all student proof reports for admin verification.
 exports.adminGetParticipations = async (req, res) => {
   try {
-    const { status, page = 1, limit = 10, search } = req.query;
+    const { status, search } = req.query;
     const where = {};
     if (status) where.status = status;
 
@@ -131,7 +132,7 @@ exports.adminGetParticipations = async (req, res) => {
       userWhere.full_name = { [Op.like]: `%${search}%` };
     }
 
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { page, limit, offset } = getPagination(req.query);
     const { count, rows } = await Participation.findAndCountAll({
       where: participationWhere,
       include: [
@@ -143,12 +144,12 @@ exports.adminGetParticipations = async (req, res) => {
         { model: ParticipationFile, as: 'files' },
       ],
       order: [['created_at', 'DESC']],
-      limit: parseInt(limit),
+      limit,
       offset,
       distinct: true,
     });
 
-    res.json({ participations: rows, total: count, page: parseInt(page), totalPages: Math.ceil(count / parseInt(limit)) });
+    res.json({ participations: rows, total: count, page, totalPages: Math.ceil(count / limit) });
   } catch (err) {
     logger.error('adminGetParticipations error:', err);
     res.status(500).json({ message: 'Failed to fetch participations.' });

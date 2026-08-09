@@ -1,5 +1,11 @@
 // Server entrypoint: Initializes Express server, security middleware, API routes, Socket.IO, and DB connection.
 require('dotenv').config();
+
+// Fail fast in production if critical secrets are missing.
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  throw new Error('[server] Missing required environment variable: JWT_SECRET');
+}
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -9,6 +15,7 @@ const path = require('path');
 const { sequelize } = require('./config/database');
 const logger = require('./utils/logger');
 const cronService = require('./services/cronService');
+const { allowedOrigins } = require('./config/clientOrigins');
 
 // ── Routes ────────────────────────────────────────────────────
 const authRoutes          = require('./routes/authRoutes');
@@ -52,11 +59,14 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
+
+const { generalLimiter } = require('./middleware/rateLimitMiddleware');
+app.use(generalLimiter);
 
 // ── Parsers ───────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));

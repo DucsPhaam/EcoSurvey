@@ -3,13 +3,14 @@ const { Op } = require('sequelize');
 const { User, Survey, SurveyResponse, Participation, Notification, FAQ } = require('../models');
 const emailService = require('../services/emailService');
 const logger = require('../utils/logger');
+const { getPagination } = require('../utils/pagination');
 const ExcelJS = require('exceljs');
 const bcrypt = require('bcrypt');
 
 // Retrieves paginated user list with role, status, and keyword search filters.
 exports.getUsers = async (req, res) => {
   try {
-    const { role, status, search, page = 1, limit = 10 } = req.query;
+    const { role, status, search } = req.query;
     const where = {};
     if (role)   where.role   = role;
     if (status) where.status = status;
@@ -22,20 +23,20 @@ exports.getUsers = async (req, res) => {
       ];
     }
     
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { page, limit, offset } = getPagination(req.query);
     const { count, rows } = await User.findAndCountAll({
       where,
       attributes: { exclude: ['password_hash'] },
       order: [['created_at', 'DESC']],
-      limit: parseInt(limit),
+      limit,
       offset,
     });
 
     res.json({
       users: rows,
       total: count,
-      page: parseInt(page),
-      totalPages: Math.ceil(count / parseInt(limit)),
+      page,
+      totalPages: Math.ceil(count / limit),
     });
   } catch (err) {
     logger.error('getUsers error:', err);
@@ -214,18 +215,17 @@ exports.getStats = async (req, res) => {
 // Retrieves list of pending extracurricular proof reports (`status = Pending`).
 exports.getPendingParticipations = async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { page, limit, offset } = getPagination(req.query);
 
     const { count, rows } = await Participation.findAndCountAll({
       where: { status: 'Pending' },
       include: [{ model: User, as: 'user', attributes: ['id', 'full_name', 'username', 'role'] }],
       order: [['created_at', 'DESC']],
-      limit: parseInt(limit),
+      limit,
       offset,
     });
 
-    res.json({ participations: rows, total: count, page: parseInt(page), totalPages: Math.ceil(count / parseInt(limit)) });
+    res.json({ participations: rows, total: count, page, totalPages: Math.ceil(count / limit) });
   } catch (err) {
     logger.error('getPendingParticipations error:', err);
     res.status(500).json({ message: 'Failed to fetch pending participations.' });

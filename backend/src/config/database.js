@@ -2,10 +2,22 @@
 const { Sequelize } = require('sequelize');
 const logger = require('../utils/logger');
 
+// Validates required environment variables at startup to prevent silent misconfigurations in production.
+const isProduction = process.env.NODE_ENV === 'production';
+
+if (isProduction) {
+  const required = ['DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DB_HOST'];
+  for (const key of required) {
+    if (!process.env[key]) {
+      throw new Error(`[database] Missing required environment variable: ${key}`);
+    }
+  }
+}
+
 const sequelize = new Sequelize(
   process.env.DB_NAME || 'ecosurvey',
   process.env.DB_USER || 'root',
-  process.env.DB_PASSWORD || '12345678',
+  process.env.DB_PASSWORD || '12345678',  // fallback only applies in dev/test
   {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '3306', 10),

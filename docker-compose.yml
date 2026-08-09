@@ -47,8 +47,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:-change_me_in_production_very_long_secret}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-another_refresh_secret_change_me}
       JWT_EXPIRES_IN: 15m
-      JWT_REFRESH_EXPIRES_IN: 7d
-      CLIENT_URL: ${CLIENT_URL:-http://localhost}
+      REFRESH_TOKEN_EXPIRES_DAYS: ${REFRESH_TOKEN_EXPIRES_DAYS:-30}  # used by cookie/DB logic in authController
+      CLIENT_URLS: ${CLIENT_URLS:-http://localhost}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}

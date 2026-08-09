@@ -6,10 +6,13 @@ const { Op } = require('sequelize');
 const { User, RefreshToken } = require('../models');
 const emailService = require('../services/emailService');
 const logger = require('../utils/logger');
+const { primaryClientUrl } = require('../config/clientOrigins');
 
 const SALT_ROUNDS = 10;
 const ACCESS_EXPIRES = process.env.JWT_EXPIRES_IN || '15m';
-const REFRESH_DAYS   = parseInt(process.env.REFRESH_TOKEN_EXPIRES_DAYS || '7', 10);
+// Number of days the refresh token (cookie + DB row) stays valid.
+// Controlled by REFRESH_TOKEN_EXPIRES_DAYS env variable (integer, e.g. "30").
+const REFRESH_DAYS = parseInt(process.env.REFRESH_TOKEN_EXPIRES_DAYS || '30', 10);
 
 // Generates a JWT Access Token with user payload (15m expiration).
 const signAccessToken = (user) =>
@@ -134,8 +137,10 @@ exports.login = async (req, res) => {
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production' && !process.env.CLIENT_URL?.includes('localhost'),
-      sameSite: process.env.NODE_ENV === 'production' && !process.env.CLIENT_URL?.includes('localhost') ? 'strict' : 'lax',
+      // SameSite=None + Secure is required for cross-site cookies (Vercel frontend → Railway API).
+      // In development (non-production), use Lax to allow cookies over HTTP.
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: REFRESH_DAYS * 86400 * 1000,
     });
 
@@ -192,7 +197,11 @@ exports.logout = async (req, res) => {
       const hash = crypto.createHash('sha256').update(raw).digest('hex');
       await RefreshToken.update({ revoked: true }, { where: { token_hash: hash } });
     }
-    res.clearCookie('refreshToken');
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    });
     res.json({ message: 'Logged out successfully.' });
   } catch (err) {
     logger.error('logout error:', err);
@@ -219,8 +228,7 @@ exports.forgotPassword = async (req, res) => {
       reset_password_expires: expires,
     });
 
-    const clientUrl = (process.env.CLIENT_URL || 'http://localhost:8080').replace(/\/+$/, '');
-    const resetUrl = `${clientUrl}/reset-password?token=${rawToken}&email=${encodeURIComponent(email)}`;
+    const resetUrl = `${primaryClientUrl}/reset-password?token=${rawToken}&email=${encodeURIComponent(email)}`;
     emailService.sendForgotPasswordEmail(email, user.full_name, resetUrl).catch(logger.error);
 
     res.json({ message: 'Nếu email tồn tại, chúng tôi đã gửi liên kết đặt lại mật khẩu.' });
@@ -278,8 +286,7 @@ exports.sendVerificationEmail = async (req, res) => {
     const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
     await user.update({ email_verify_token: tokenHash });
 
-    const clientUrl = (process.env.CLIENT_URL || 'http://localhost:8080').replace(/\/+$/, '');
-    const verifyUrl = `${clientUrl}/verify-email?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
+    const verifyUrl = `${primaryClientUrl}/verify-email?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
     emailService.sendEmailVerificationEmail(user.email, user.full_name, verifyUrl).catch(logger.error);
 
     res.json({ message: 'Email xác minh đã được gửi.' });
@@ -312,7 +319,6 @@ exports.verifyEmail = async (req, res) => {
 exports.googleCallback = async (req, res) => {
   try {
     const user = req.user;
-    const clientUrl = (process.env.CLIENT_URL || 'http://localhost:8080').replace(/\/+$/, '');
 
     if (user.isNewGoogleUser) {
       const params = new URLSearchParams({
@@ -320,17 +326,17 @@ exports.googleCallback = async (req, res) => {
         name: user.full_name || '',
         google_id: user.google_id || ''
       });
-      return res.redirect(`${clientUrl}/register?${params.toString()}`);
+      return res.redirect(`${primaryClientUrl}/register?${params.toString()}`);
     }
 
     if (user.status === 'Pending') {
-      return res.redirect(`${clientUrl}/login?error=pending`);
+      return res.redirect(`${primaryClientUrl}/login?error=pending`);
     }
     if (user.status === 'Rejected') {
-      return res.redirect(`${clientUrl}/login?error=rejected`);
+      return res.redirect(`${primaryClientUrl}/login?error=rejected`);
     }
     if (user.status === 'Deactivated') {
-      return res.redirect(`${clientUrl}/login?error=deactivated`);
+      return res.redirect(`${primaryClientUrl}/login?error=deactivated`);
     }
 
     const accessToken = signAccessToken(user);
@@ -338,15 +344,15 @@ exports.googleCallback = async (req, res) => {
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production' && !process.env.CLIENT_URL?.includes('localhost'),
-      sameSite: process.env.NODE_ENV === 'production' && !process.env.CLIENT_URL?.includes('localhost') ? 'strict' : 'lax',
+      // SameSite=None + Secure is required for cross-site cookies (Vercel frontend → Railway API).
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: REFRESH_DAYS * 86400 * 1000,
     });
 
-    res.redirect(`${clientUrl}/oauth/callback?accessToken=${accessToken}`);
+    res.redirect(`${primaryClientUrl}/oauth/callback?accessToken=${accessToken}`);
   } catch (err) {
     logger.error('googleCallback error:', err);
-    const fallbackUrl = (process.env.CLIENT_URL || 'http://localhost:8080').replace(/\/+$/, '');
-    res.redirect(`${fallbackUrl}/login?error=server_error`);
+    res.redirect(`${primaryClientUrl}/login?error=server_error`);
   }
 };

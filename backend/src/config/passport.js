@@ -3,6 +3,13 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { User } = require('../models');
 
+// Fail fast in production if Google OAuth credentials are not configured.
+if (process.env.NODE_ENV === 'production') {
+  if (!process.env.GOOGLE_CLIENT_ID) throw new Error('[passport] Missing required environment variable: GOOGLE_CLIENT_ID');
+  if (!process.env.GOOGLE_CLIENT_SECRET) throw new Error('[passport] Missing required environment variable: GOOGLE_CLIENT_SECRET');
+}
+
+// Fallback placeholders are intentional for development (devs may not configure OAuth locally).
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'placeholder_client_id';
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || 'placeholder_client_secret';
 

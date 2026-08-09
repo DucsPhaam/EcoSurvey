@@ -12,6 +12,9 @@ jest.mock('../src/services/emailService', () => ({
   sendEmailVerificationEmail: jest.fn(),
 }));
 
+process.env.NODE_ENV = 'test';
+process.env.JWT_SECRET = 'test_jwt_secret_very_long_value_for_testing_only';
+
 const testDb = new Sequelize({ dialect: 'sqlite', storage: ':memory:', logging: false });
 
 const User = testDb.define('users', {

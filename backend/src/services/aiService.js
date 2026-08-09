@@ -1,5 +1,6 @@
 // AI service: Integrates Gemini AI API via OpenRouter for FAQ chatbot assistance and proof report summarization.
 const logger = require('../utils/logger');
+const { primaryClientUrl } = require('../config/clientOrigins');
 
 const apiKey = process.env.OPENROUTER_API_KEY;
 
@@ -14,7 +15,7 @@ async function callOpenRouter(prompt) {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${apiKey}`,
-      "HTTP-Referer": process.env.CLIENT_URL || "http://localhost:3000",
+      "HTTP-Referer": primaryClientUrl,
       "X-Title": "EcoSurvey",
       "Content-Type": "application/json"
     },

@@ -2,8 +2,16 @@
 const logger = require('../utils/logger');
 
 exports.verifyCaptcha = async (req, res, next) => {
-  if (!process.env.TURNSTILE_SECRET_KEY || process.env.NODE_ENV === 'test') {
-    logger.warn('CAPTCHA verification bypassed (either missing key or test env).');
+  if (process.env.NODE_ENV === 'test') {
+    return next();
+  }
+
+  if (!process.env.TURNSTILE_SECRET_KEY) {
+    if (process.env.NODE_ENV === 'production') {
+      logger.error('CAPTCHA verification failed: TURNSTILE_SECRET_KEY is missing in production.');
+      return res.status(500).json({ message: 'CAPTCHA service misconfigured.' });
+    }
+    logger.warn('CAPTCHA verification bypassed in development mode (missing TURNSTILE_SECRET_KEY).');
     return next();
   }
 

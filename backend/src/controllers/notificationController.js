@@ -1,22 +1,22 @@
 // Notification controller: Manages user notifications (paginated list, mark read, mark all read).
 const { Notification } = require('../models');
 const logger = require('../utils/logger');
+const { getPagination } = require('../utils/pagination');
 
 exports.getNotifications = async (req, res) => {
   try {
-    const { page = 1, limit = 20 } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { page, limit, offset } = getPagination(req.query, 20);
 
     const { count, rows } = await Notification.findAndCountAll({
       where: { user_id: req.user.id },
       order: [['created_at', 'DESC']],
-      limit: parseInt(limit),
+      limit,
       offset,
     });
 
     const unread = await Notification.count({ where: { user_id: req.user.id, is_read: false } });
 
-    res.json({ notifications: rows, total: count, unread_count: unread, page: parseInt(page), totalPages: Math.ceil(count / parseInt(limit)) });
+    res.json({ notifications: rows, total: count, unread_count: unread, page, totalPages: Math.ceil(count / limit) });
   } catch (err) {
     logger.error('getNotifications error:', err);
     res.status(500).json({ message: 'Failed to fetch notifications.' });

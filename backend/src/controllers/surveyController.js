@@ -4,13 +4,14 @@ const { sequelize } = require('../config/database');
 const { Survey, Question, SurveyResponse, SurveyAnswer, PointLog, Notification, User } = require('../models');
 const logger = require('../utils/logger');
 const badgeService = require('../services/badgeService');
+const { getPagination } = require('../utils/pagination');
 
 // Retrieves list of open published surveys for students/staff.
 exports.getSurveys = async (req, res) => {
   try {
     const userRole = req.user.role;
     const userId = req.user.id;
-    const { page = 1, limit = 12, search } = req.query;
+    const { search } = req.query;
 
     const where = {
       status: 'Published',
@@ -19,7 +20,7 @@ exports.getSurveys = async (req, res) => {
     };
     if (search) where.title = { [Op.like]: `%${search}%` };
 
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { page, limit, offset } = getPagination(req.query, 12);
     const { count, rows: surveys } = await Survey.findAndCountAll({
       where,
       include: [
@@ -27,7 +28,7 @@ exports.getSurveys = async (req, res) => {
         { model: User, as: 'creator', attributes: ['full_name'] },
       ],
       order: [['created_at', 'DESC']],
-      limit: parseInt(limit),
+      limit,
       offset,
       distinct: true,
     });
@@ -45,7 +46,7 @@ exports.getSurveys = async (req, res) => {
       is_completed: completedSet.has(s.id),
     }));
 
-    res.json({ surveys: data, total: count, page: parseInt(page), totalPages: Math.ceil(count / parseInt(limit)) });
+    res.json({ surveys: data, total: count, page, totalPages: Math.ceil(count / limit) });
   } catch (err) {
     logger.error('getSurveys error:', err);
     res.status(500).json({ message: 'Failed to fetch surveys.' });
@@ -182,12 +183,12 @@ exports.submitSurvey = async (req, res) => {
 // Retrieves list of all surveys.
 exports.adminGetSurveys = async (req, res) => {
   try {
-    const { status, search, page = 1, limit = 10 } = req.query;
+    const { status, search } = req.query;
     const where = {};
     if (status) where.status = status;
     if (search) where.title = { [Op.like]: `%${search}%` };
 
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { page, limit, offset } = getPagination(req.query);
     const { count, rows } = await Survey.findAndCountAll({
       where,
       include: [
@@ -196,7 +197,7 @@ exports.adminGetSurveys = async (req, res) => {
         { model: Question, as: 'questions', attributes: ['id'], required: false },
       ],
       order: [['created_at', 'DESC']],
-      limit: parseInt(limit),
+      limit,
       offset,
       distinct: true,
     });
@@ -207,7 +208,7 @@ exports.adminGetSurveys = async (req, res) => {
       question_count: s.questions?.length || 0,
     }));
 
-    res.json({ surveys: data, total: count, page: parseInt(page), totalPages: Math.ceil(count / parseInt(limit)) });
+    res.json({ surveys: data, total: count, page, totalPages: Math.ceil(count / limit) });
   } catch (err) {
     logger.error('adminGetSurveys error:', err);
     res.status(500).json({ message: 'Failed to fetch surveys.' });
@@ -525,8 +526,7 @@ exports.reorderQuestions = async (req, res) => {
 // Retrieves anonymous survey response list.
 exports.getSurveyResponses = async (req, res) => {
   try {
-    const { page = 1, limit = 20 } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { page, limit, offset } = getPagination(req.query, 20);
 
     const { count, rows } = await SurveyResponse.findAndCountAll({
       where: { survey_id: req.params.id },
@@ -535,7 +535,7 @@ exports.getSurveyResponses = async (req, res) => {
         { model: SurveyAnswer, as: 'answers', include: [{ model: Question, as: 'question' }] },
       ],
       order: [['submitted_at', 'DESC']],
-      limit: parseInt(limit),
+      limit,
       offset,
     });
 
@@ -550,7 +550,7 @@ exports.getSurveyResponses = async (req, res) => {
       };
     });
 
-    res.json({ responses: anonymousResponses, total: count, page: parseInt(page), totalPages: Math.ceil(count / parseInt(limit)) });
+    res.json({ responses: anonymousResponses, total: count, page, totalPages: Math.ceil(count / limit) });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch survey responses.' });
   }

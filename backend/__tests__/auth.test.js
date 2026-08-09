@@ -7,7 +7,7 @@ process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test_jwt_secret_very_long_value_for_testing_only';
 process.env.JWT_REFRESH_SECRET = 'test_refresh_secret_for_testing_only';
 process.env.JWT_EXPIRES_IN = '15m';
-process.env.CLIENT_URL = 'http://localhost:3000';
+process.env.CLIENT_URLS = 'http://localhost:3000';
 
 // ── In-memory "database" ──────────────────────────────────────
 const mockDB = { users: [], refreshTokens: [] };

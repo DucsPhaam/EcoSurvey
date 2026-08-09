@@ -2,6 +2,7 @@
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const logger = require('../utils/logger');
+const { allowedOrigins } = require('../config/clientOrigins');
 
 let io;
 const userSockets = new Map();
@@ -9,7 +10,7 @@ const userSockets = new Map();
 exports.init = (server) => {
   io = new Server(server, {
     cors: {
-      origin: process.env.CLIENT_URL || 'http://localhost:3000',
+      origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
       methods: ['GET', 'POST'],
       credentials: true,
     },
@@ -22,7 +23,7 @@ exports.init = (server) => {
     }
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'change_me_in_production_very_long_secret');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
       socket.user = decoded;
       next();
     } catch (err) {
