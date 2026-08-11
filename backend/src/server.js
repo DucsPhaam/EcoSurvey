@@ -84,6 +84,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 // ── Router Mounts ─────────────────────────────────────────────
 app.use('/api/auth',           authRoutes);
+app.use('/auth',               authRoutes); // Fallback alias for direct calls / OAuth callbacks missing /api prefix
 app.use('/api/admin',          adminRoutes);
 app.use('/api/surveys',        surveyRoutes);
 app.use('/api/participations', participationRoutes);
