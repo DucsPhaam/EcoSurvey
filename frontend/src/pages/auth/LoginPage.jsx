@@ -54,6 +54,9 @@ export default function LoginPage() {
     }
   }
 
+  const rawApiUrl = (import.meta.env.VITE_API_URL || '/api').replace(/\/+$/, '')
+  const googleAuthUrl = rawApiUrl.endsWith('/api') ? `${rawApiUrl}/auth/google` : `${rawApiUrl}/api/auth/google`
+
   return (
     <div className="min-h-screen bg-earth-paper grid lg:grid-cols-2">
       {/* Left brutalist panel */}
