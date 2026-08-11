@@ -25,16 +25,38 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const restoreSession = async () => {
-      if (!accessToken) { setLoading(false); return }
+      const storedToken = localStorage.getItem('ecosurvey_token')
+      if (!storedToken) {
+        setLoading(false)
+        return
+      }
+
       try {
-        const res = await authService.refresh()
-        setAccessToken(res.data.accessToken)
+        api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`
+        const res = await userService.getMe()
+        if (res.data?.user) {
+          setUser(res.data.user)
+          localStorage.setItem('ecosurvey_user', JSON.stringify(res.data.user))
+          setLoading(false)
+          return
+        }
       } catch {
-        setUser(null)
-        setAccessToken(null)
-        localStorage.removeItem('ecosurvey_user')
-        localStorage.removeItem('ecosurvey_token')
-        authService.logout().catch(() => {})
+        try {
+          const res = await authService.refresh()
+          const newToken = res.data.accessToken
+          setAccessToken(newToken)
+          api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
+          const userRes = await userService.getMe()
+          if (userRes.data?.user) {
+            setUser(userRes.data.user)
+            localStorage.setItem('ecosurvey_user', JSON.stringify(userRes.data.user))
+          }
+        } catch {
+          setUser(null)
+          setAccessToken(null)
+          localStorage.removeItem('ecosurvey_user')
+          localStorage.removeItem('ecosurvey_token')
+        }
       } finally {
         setLoading(false)
       }
