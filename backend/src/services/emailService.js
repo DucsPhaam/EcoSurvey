@@ -1,34 +1,50 @@
 // Email service: Sends automated emails (registration, password reset, account approval, proof status) via Nodemailer.
 const logger = require('../utils/logger');
 
-let transporter = null;
+const getTransporter = () => {
+  const host = process.env.SMTP_HOST;
+  const user = process.env.SMTP_USER;
+  const rawPass = process.env.SMTP_PASS;
 
-(async () => {
-  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-    try {
-      const nodemailer = require('nodemailer');
-      transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT || '587', 10),
-        secure: process.env.SMTP_PORT === '465',
-        auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-      });
-      await transporter.verify();
-      logger.info('✅ Email transporter ready');
-    } catch (e) {
-      logger.warn('⚠️  Email transporter failed. Emails will be logged only:', e.message);
-      transporter = null;
-    }
-  } else {
-    logger.warn('⚠️  SMTP not configured. Emails will be logged to console (Phase 1 mode).');
+  if (!host || !user || !rawPass) {
+    return null;
   }
-})();
+
+  const nodemailer = require('nodemailer');
+  const port = parseInt(process.env.SMTP_PORT || '587', 10);
+  const pass = rawPass.replace(/\s+/g, ''); // Strip spaces from Gmail App Password
+
+  return nodemailer.createTransport({
+    host: host.trim(),
+    port: port,
+    secure: port === 465,
+    auth: {
+      user: user.trim(),
+      pass: pass,
+    },
+    tls: {
+      rejectUnauthorized: false,
+    },
+    connectionTimeout: 10000,
+  });
+};
 
 const sendMail = async ({ to, subject, html }) => {
+  const transporter = getTransporter();
   if (transporter) {
-    await transporter.sendMail({ from: process.env.EMAIL_FROM || 'EcoSurvey <noreply@ecosurvey.edu.vn>', to, subject, html });
+    try {
+      await transporter.sendMail({
+        from: process.env.EMAIL_FROM || 'EcoSurvey <noreply@ecosurvey.edu.vn>',
+        to,
+        subject,
+        html,
+      });
+      logger.info(`📧 Email sent successfully to ${to} (Subject: "${subject}")`);
+    } catch (err) {
+      logger.error(`❌ Failed to send email to ${to}:`, err.message);
+    }
   } else {
-    logger.info(`[EMAIL LOG] To: ${to} | Subject: ${subject}`);
+    logger.info(`[EMAIL LOG - SMTP NOT CONFIGURED] To: ${to} | Subject: ${subject}`);
   }
 };
 
