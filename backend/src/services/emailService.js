@@ -13,28 +13,42 @@ const getTransporter = () => {
   const nodemailer = require('nodemailer');
   const port = parseInt(process.env.SMTP_PORT || '587', 10);
   const pass = rawPass.replace(/\s+/g, ''); // Strip spaces from Gmail App Password
+  const cleanHost = host.trim();
+  const cleanUser = user.trim();
+
+  if (cleanHost.includes('gmail')) {
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: cleanUser,
+        pass: pass,
+      },
+    });
+  }
 
   return nodemailer.createTransport({
-    host: host.trim(),
+    host: cleanHost,
     port: port,
     secure: port === 465,
     auth: {
-      user: user.trim(),
+      user: cleanUser,
       pass: pass,
     },
     tls: {
       rejectUnauthorized: false,
     },
-    connectionTimeout: 10000,
+    connectionTimeout: 15000,
   });
 };
 
 const sendMail = async ({ to, subject, html }) => {
   const transporter = getTransporter();
   if (transporter) {
+    const smtpUser = (process.env.SMTP_USER || '').trim();
+    const fromAddress = process.env.EMAIL_FROM || (smtpUser ? `EcoSurvey <${smtpUser}>` : 'EcoSurvey <noreply@ecosurvey.edu.vn>');
     try {
       await transporter.sendMail({
-        from: process.env.EMAIL_FROM || 'EcoSurvey <noreply@ecosurvey.edu.vn>',
+        from: fromAddress,
         to,
         subject,
         html,
