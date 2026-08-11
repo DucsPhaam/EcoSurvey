@@ -13,12 +13,17 @@ if (process.env.NODE_ENV === 'production') {
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'placeholder_client_id';
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || 'placeholder_client_secret';
 
+let callbackURL = process.env.GOOGLE_CALLBACK_URL;
+if (!callbackURL || callbackURL.includes('CLIENT_URLS=') || (!callbackURL.startsWith('http://') && !callbackURL.startsWith('https://') && !callbackURL.startsWith('/'))) {
+  callbackURL = '/api/auth/google/callback';
+}
+
 passport.use(
   new GoogleStrategy(
     {
       clientID: GOOGLE_CLIENT_ID,
       clientSecret: GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.GOOGLE_CALLBACK_URL || '/api/auth/google/callback',
+      callbackURL: callbackURL,
       proxy: true,
     },
     async (accessToken, refreshToken, profile, done) => {
