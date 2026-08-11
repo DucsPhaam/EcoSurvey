@@ -6,7 +6,7 @@ const { Op } = require('sequelize');
 const { User, RefreshToken } = require('../models');
 const emailService = require('../services/emailService');
 const logger = require('../utils/logger');
-const { primaryClientUrl } = require('../config/clientOrigins');
+const { allowedOrigins, primaryClientUrl } = require('../config/clientOrigins');
 
 const SALT_ROUNDS = 10;
 const ACCESS_EXPIRES = process.env.JWT_EXPIRES_IN || '15m';
@@ -320,23 +320,36 @@ exports.googleCallback = async (req, res) => {
   try {
     const user = req.user;
 
+    let targetClientUrl = primaryClientUrl;
+    if (req.query.state) {
+      try {
+        const refererUrl = Buffer.from(req.query.state, 'base64url').toString('utf8');
+        const matched = allowedOrigins.find(origin => refererUrl.startsWith(origin));
+        if (matched) {
+          targetClientUrl = matched;
+        }
+      } catch (e) {
+        // fallback to primaryClientUrl
+      }
+    }
+
     if (user.isNewGoogleUser) {
       const params = new URLSearchParams({
         email: user.email || '',
         name: user.full_name || '',
         google_id: user.google_id || ''
       });
-      return res.redirect(`${primaryClientUrl}/register?${params.toString()}`);
+      return res.redirect(`${targetClientUrl}/register?${params.toString()}`);
     }
 
     if (user.status === 'Pending') {
-      return res.redirect(`${primaryClientUrl}/login?error=pending`);
+      return res.redirect(`${targetClientUrl}/login?error=pending`);
     }
     if (user.status === 'Rejected') {
-      return res.redirect(`${primaryClientUrl}/login?error=rejected`);
+      return res.redirect(`${targetClientUrl}/login?error=rejected`);
     }
     if (user.status === 'Deactivated') {
-      return res.redirect(`${primaryClientUrl}/login?error=deactivated`);
+      return res.redirect(`${targetClientUrl}/login?error=deactivated`);
     }
 
     const accessToken = signAccessToken(user);
@@ -350,7 +363,7 @@ exports.googleCallback = async (req, res) => {
       maxAge: REFRESH_DAYS * 86400 * 1000,
     });
 
-    res.redirect(`${primaryClientUrl}/oauth/callback?accessToken=${accessToken}`);
+    res.redirect(`${targetClientUrl}/oauth/callback?accessToken=${accessToken}`);
   } catch (err) {
     logger.error('googleCallback error:', err);
     res.redirect(`${primaryClientUrl}/login?error=server_error`);

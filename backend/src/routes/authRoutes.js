@@ -37,7 +37,18 @@ router.post('/send-verification', authenticate, authCtrl.sendVerificationEmail);
 router.get('/verify-email',       authCtrl.verifyEmail);
 
 const passport = require('passport');
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'], prompt: 'select_account' }));
+router.get('/google', (req, res, next) => {
+  const referer = req.headers.referer || '';
+  let state = undefined;
+  if (referer) {
+    state = Buffer.from(referer).toString('base64url');
+  }
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    prompt: 'select_account',
+    state: state,
+  })(req, res, next);
+});
 router.get('/google/callback', passport.authenticate('google', { session: false, failureRedirect: `${primaryClientUrl}/login?error=auth_failed` }), authCtrl.googleCallback);
 
 module.exports = router;
