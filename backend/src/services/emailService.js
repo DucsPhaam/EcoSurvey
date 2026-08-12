@@ -29,13 +29,20 @@ const getTransporter = () => {
   const port = parseInt(process.env.SMTP_PORT || '587', 10);
   const pass = rawPass.replace(/\s+/g, ''); // Strip spaces from Gmail App Password
 
-  if (host.includes('gmail') || user.endsWith('@gmail.com')) {
+  // Google Workspace (@aptechlearning.edu.vn) & standard Gmail support
+  if (host.includes('gmail') || user.endsWith('@gmail.com') || user.includes('aptech')) {
     return nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: port,
+      secure: port === 465, // true for 465, false for 587
       auth: {
         user: user,
         pass: pass,
       },
+      tls: {
+        rejectUnauthorized: false,
+      },
+      connectionTimeout: 15000,
     });
   }
 
@@ -64,15 +71,16 @@ const sendMail = async ({ to, subject, html }) => {
     }
     const fromAddress = process.env.EMAIL_FROM || (smtpUser ? `EcoSurvey <${smtpUser}>` : 'EcoSurvey <noreply@ecosurvey.edu.vn>');
     try {
+      logger.info(`📧 Attempting to send email to "${to}" (Subject: "${subject}") from "${fromAddress}"...`);
       await transporter.sendMail({
         from: fromAddress,
         to,
         subject,
         html,
       });
-      logger.info(`📧 Email sent successfully to ${to} (Subject: "${subject}")`);
+      logger.info(`✅ Email sent successfully to "${to}" (Subject: "${subject}")`);
     } catch (err) {
-      logger.error(`❌ Failed to send email to ${to}:`, err.message);
+      logger.error(`❌ Failed to send email to "${to}":`, err.stack || err.message);
     }
   } else {
     logger.info(`[EMAIL LOG - SMTP NOT CONFIGURED] To: ${to} | Subject: ${subject}`);
