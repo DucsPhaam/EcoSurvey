@@ -17,7 +17,7 @@ DROP TABLE IF EXISTS `user_badges`, `notifications`, `point_logs`, `participatio
 
 -- ─────────────────────────────────────────────────────────────
 -- TABLE: users
--- Fix #9: Thêm 'Deactivated' vào enum status (soft-delete)
+-- Fix #9: Thêm 'Locked', 'Deactivated' vào enum status
 -- Fix #17: Xóa duplicate unique keys (username_2, email_2, ...)
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE `users` (
@@ -30,7 +30,7 @@ CREATE TABLE `users` (
   `google_id`        VARCHAR(255)    COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `role`             ENUM('Student','Staff','Admin')
                                      COLLATE utf8mb4_unicode_ci DEFAULT 'Student',
-  `status`           ENUM('Pending','Approved','Rejected','Deactivated')
+  `status`           ENUM('Pending','Approved','Rejected','Locked','Deactivated')
                                      COLLATE utf8mb4_unicode_ci DEFAULT 'Pending',
   `student_staff_id` VARCHAR(30)     COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `class_name`       VARCHAR(100)    COLLATE utf8mb4_unicode_ci DEFAULT NULL,
