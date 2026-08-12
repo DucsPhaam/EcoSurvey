@@ -1,7 +1,7 @@
 // Email service: Sends automated emails (registration, password reset, account approval, proof status) via Nodemailer.
 const logger = require('../utils/logger');
 
-const getTransporter = () => {
+const getTransporter = (useFallback = false) => {
   const host = process.env.SMTP_HOST;
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
@@ -11,7 +11,22 @@ const getTransporter = () => {
   }
 
   const nodemailer = require('nodemailer');
+  const cleanPass = pass.replace(/\s+/g, '');
   const port = parseInt(process.env.SMTP_PORT || '587', 10);
+
+  // If fallback requested or host is Gmail on port 587 (which Railway often blocks/times out), use built-in 'gmail' service (port 465 SSL)
+  if (useFallback || (host.includes('gmail') && port === 587)) {
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user,
+        pass: cleanPass,
+      },
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 15000,
+    });
+  }
 
   return nodemailer.createTransport({
     host,
@@ -19,11 +34,11 @@ const getTransporter = () => {
     secure: port === 465,
     auth: {
       user,
-      pass: pass.replace(/\s+/g, ''),
+      pass: cleanPass,
     },
-    connectionTimeout: 30000,
-    greetingTimeout: 30000,
-    socketTimeout: 30000,
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 15000,
   });
 };
 
@@ -36,7 +51,7 @@ const verifySmtpConnection = async () => {
     nodeEnv: process.env.NODE_ENV,
   });
 
-  const transporter = getTransporter();
+  let transporter = getTransporter(false);
 
   if (!transporter) {
     logger.error('[EMAIL SERVICE] SMTP transporter is null');
@@ -48,13 +63,21 @@ const verifySmtpConnection = async () => {
     logger.info('[EMAIL SERVICE] SMTP VERIFY SUCCESS');
     return true;
   } catch (error) {
-    logger.error('[EMAIL SERVICE] SMTP VERIFY FAILED', {
-      code: error.code,
-      responseCode: error.responseCode,
-      command: error.command,
-      message: error.message,
-    });
-    return false;
+    logger.warn(`[EMAIL SERVICE] Direct SMTP verify failed (${error.message}). Trying Gmail service fallback...`);
+    try {
+      transporter = getTransporter(true);
+      await transporter.verify();
+      logger.info('[EMAIL SERVICE] SMTP VERIFY SUCCESS (via Fallback)');
+      return true;
+    } catch (fallbackErr) {
+      logger.error('[EMAIL SERVICE] SMTP VERIFY FAILED', {
+        code: fallbackErr.code || error.code,
+        responseCode: fallbackErr.responseCode || error.responseCode,
+        command: fallbackErr.command || error.command,
+        message: fallbackErr.message || error.message,
+      });
+      return false;
+    }
   }
 };
 
@@ -76,7 +99,7 @@ const getFromAddress = () => {
 };
 
 const sendMail = async ({ to, subject, html }) => {
-  const transporter = getTransporter();
+  let transporter = getTransporter(false);
   if (!transporter) {
     logger.info(`[EMAIL LOG - SMTP NOT CONFIGURED] To: ${to} | Subject: ${subject}`);
     return;
@@ -93,6 +116,29 @@ const sendMail = async ({ to, subject, html }) => {
     });
     logger.info(`[EMAIL SERVICE] SMTP SEND SUCCESS to "${to}" (Subject: "${subject}")`);
   } catch (error) {
+    if (error.code === 'ETIMEDOUT' || (error.message && error.message.toLowerCase().includes('timeout'))) {
+      logger.warn(`[EMAIL SERVICE] Primary SMTP timed out (${error.message}). Retrying via Gmail service fallback...`);
+      try {
+        const fallbackTransporter = getTransporter(true);
+        await fallbackTransporter.sendMail({
+          from: fromAddress,
+          to,
+          subject,
+          html,
+        });
+        logger.info(`[EMAIL SERVICE] SMTP SEND SUCCESS (via Fallback) to "${to}" (Subject: "${subject}")`);
+        return;
+      } catch (fallbackErr) {
+        logger.error('[EMAIL SERVICE] SMTP SEND FAILED (Fallback)', {
+          code: fallbackErr.code,
+          responseCode: fallbackErr.responseCode,
+          command: fallbackErr.command,
+          message: fallbackErr.message,
+        });
+        throw fallbackErr;
+      }
+    }
+
     logger.error('[EMAIL SERVICE] SMTP SEND FAILED', {
       code: error.code,
       responseCode: error.responseCode,
