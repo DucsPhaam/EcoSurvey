@@ -119,35 +119,51 @@ exports.importUsers = async (req, res) => {
   }
 };
 
-// Approves (`Approved`) or rejects (`Rejected`) user registration requests.
+// Approves (`Approved`), rejects (`Rejected`), or locks (`Locked`) user accounts.
 exports.updateUserStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status, reject_reason } = req.body;
 
-    if (!['Approved', 'Rejected'].includes(status)) {
-      return res.status(400).json({ message: 'Invalid status. Must be Approved or Rejected.' });
+    if (!['Approved', 'Rejected', 'Locked'].includes(status)) {
+      return res.status(400).json({ message: 'Trạng thái không hợp lệ. Phải là Approved, Rejected hoặc Locked.' });
     }
 
     const user = await User.findByPk(id, { attributes: ['id', 'full_name', 'email', 'status', 'role'] });
     if (!user) return res.status(404).json({ message: 'User not found.' });
     if (user.role === 'Admin') return res.status(403).json({ message: 'Cannot change admin account status this way.' });
 
-    await user.update({ status, reject_reason: status === 'Rejected' ? reject_reason : null });
+    const isReasonNeeded = status === 'Rejected' || status === 'Locked';
+    await user.update({
+      status,
+      reject_reason: isReasonNeeded ? (reject_reason || null) : null
+    });
+
+    let notifTitle = '';
+    let notifMessage = '';
+
+    if (status === 'Approved') {
+      notifTitle = 'Tài khoản đã được phê duyệt';
+      notifMessage = 'Tài khoản của bạn đã được Quản trị viên phê duyệt thành công. Bạn hiện có thể đăng nhập và trải nghiệm toàn bộ tính năng của EcoSurvey.';
+    } else if (status === 'Locked') {
+      notifTitle = 'Tài khoản đã bị khóa';
+      notifMessage = `Tài khoản của bạn đã bị Quản trị viên khóa. ${reject_reason ? 'Lý do: ' + reject_reason : 'Vui lòng liên hệ Quản trị viên để biết thêm chi tiết.'}`;
+    } else {
+      notifTitle = 'Đơn đăng ký bị từ chối';
+      notifMessage = `Yêu cầu đăng ký tài khoản của bạn đã bị từ chối. ${reject_reason ? 'Lý do: ' + reject_reason : 'Vui lòng liên hệ Quản trị viên để biết thêm chi tiết.'}`;
+    }
 
     await Notification.create({
       user_id:        user.id,
-      title:          status === 'Approved' ? 'Account Approved' : 'Account Rejected',
-      message:        status === 'Approved'
-        ? 'Your account has been approved. You can now log in.'
-        : `Your account registration was rejected. ${reject_reason ? 'Reason: ' + reject_reason : 'Please contact Admin for details.'}`,
+      title:          notifTitle,
+      message:        notifMessage,
       reference_type: 'user',
       reference_id:   user.id,
     });
 
     emailService.sendStatusUpdateEmail(user.email, user.full_name, status, reject_reason).catch(logger.error);
 
-    res.json({ message: `Account ${status === 'Approved' ? 'approved' : 'rejected'} successfully.`, user });
+    res.json({ message: `Cập nhật trạng thái tài khoản thành ${status} thành công.`, user });
   } catch (err) {
     logger.error('updateUserStatus error:', err);
     res.status(500).json({ message: 'Failed to update user status.' });

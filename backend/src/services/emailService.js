@@ -2,36 +2,49 @@
 const logger = require('../utils/logger');
 
 const getTransporter = () => {
-  const host = process.env.SMTP_HOST;
-  const user = process.env.SMTP_USER;
+  const host = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
+  let user = (process.env.SMTP_USER || '').trim();
   const rawPass = process.env.SMTP_PASS;
 
-  if (!host || !user || !rawPass) {
+  // Fallback: If SMTP_USER is missing on Railway, extract email from EMAIL_FROM
+  if (!user && process.env.EMAIL_FROM) {
+    const fromStr = process.env.EMAIL_FROM.trim();
+    const match = fromStr.match(/<([^>]+)>/) || fromStr.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+    if (match) {
+      user = match[1] || match[0];
+    } else if (fromStr.includes('@')) {
+      user = fromStr;
+    }
+  }
+
+  if (!user || !rawPass) {
+    const missing = [];
+    if (!user) missing.push('SMTP_USER / EMAIL_FROM');
+    if (!rawPass) missing.push('SMTP_PASS');
+    logger.warn(`⚠️ [EMAIL SERVICE] SMTP non-functional. Missing required variable(s): ${missing.join(', ')}. Please set SMTP_USER and SMTP_PASS in Railway environment variables.`);
     return null;
   }
 
   const nodemailer = require('nodemailer');
   const port = parseInt(process.env.SMTP_PORT || '587', 10);
   const pass = rawPass.replace(/\s+/g, ''); // Strip spaces from Gmail App Password
-  const cleanHost = host.trim();
-  const cleanUser = user.trim();
 
-  if (cleanHost.includes('gmail')) {
+  if (host.includes('gmail') || user.endsWith('@gmail.com')) {
     return nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: cleanUser,
+        user: user,
         pass: pass,
       },
     });
   }
 
   return nodemailer.createTransport({
-    host: cleanHost,
+    host: host,
     port: port,
     secure: port === 465,
     auth: {
-      user: cleanUser,
+      user: user,
       pass: pass,
     },
     tls: {
@@ -44,7 +57,11 @@ const getTransporter = () => {
 const sendMail = async ({ to, subject, html }) => {
   const transporter = getTransporter();
   if (transporter) {
-    const smtpUser = (process.env.SMTP_USER || '').trim();
+    let smtpUser = (process.env.SMTP_USER || '').trim();
+    if (!smtpUser && process.env.EMAIL_FROM) {
+      const match = process.env.EMAIL_FROM.match(/<([^>]+)>/) || process.env.EMAIL_FROM.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+      if (match) smtpUser = match[1] || match[0];
+    }
     const fromAddress = process.env.EMAIL_FROM || (smtpUser ? `EcoSurvey <${smtpUser}>` : 'EcoSurvey <noreply@ecosurvey.edu.vn>');
     try {
       await transporter.sendMail({
@@ -74,18 +91,32 @@ exports.sendRegistrationEmail = async (email, fullName) => {
 };
 
 exports.sendStatusUpdateEmail = async (email, fullName, status, reason) => {
-  const approved = status === 'Approved';
-  await sendMail({
-    to: email,
-    subject: `EcoSurvey — Account ${approved ? 'Approved' : 'Rejected'}`,
-    html: `<h2>Hello, ${fullName}</h2>
-           ${approved
-             ? `<p>🎉 Your EcoSurvey account has been <strong>approved</strong>! You can now log in.</p>`
-             : `<p>Unfortunately, your EcoSurvey account registration was <strong>rejected</strong>.</p>
-                ${reason ? `<p>Reason: ${reason}</p>` : ''}
-                <p>Please contact Admin if you believe this is a mistake.</p>`}
-           <br><p>— EcoSurvey Team</p>`,
-  });
+  let subject = '';
+  let html = '';
+
+  if (status === 'Approved') {
+    subject = 'EcoSurvey — Tài khoản của bạn đã được phê duyệt thành công';
+    html = `<h2>Xin chào ${fullName},</h2>
+            <p>🎉 Chúc mừng! Tài khoản EcoSurvey của bạn đã được Quản trị viên <strong>phê duyệt thành công</strong>.</p>
+            <p>Bây giờ bạn có thể đăng nhập vào hệ thống để bắt đầu tham gia các khảo sát nhận thức môi trường và tích điểm thưởng.</p>
+            <br><p>— EcoSurvey Team</p>`;
+  } else if (status === 'Locked') {
+    subject = 'EcoSurvey — Thông báo khóa tài khoản';
+    html = `<h2>Xin chào ${fullName},</h2>
+            <p>⚠️ Tài khoản EcoSurvey của bạn đã bị <strong>khóa</strong> bởi Quản trị viên.</p>
+            ${reason ? `<p><strong>Lý do:</strong> ${reason}</p>` : ''}
+            <p>Nếu bạn cho rằng đây là sự nhầm lẫn, vui lòng liên hệ với Quản trị viên để được hỗ trợ.</p>
+            <br><p>— EcoSurvey Team</p>`;
+  } else {
+    subject = 'EcoSurvey — Thông báo từ chối đăng ký tài khoản';
+    html = `<h2>Xin chào ${fullName},</h2>
+            <p>Rất tiếc, yêu cầu đăng ký tài khoản EcoSurvey của bạn đã <strong>bị từ chối</strong>.</p>
+            ${reason ? `<p><strong>Lý do:</strong> ${reason}</p>` : ''}
+            <p>Vui lòng liên hệ với Quản trị viên nếu bạn có thắc mắc hoặc cần giải đáp.</p>
+            <br><p>— EcoSurvey Team</p>`;
+  }
+
+  await sendMail({ to: email, subject, html });
 };
 
 exports.sendParticipationReviewEmail = async (email, fullName, eventName, status, reason) => {

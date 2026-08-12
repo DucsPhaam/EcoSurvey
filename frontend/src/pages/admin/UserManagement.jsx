@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Search, Check, X, Trash2, Filter, Users, ChevronDown, Upload } from 'lucide-react'
+import { Search, Check, X, Trash2, Filter, Users, ChevronDown, Upload, Lock, Unlock } from 'lucide-react'
 import { adminService } from '../../services/adminService'
 import { SpinnerPage } from '../../components/ui/Spinner'
 import Pagination from '../../components/ui/Pagination'
@@ -8,7 +8,13 @@ import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 
 const ROLE_COLORS   = { Student: 'badge-published', Staff: 'badge-pending', Admin: 'badge-approved' }
-const STATUS_COLORS = { Pending: 'badge-pending', Approved: 'badge-approved', Rejected: 'badge-rejected' }
+const STATUS_COLORS = { 
+  Pending: 'badge-pending', 
+  Approved: 'badge-approved', 
+  Rejected: 'badge-rejected',
+  Locked: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 font-medium px-2.5 py-0.5 rounded-full text-xs inline-flex items-center gap-1',
+  Deactivated: 'badge-rejected'
+}
 
 export default function UserManagement() {
   const { t } = useTranslation('admin')
@@ -23,9 +29,11 @@ export default function UserManagement() {
 
   const [rejectModal, setRejectModal] = useState(null) // { user }
   const [rejectReason, setRejectReason] = useState('')
-  const [deleteModal, setDeleteModal]   = useState(null)
+  const [lockModal, setLockModal]     = useState(null) // { user }
+  const [lockReason, setLockReason]   = useState('')
+  const [deleteModal, setDeleteModal] = useState(null)
   const [importModalOpen, setImportModalOpen] = useState(false)
-  const [importFile, setImportFile] = useState(null)
+  const [importFile, setImportFile]   = useState(null)
   const [importErrors, setImportErrors] = useState([])
   const [actionLoading, setActionLoading] = useState(false)
 
@@ -47,8 +55,12 @@ export default function UserManagement() {
     setActionLoading(true)
     try {
       await adminService.updateUserStatus(userId, { status, reject_reason: reason || undefined })
-      toast.success(status === 'Approved' ? t('userManagement.approved') : t('userManagement.rejected'))
+      if (status === 'Approved') toast.success(t('userManagement.approved'))
+      else if (status === 'Locked') toast.success(t('userManagement.locked'))
+      else if (status === 'Rejected') toast.success(t('userManagement.rejected'))
+      
       setRejectModal(null); setRejectReason('')
+      setLockModal(null); setLockReason('')
       fetch(page)
     } catch (err) { toast.error(err.response?.data?.message || t('userManagement.actionFailed')) }
     finally { setActionLoading(false) }
@@ -115,7 +127,10 @@ export default function UserManagement() {
         <select value={statusFilter} onChange={(e) => { setStatus(e.target.value); setPage(1) }}
           className="input py-2 w-auto">
           <option value="">{t('userManagement.allStatuses')}</option>
-          <option value="Pending">Pending</option><option value="Approved">Approved</option><option value="Rejected">Rejected</option>
+          <option value="Pending">{t('userManagement.statusPending', 'Pending')}</option>
+          <option value="Approved">{t('userManagement.statusApproved', 'Approved')}</option>
+          <option value="Rejected">{t('userManagement.statusRejected', 'Rejected')}</option>
+          <option value="Locked">{t('userManagement.statusLocked', 'Locked')}</option>
         </select>
         <button onClick={() => setImportModalOpen(true)} className="btn-secondary py-2 px-4 text-sm flex items-center gap-2">
           <Upload className="w-4 h-4" /> {t('userManagement.importExcel')}
@@ -151,7 +166,7 @@ export default function UserManagement() {
                       </div>
                     </td>
                     <td className="table-cell"><span className={ROLE_COLORS[u.role]}>{u.role}</span></td>
-                    <td className="table-cell"><span className={STATUS_COLORS[u.status]}>{u.status}</span></td>
+                    <td className="table-cell"><span className={STATUS_COLORS[u.status]}>{t(`userManagement.status${u.status}`, u.status)}</span></td>
                     <td className="table-cell text-xs">
                       <span>{u.student_staff_id || '—'}</span>
                       {u.class_name && <span className="text-gray-400 block">{u.class_name}</span>}
@@ -173,9 +188,15 @@ export default function UserManagement() {
                           </>
                         )}
                         {u.status === 'Approved' && u.role !== 'Admin' && (
-                          <button onClick={() => setRejectModal(u)}
-                            className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 hover:bg-amber-100 transition-colors text-xs font-medium px-2" title={t('userManagement.lock')}>
-                            {t('userManagement.lock')}
+                          <button onClick={() => setLockModal(u)}
+                            className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 hover:bg-amber-100 transition-colors text-xs font-medium px-2 flex items-center gap-1" title={t('userManagement.lock')}>
+                            <Lock className="w-3.5 h-3.5" /> {t('userManagement.lock')}
+                          </button>
+                        )}
+                        {u.status === 'Locked' && u.role !== 'Admin' && (
+                          <button onClick={() => updateStatus(u.id, 'Approved')}
+                            className="p-1.5 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 hover:bg-green-100 transition-colors text-xs font-medium px-2 flex items-center gap-1" title={t('userManagement.unlock')}>
+                            <Unlock className="w-3.5 h-3.5" /> {t('userManagement.unlock')}
                           </button>
                         )}
                         {u.role !== 'Admin' && (
@@ -207,6 +228,21 @@ export default function UserManagement() {
             className="btn-danger flex-1 flex items-center justify-center gap-2">
             {actionLoading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <X className="w-4 h-4" />}
             {t('userManagement.rejectBtn')}
+          </button>
+        </div>
+      </Modal>
+
+      {/* Lock modal */}
+      <Modal isOpen={!!lockModal} onClose={() => { setLockModal(null); setLockReason('') }} title={t('userManagement.lockTitle', { name: lockModal?.full_name })}>
+        <p className="text-sm text-gray-500 mb-4">{t('userManagement.lockDesc')}</p>
+        <textarea rows={3} value={lockReason} onChange={(e) => setLockReason(e.target.value)}
+          placeholder={t('userManagement.lockPlaceholder')} className="input mb-4" />
+        <div className="flex gap-3">
+          <button onClick={() => { setLockModal(null); setLockReason('') }} className="btn-secondary flex-1">{t('userManagement.cancel')}</button>
+          <button onClick={() => updateStatus(lockModal.id, 'Locked', lockReason)} disabled={actionLoading}
+            className="btn-danger flex-1 flex items-center justify-center gap-2">
+            {actionLoading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Lock className="w-4 h-4" />}
+            {t('userManagement.lockBtn')}
           </button>
         </div>
       </Modal>

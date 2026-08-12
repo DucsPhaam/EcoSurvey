@@ -24,8 +24,20 @@ export default function LoginPage() {
   useEffect(() => {
     if (user) {
       navigate(user.role === 'Admin' ? '/admin' : '/dashboard', { replace: true })
+      return
     }
-  }, [user, navigate])
+    const searchParams = new URLSearchParams(location.search)
+    const errParam = searchParams.get('error')
+    if (errParam === 'pending') {
+      toast.error(t('auth:error.pending', 'Tài khoản của bạn đang chờ Admin phê duyệt.'))
+    } else if (errParam === 'rejected') {
+      toast.error(t('auth:error.rejected', 'Yêu cầu đăng ký tài khoản đã bị từ chối.'))
+    } else if (errParam === 'locked') {
+      toast.error(t('auth:error.locked', 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên.'))
+    } else if (errParam === 'deactivated') {
+      toast.error(t('auth:error.deactivated', 'Tài khoản đã bị vô hiệu hóa.'))
+    }
+  }, [user, navigate, location.search])
 
   const handleSubmit = async (e) => {
     e.preventDefault()

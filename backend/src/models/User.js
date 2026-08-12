@@ -11,7 +11,7 @@ const User = sequelize.define('users', {
   auth_provider:    { type: DataTypes.ENUM('local', 'google'), defaultValue: 'local' },
   google_id:        { type: DataTypes.STRING(255), allowNull: true, unique: true },
   role:             { type: DataTypes.ENUM('Student','Staff','Admin'), defaultValue: 'Student' },
-  status:           { type: DataTypes.ENUM('Pending','Approved','Rejected','Deactivated'), defaultValue: 'Pending' },
+  status:           { type: DataTypes.ENUM('Pending','Approved','Rejected','Locked','Deactivated'), defaultValue: 'Pending' },
   student_staff_id: { type: DataTypes.STRING(30),  allowNull: true },
   class_name:       { type: DataTypes.STRING(100), allowNull: true },
   department:       { type: DataTypes.STRING(150), allowNull: true },

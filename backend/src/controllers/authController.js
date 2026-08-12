@@ -130,7 +130,9 @@ exports.login = async (req, res) => {
     if (!isMatch) return res.status(401).json({ message: 'Invalid credentials.' });
 
     if (user.status === 'Pending')  return res.status(403).json({ message: 'Your account is pending admin approval.', code: 'PENDING' });
-    if (user.status === 'Rejected') return res.status(403).json({ message: 'Your account has been rejected. Please contact Admin.', reason: user.reject_reason, code: 'REJECTED' });
+    if (user.status === 'Rejected') return res.status(403).json({ message: 'Your account registration was rejected. Please contact Admin.', reason: user.reject_reason, code: 'REJECTED' });
+    if (user.status === 'Locked')   return res.status(403).json({ message: 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên.', reason: user.reject_reason, code: 'LOCKED' });
+    if (user.status === 'Deactivated') return res.status(403).json({ message: 'Your account has been deactivated.', code: 'DEACTIVATED' });
 
     const accessToken  = signAccessToken(user);
     const refreshToken = await createRefreshToken(user.id);
@@ -347,6 +349,9 @@ exports.googleCallback = async (req, res) => {
     }
     if (user.status === 'Rejected') {
       return res.redirect(`${targetClientUrl}/login?error=rejected`);
+    }
+    if (user.status === 'Locked') {
+      return res.redirect(`${targetClientUrl}/login?error=locked`);
     }
     if (user.status === 'Deactivated') {
       return res.redirect(`${targetClientUrl}/login?error=deactivated`);

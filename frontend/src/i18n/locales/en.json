@@ -66,6 +66,12 @@
       "welcomeBack": "Welcome back",
       "loginFailed": "Login failed. Please try again."
     },
+    "error": {
+      "pending": "Your account is pending admin approval.",
+      "rejected": "Your registration request was rejected.",
+      "locked": "Your account has been locked. Please contact Admin.",
+      "deactivated": "Your account has been deactivated."
+    },
     "registerPage": {
       "title": "Create Account",
       "joinMovement": "join the movement",
@@ -550,8 +556,20 @@
       "importDesc2": "1: Full Name, 2: Username, 3: Email, 4: Password, 5: Role (Student/Staff/Admin), 6: ID, 7: Class, 8: Dept.",
       "importErrors": "Import Errors:",
       "importBtn": "Start Import",
-      "approved": "approved",
-      "rejected": "rejected"
+      "statusPending": "Pending",
+      "statusApproved": "Approved",
+      "statusRejected": "Rejected",
+      "statusLocked": "Locked",
+      "statusDeactivated": "Deactivated",
+      "unlock": "Unlock",
+      "lockTitle": "Lock Account: {{name}}",
+      "lockDesc": "Provide an optional reason for locking this user account. The user will be unable to log in until unlocked.",
+      "lockPlaceholder": "Reason for locking (optional)…",
+      "lockBtn": "Lock Account",
+      "approved": "Account approved successfully.",
+      "rejected": "Registration rejected.",
+      "locked": "Account locked successfully.",
+      "unlocked": "Account unlocked successfully."
     }
   },
   "profile": {

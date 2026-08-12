@@ -67,6 +67,12 @@
       "welcomeBack": "Chào mừng trở lại",
       "loginFailed": "Đăng nhập thất bại. Vui lòng thử lại."
     },
+    "error": {
+      "pending": "Tài khoản của bạn đang chờ Admin phê duyệt.",
+      "rejected": "Yêu cầu đăng ký tài khoản đã bị từ chối.",
+      "locked": "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên.",
+      "deactivated": "Tài khoản đã bị vô hiệu hóa."
+    },
     "registerPage": {
       "title": "Tạo tài khoản",
       "joinMovement": "Tham gia phong trào",
@@ -551,8 +557,20 @@
       "importDesc2": "1: Họ tên, 2: Tên người dùng, 3: Email, 4: Mật khẩu, 5: Vai trò (Student/Staff/Admin), 6: ID, 7: Lớp, 8: Phòng ban.",
       "importErrors": "Lỗi Nhập:",
       "importBtn": "Bắt đầu Nhập",
-      "approved": "đã phê duyệt",
-      "rejected": "đã từ chối"
+      "statusPending": "Chờ duyệt",
+      "statusApproved": "Đã duyệt",
+      "statusRejected": "Từ chối",
+      "statusLocked": "Đã khóa",
+      "statusDeactivated": "Vô hiệu hóa",
+      "unlock": "Mở khóa",
+      "lockTitle": "Khóa Tài khoản: {{name}}",
+      "lockDesc": "Cung cấp lý do khóa tài khoản (tùy chọn). Người dùng sẽ không thể đăng nhập cho đến khi được mở khóa.",
+      "lockPlaceholder": "Lý do khóa tài khoản (tùy chọn)…",
+      "lockBtn": "Khóa Tài khoản",
+      "approved": "Tài khoản đã được phê duyệt thành công.",
+      "rejected": "Đã từ chối đơn đăng ký.",
+      "locked": "Tài khoản đã bị khóa.",
+      "unlocked": "Tài khoản đã được mở khóa thành công."
     }
   },
   "profile": {
