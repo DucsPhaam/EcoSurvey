@@ -135,6 +135,12 @@ if (process.env.NODE_ENV !== 'test') {
       logger.info('✅ Database connection established');
       await sequelize.sync();
       logger.info('✅ Database schema synchronized');
+
+      // Ensure MySQL status column ENUM contains 'Locked'
+      await sequelize.query("ALTER TABLE users MODIFY COLUMN status ENUM('Pending','Approved','Rejected','Locked','Deactivated') DEFAULT 'Pending';").catch(err => {
+        logger.warn('⚠️ Could not alter users status column:', err.message);
+      });
+
       cronService.start();
 
       const emailService = require('./services/emailService');

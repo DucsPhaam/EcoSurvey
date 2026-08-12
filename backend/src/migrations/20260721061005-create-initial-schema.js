@@ -38,7 +38,7 @@ module.exports = {
         defaultValue: 'Student',
       },
       status: {
-        type: Sequelize.ENUM('Pending', 'Approved', 'Rejected', 'Deactivated'),
+        type: Sequelize.ENUM('Pending', 'Approved', 'Rejected', 'Locked', 'Deactivated'),
         defaultValue: 'Pending',
       },
       student_staff_id: {
