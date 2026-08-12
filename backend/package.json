@@ -34,7 +34,6 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "pdfkit": "^0.15.0",
-    "resend": "^6.19.0",
     "sequelize": "^6.37.3",
     "socket.io": "^4.8.3",
     "uuid": "^10.0.0",

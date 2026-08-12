@@ -1,100 +1,155 @@
-// Email service: Sends automated emails (registration, password reset, account approval, proof status) via Resend HTTPS API.
-const { Resend } = require('resend');
+// Email service: Sends automated emails (registration, password reset, account approval, proof status) via Nodemailer.
 const logger = require('../utils/logger');
 
-const getResendClient = () => {
-  const apiKey = process.env.RESEND_API_KEY;
+const getTransporter = (useFallback = false) => {
+  const host = process.env.SMTP_HOST;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
 
-  if (!apiKey) {
-    throw new Error('RESEND_API_KEY is not configured');
+  if (!host || !user || !pass) {
+    return null;
   }
 
-  return new Resend(apiKey);
+  const nodemailer = require('nodemailer');
+  const cleanPass = pass.replace(/\s+/g, '');
+  const port = parseInt(process.env.SMTP_PORT || '587', 10);
+
+  // If fallback requested or host is Gmail on port 587 (which Railway often blocks/times out), use built-in 'gmail' service (port 465 SSL)
+  if (useFallback || (host.includes('gmail') && port === 587)) {
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user,
+        pass: cleanPass,
+      },
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 15000,
+    });
+  }
+
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465,
+    auth: {
+      user,
+      pass: cleanPass,
+    },
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 15000,
+  });
 };
 
-const verifyEmailService = async () => {
-  const apiKey = process.env.RESEND_API_KEY;
-  const isProd = process.env.NODE_ENV === 'production';
-  const emailFrom = process.env.EMAIL_FROM;
+const verifySmtpConnection = async () => {
+  logger.info('[EMAIL SERVICE] Runtime SMTP config:', {
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT,
+    user: process.env.SMTP_USER,
+    emailFrom: process.env.EMAIL_FROM,
+    nodeEnv: process.env.NODE_ENV,
+  });
 
-  if (!apiKey) {
-    logger.warn('[EMAIL SERVICE] RESEND_API_KEY is missing');
+  let transporter = getTransporter(false);
+
+  if (!transporter) {
+    logger.error('[EMAIL SERVICE] SMTP transporter is null');
     return false;
   }
 
-  if (isProd && !emailFrom) {
-    logger.error('[EMAIL SERVICE] EMAIL_FROM environment variable is required in production');
-    return false;
+  try {
+    await transporter.verify();
+    logger.info('[EMAIL SERVICE] SMTP VERIFY SUCCESS');
+    return true;
+  } catch (error) {
+    logger.warn(`[EMAIL SERVICE] Direct SMTP verify failed (${error.message}). Trying Gmail service fallback...`);
+    try {
+      transporter = getTransporter(true);
+      await transporter.verify();
+      logger.info('[EMAIL SERVICE] SMTP VERIFY SUCCESS (via Fallback)');
+      return true;
+    } catch (fallbackErr) {
+      logger.error('[EMAIL SERVICE] SMTP VERIFY FAILED', {
+        code: fallbackErr.code || error.code,
+        responseCode: fallbackErr.responseCode || error.responseCode,
+        command: fallbackErr.command || error.command,
+        message: fallbackErr.message || error.message,
+      });
+      return false;
+    }
   }
+};
 
-  logger.info('[EMAIL SERVICE] Resend API configuration verified');
-  return true;
+const getFromAddress = () => {
+  const rawFrom = (process.env.EMAIL_FROM || '').replace(/['"]/g, '').trim();
+  if (rawFrom) {
+    const match = rawFrom.match(/^(.*?)\s*<([^>]+)>$/);
+    if (match) {
+      const name = match[1].trim();
+      const email = match[2].trim();
+      return name ? `"${name}" <${email}>` : email;
+    }
+    if (rawFrom.includes('@')) {
+      return `"EcoSurvey" <${rawFrom}>`;
+    }
+  }
+  const fallbackEmail = process.env.SMTP_USER || 'noreply@ecosurvey.edu.vn';
+  return `"EcoSurvey" <${fallbackEmail}>`;
 };
 
 const sendMail = async ({ to, subject, html }) => {
-  if (!to || typeof to !== 'string' || !to.trim()) {
-    const err = new Error('Recipient "to" must be a non-empty string');
-    logger.error('[EMAIL SERVICE] Invalid recipient address:', { to });
-    throw err;
-  }
-
-  const isProd = process.env.NODE_ENV === 'production';
-  let from = process.env.EMAIL_FROM;
-
-  if (isProd && !from) {
-    const err = new Error('EMAIL_FROM environment variable is required in production');
-    logger.error('[EMAIL SERVICE] Missing EMAIL_FROM in production environment');
-    throw err;
-  }
-
-  if (!from) {
-    from = 'EcoSurvey <onboarding@resend.dev>';
-  }
-
-  if (!process.env.RESEND_API_KEY) {
-    logger.info(`[EMAIL LOG - RESEND_API_KEY NOT CONFIGURED] To: ${to} | Subject: ${subject}`);
+  let transporter = getTransporter(false);
+  if (!transporter) {
+    logger.info(`[EMAIL LOG - SMTP NOT CONFIGURED] To: ${to} | Subject: ${subject}`);
     return;
   }
 
-  const resend = getResendClient();
+  const fromAddress = getFromAddress();
 
   try {
-    logger.info(
-      `[EMAIL SERVICE] Sending email via Resend: to=${to}, subject="${subject}", from=${from}`
-    );
-
-    const { data, error } = await resend.emails.send({
-      from,
-      to: [to.trim()],
+    await transporter.sendMail({
+      from: fromAddress,
+      to,
       subject,
       html,
     });
-
-    if (error) {
-      logger.error('[EMAIL SERVICE] Resend API error', {
-        name: error.name,
-        message: error.message,
-      });
-
-      throw new Error(error.message);
+    logger.info(`[EMAIL SERVICE] SMTP SEND SUCCESS to "${to}" (Subject: "${subject}")`);
+  } catch (error) {
+    if (error.code === 'ETIMEDOUT' || (error.message && error.message.toLowerCase().includes('timeout'))) {
+      logger.warn(`[EMAIL SERVICE] Primary SMTP timed out (${error.message}). Retrying via Gmail service fallback...`);
+      try {
+        const fallbackTransporter = getTransporter(true);
+        await fallbackTransporter.sendMail({
+          from: fromAddress,
+          to,
+          subject,
+          html,
+        });
+        logger.info(`[EMAIL SERVICE] SMTP SEND SUCCESS (via Fallback) to "${to}" (Subject: "${subject}")`);
+        return;
+      } catch (fallbackErr) {
+        logger.error('[EMAIL SERVICE] SMTP SEND FAILED (Fallback)', {
+          code: fallbackErr.code,
+          responseCode: fallbackErr.responseCode,
+          command: fallbackErr.command,
+          message: fallbackErr.message,
+        });
+        throw fallbackErr;
+      }
     }
 
-    logger.info(
-      `[EMAIL SERVICE] Email sent successfully via Resend: id=${data?.id || 'unknown'}`
-    );
-
-    return data;
-  } catch (error) {
-    logger.error('[EMAIL SERVICE] Email send failed', {
+    logger.error('[EMAIL SERVICE] SMTP SEND FAILED', {
+      code: error.code,
+      responseCode: error.responseCode,
+      command: error.command,
       message: error.message,
-      name: error.name,
     });
-
     throw error;
   }
 };
 
-exports.verifyEmailService = verifyEmailService;
+exports.verifySmtpConnection = verifySmtpConnection;
 
 exports.sendRegistrationEmail = async (email, fullName) => {
   await sendMail({
@@ -108,12 +163,6 @@ exports.sendRegistrationEmail = async (email, fullName) => {
 };
 
 exports.sendStatusUpdateEmail = async (email, fullName, status, reason) => {
-  if (!['Approved', 'Locked', 'Rejected'].includes(status)) {
-    throw new Error(
-      `Invalid status "${status}" for sendStatusUpdateEmail. Expected Approved, Locked, or Rejected.`
-    );
-  }
-
   let subject = '';
   let html = '';
 
@@ -130,7 +179,7 @@ exports.sendStatusUpdateEmail = async (email, fullName, status, reason) => {
             ${reason ? `<p><strong>Lý do:</strong> ${reason}</p>` : ''}
             <p>Nếu bạn cho rằng đây là sự nhầm lẫn, vui lòng liên hệ với Quản trị viên để được hỗ trợ.</p>
             <br><p>— EcoSurvey Team</p>`;
-  } else if (status === 'Rejected') {
+  } else {
     subject = 'EcoSurvey — Thông báo từ chối đăng ký tài khoản';
     html = `<h2>Xin chào ${fullName},</h2>
             <p>Rất tiếc, yêu cầu đăng ký tài khoản EcoSurvey của bạn đã <strong>bị từ chối</strong>.</p>
@@ -143,20 +192,14 @@ exports.sendStatusUpdateEmail = async (email, fullName, status, reason) => {
 };
 
 exports.sendParticipationReviewEmail = async (email, fullName, eventName, status, reason) => {
-  if (!['Approved', 'Rejected'].includes(status)) {
-    throw new Error(
-      `Invalid status "${status}" for sendParticipationReviewEmail. Expected Approved or Rejected.`
-    );
-  }
-
   const approved = status === 'Approved';
   await sendMail({
     to: email,
     subject: `EcoSurvey — Report ${approved ? 'Approved' : 'Rejected'}: ${eventName}`,
     html: `<h2>Hello, ${fullName}</h2>
            ${approved
-        ? `<p>✅ Your participation report "<strong>${eventName}</strong>" has been <strong>approved</strong>. You earned <strong>50 points</strong>!</p>`
-        : `<p>Your participation report "<strong>${eventName}</strong>" was <strong>rejected</strong>.</p>
+             ? `<p>✅ Your participation report "<strong>${eventName}</strong>" has been <strong>approved</strong>. You earned <strong>50 points</strong>!</p>`
+             : `<p>Your participation report "<strong>${eventName}</strong>" was <strong>rejected</strong>.</p>
                 ${reason ? `<p>Reason: ${reason}</p>` : ''}`}
            <br><p>— EcoSurvey Team</p>`,
   });
