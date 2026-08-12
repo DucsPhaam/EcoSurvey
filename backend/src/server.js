@@ -138,7 +138,7 @@ if (process.env.NODE_ENV !== 'test') {
       cronService.start();
 
       const emailService = require('./services/emailService');
-      await emailService.verifySmtpConnection();
+      await emailService.verifyEmailService();
       
       server.listen(PORT, () => {
         logger.info(`🚀 EcoSurvey API & Socket.io running on port ${PORT}`);
