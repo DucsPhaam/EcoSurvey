@@ -2,14 +2,20 @@ const request = require('supertest');
 
 describe('Multiple CORS Origins Configuration', () => {
   let app;
-  const originalEnv = process.env.CLIENT_URLS;
+  const originalClientUrl = process.env.CLIENT_URL;
+  const originalClientUrls = process.env.CLIENT_URLS;
+  const originalFrontendUrl = process.env.FRONTEND_URL;
 
   beforeEach(() => {
     jest.resetModules();
+    delete process.env.CLIENT_URL;
+    delete process.env.FRONTEND_URL;
   });
 
   afterEach(() => {
-    process.env.CLIENT_URLS = originalEnv;
+    process.env.CLIENT_URL = originalClientUrl;
+    process.env.CLIENT_URLS = originalClientUrls;
+    process.env.FRONTEND_URL = originalFrontendUrl;
   });
 
   it('allows access from first URL in comma-separated CLIENT_URLS', async () => {
