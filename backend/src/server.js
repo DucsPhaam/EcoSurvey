@@ -136,6 +136,9 @@ if (process.env.NODE_ENV !== 'test') {
       await sequelize.sync();
       logger.info('✅ Database schema synchronized');
       cronService.start();
+
+      const emailService = require('./services/emailService');
+      await emailService.verifySmtpConnection();
       
       server.listen(PORT, () => {
         logger.info(`🚀 EcoSurvey API & Socket.io running on port ${PORT}`);

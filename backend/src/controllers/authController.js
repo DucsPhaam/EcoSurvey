@@ -329,6 +329,11 @@ exports.googleCallback = async (req, res) => {
         const matched = allowedOrigins.find(origin => refererUrl.startsWith(origin));
         if (matched) {
           targetClientUrl = matched;
+        } else {
+          const parsed = new URL(refererUrl);
+          if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+            targetClientUrl = parsed.origin;
+          }
         }
       } catch (e) {
         // fallback to primaryClientUrl

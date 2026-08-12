@@ -83,8 +83,9 @@ export default function RegisterPage() {
         full_name: name || f.full_name,
         google_id: googleId || f.google_id
       }))
+      toast.success(t('auth:registerPage.googleWelcome', '👋 Tài khoản Google của bạn chưa được đăng ký. Thông tin Email & Họ tên đã được điền sẵn, vui lòng hoàn tất đăng ký!'), { id: 'google-welcome', duration: 6000 })
     }
-  }, [location.search])
+  }, [location.search, t])
 
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }))
 

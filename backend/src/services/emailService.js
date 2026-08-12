@@ -2,60 +2,63 @@
 const logger = require('../utils/logger');
 
 const getTransporter = () => {
-  const host = (process.env.SMTP_HOST || process.env.MAIL_HOST || 'smtp.gmail.com').replace(/['"]/g, '').trim();
-  let user = (process.env.SMTP_USER || process.env.SMTP_USERNAME || process.env.MAIL_USER || process.env.EMAIL_USER || '').replace(/['"]/g, '').trim();
-  const rawPass = (process.env.SMTP_PASS || process.env.SMTP_PASSWORD || process.env.MAIL_PASS || process.env.EMAIL_PASS || process.env.GMAIL_APP_PASSWORD || '').replace(/['"]/g, '');
+  const host = process.env.SMTP_HOST;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
 
-  // Fallback: If user is missing on Railway, extract email from EMAIL_FROM
-  if (!user && process.env.EMAIL_FROM) {
-    const fromStr = process.env.EMAIL_FROM.replace(/['"]/g, '').trim();
-    const match = fromStr.match(/<([^>]+)>/) || fromStr.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
-    if (match) {
-      user = match[1] || match[0];
-    } else if (fromStr.includes('@')) {
-      user = fromStr;
-    }
-  }
-
-  if (!user || !rawPass) {
-    const missing = [];
-    if (!user) missing.push('SMTP_USER / EMAIL_FROM');
-    if (!rawPass) missing.push('SMTP_PASS');
-    logger.warn(`⚠️ [EMAIL SERVICE] SMTP disabled. Missing required variable(s): ${missing.join(', ')}. Please set SMTP_USER and SMTP_PASS in Railway environment variables.`);
+  if (!host || !user || !pass) {
     return null;
   }
 
   const nodemailer = require('nodemailer');
-  const pass = rawPass.replace(/\s+/g, ''); // Strip spaces from Gmail App Password
-
-  // Use Nodemailer built-in Gmail service preset for standard Gmail & Google Workspace (@aptechlearning.edu.vn)
-  if (host.includes('gmail') || user.includes('gmail') || user.includes('aptech') || user.includes('@')) {
-    return nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: user,
-        pass: pass,
-      },
-    });
-  }
-
   const port = parseInt(process.env.SMTP_PORT || '587', 10);
+
   return nodemailer.createTransport({
-    host: host,
-    port: port,
+    host,
+    port,
     secure: port === 465,
     auth: {
-      user: user,
-      pass: pass,
+      user,
+      pass: pass.replace(/\s+/g, ''),
     },
-    tls: {
-      rejectUnauthorized: false,
-    },
-    connectionTimeout: 15000,
+    connectionTimeout: 30000,
+    greetingTimeout: 30000,
+    socketTimeout: 30000,
   });
 };
 
-const getFromAddress = (smtpUser) => {
+const verifySmtpConnection = async () => {
+  logger.info('[EMAIL SERVICE] Runtime SMTP config:', {
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT,
+    user: process.env.SMTP_USER,
+    emailFrom: process.env.EMAIL_FROM,
+    nodeEnv: process.env.NODE_ENV,
+  });
+
+  const transporter = getTransporter();
+
+  if (!transporter) {
+    logger.error('[EMAIL SERVICE] SMTP transporter is null');
+    return false;
+  }
+
+  try {
+    await transporter.verify();
+    logger.info('[EMAIL SERVICE] SMTP VERIFY SUCCESS');
+    return true;
+  } catch (error) {
+    logger.error('[EMAIL SERVICE] SMTP VERIFY FAILED', {
+      code: error.code,
+      responseCode: error.responseCode,
+      command: error.command,
+      message: error.message,
+    });
+    return false;
+  }
+};
+
+const getFromAddress = () => {
   const rawFrom = (process.env.EMAIL_FROM || '').replace(/['"]/g, '').trim();
   if (rawFrom) {
     const match = rawFrom.match(/^(.*?)\s*<([^>]+)>$/);
@@ -68,35 +71,39 @@ const getFromAddress = (smtpUser) => {
       return `"EcoSurvey" <${rawFrom}>`;
     }
   }
-  const fallbackEmail = smtpUser || 'noreply@ecosurvey.edu.vn';
+  const fallbackEmail = process.env.SMTP_USER || 'noreply@ecosurvey.edu.vn';
   return `"EcoSurvey" <${fallbackEmail}>`;
 };
 
 const sendMail = async ({ to, subject, html }) => {
   const transporter = getTransporter();
-  if (transporter) {
-    let smtpUser = (process.env.SMTP_USER || '').trim();
-    if (!smtpUser && process.env.EMAIL_FROM) {
-      const match = process.env.EMAIL_FROM.match(/<([^>]+)>/) || process.env.EMAIL_FROM.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
-      if (match) smtpUser = match[1] || match[0];
-    }
-    const fromAddress = getFromAddress(smtpUser);
-    try {
-      logger.info(`📧 Attempting to send email to "${to}" (Subject: "${subject}") from ${fromAddress}...`);
-      await transporter.sendMail({
-        from: fromAddress,
-        to,
-        subject,
-        html,
-      });
-      logger.info(`✅ Email sent successfully to "${to}" (Subject: "${subject}")`);
-    } catch (err) {
-      logger.error(`❌ Failed to send email to "${to}":`, err.stack || err.message);
-    }
-  } else {
+  if (!transporter) {
     logger.info(`[EMAIL LOG - SMTP NOT CONFIGURED] To: ${to} | Subject: ${subject}`);
+    return;
+  }
+
+  const fromAddress = getFromAddress();
+
+  try {
+    await transporter.sendMail({
+      from: fromAddress,
+      to,
+      subject,
+      html,
+    });
+    logger.info(`[EMAIL SERVICE] SMTP SEND SUCCESS to "${to}" (Subject: "${subject}")`);
+  } catch (error) {
+    logger.error('[EMAIL SERVICE] SMTP SEND FAILED', {
+      code: error.code,
+      responseCode: error.responseCode,
+      command: error.command,
+      message: error.message,
+    });
+    throw error;
   }
 };
+
+exports.verifySmtpConnection = verifySmtpConnection;
 
 exports.sendRegistrationEmail = async (email, fullName) => {
   await sendMail({
