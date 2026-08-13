@@ -259,7 +259,7 @@ các nhóm quan hệ chính:
 
   Lớp 1 — Transport Layer:
   • HSTS (2 năm) ép trình duyệt luôn dùng HTTPS.
-  • Helmet CSP chặn XSS, clickjacking, plugin injection.
+  • Helmet CSP (Content Security Policy) chặn XSS, clickjacking, plugin injection.
 
   Lớp 2 — Authentication & Multi-Domain Session:
   • JWT Access Token (15 phút, lưu localStorage) + Refresh Token Cookie (30 ngày, SHA-256 hashed).
@@ -468,7 +468,9 @@ Eco-Points. Được tính bằng cách SUM tất cả point_logs của mỗi us
   • Số lượt trả lời khảo sát 7 ngày gần nhất (biểu đồ Daily Responses).
   • Số minh chứng đang chờ duyệt (Pending Participations).
 
-  • Export PDF & Export Analytics: Tích hợp nút xuất báo cáo tổng quan hệ thống ra định dạng PDF chính thức và xuất kết quả phân tích chi tiết khảo sát ra file Excel (.xlsx) với định dạng cột chỉn chu.
+  • Export PDF & Export Analytics: Tích hợp nút xuất báo cáo tổng quan hệ thống ra định dạng 
+    PDF chính thức và xuất kết quả phân tích chi tiết khảo sát ra file Excel (.xlsx) 
+    với định dạng cột chỉn chu.
 
   Tất cả số liệu được tính bằng Promise.all() song song để tối ưu
   thời gian phản hồi API."
@@ -502,9 +504,9 @@ Eco-Points. Được tính bằng cách SUM tất cả point_logs của mỗi us
 
   ── Survey Editor (Tạo/Sửa khảo sát) ───────────────────────────
   • Nhập: Tiêu đề, Mô tả, Đối tượng (All/Student/Staff), Thời gian.
-  • Thêm câu hỏi: Kéo thả loại câu hỏi (multiple_choice, text, rating,
-    yes_no), tùy chỉnh options, đánh dấu required.
-  • Lưu Draft → Review → Publish.
+  • Thêm câu hỏi: Kéo thả loại câu hỏi (multiple_choice, text,),
+   tùy chỉnh options, đánh dấu required.
+  • Lưu Draft → Publish.
 
   ── Survey Analytics ────────────────────────────────────────────
   • Xem thống kê chi tiết từng survey: Tổng responses, phân bổ câu trả lời.
@@ -591,6 +593,10 @@ Eco-Points. Được tính bằng cách SUM tất cả point_logs của mỗi us
   • Docker Compose cho môi trường local development và production.
   • Environment Variables được quản lý tập trung trên Railway Dashboard.
   • Health Check endpoint: GET /api/health → { status: 'OK' }."
+
+  Do Railway Free/Trial/Hobby plans
+  chặn toàn bộ các cổng SMTP TCP đầu ra (25, 465, 587)nên là chức năng smtp 
+  không hoạt động được trên môi trường deploy
 
 
 ┌─────────────────────────────────────────────────────────────────────┐

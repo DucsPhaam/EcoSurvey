@@ -11,7 +11,8 @@ và tự động hóa quy trình quản trị:
 1. AI Chatbot FAQ (Trợ lý ảo hỗ trợ giải đáp thắc mắc):
    - Giúp sinh viên và cán bộ giải đáp nhanh các thắc mắc về quy chế, điểm thưởng, 
      cách thức tham gia khảo sát và nộp báo cáo minh chứng môi trường.
-   - Hoạt động theo cơ chế Trả lời dựa trên ngữ cảnh động (Dynamic In-Context Learning / Lightweight RAG) 
+   - Hoạt động theo cơ chế Trả lời dựa trên ngữ cảnh động 
+   (Dynamic In-Context Learning / Lightweight RAG) 
      từ CSDL FAQ thực tế của nhà trường.
 
 2. AI Summary (Hệ thống tự động tóm tắt báo cáo hoạt động):
