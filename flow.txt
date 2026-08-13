@@ -1,0 +1,118 @@
+================================================================================
+          BÁO CÁO CHI TIẾT LUỒNG ĐĂNG KÝ, ĐĂNG NHẬP, CƠ CHẾ JWT TOKEN 
+          VÀ PHÂN ĐỊNH TRÁCH NHIỆM GỬI THÔNG BÁO / EMAIL TRONG ECOSURVEY
+================================================================================
+
+I. LUỒNG ĐĂNG KÝ VÀ ĐĂNG NHẬP (REGISTRATION & LOGIN FLOW)
+--------------------------------------------------------------------------------
+
+1. Luồng Đăng ký Tài khoản (Registration Flow):
+   a) Đăng ký Form truyền thống (Local Registration):
+      - Bước 1: Người dùng điền đầy đủ các thông tin trên form Đăng ký (Họ tên, Username, Email, Mật khẩu, Xác nhận mật khẩu, Vai trò: Student/Staff, Mã SV/NV, Lớp, Khoa).
+      - Bước 2: Bắt buộc hoàn thành xác thực Cloudflare Turnstile CAPTCHA để chống Bot spam.
+      - Bước 3: Client gửi HTTP POST request tới `/api/auth/register`.
+      - Bước 4: Backend (`authController.register`) validate dữ liệu, kiểm tra mật khẩu (tối thiểu 8 ký tự, có chữ hoa và số), kiểm tra trùng lặp `username` hoặc `email` trong CSDL.
+      - Bước 5: Mật khẩu được mã hóa an toàn bằng `bcrypt` với `SALT_ROUNDS = 10`.
+      - Bước 6: Tài khoản được tạo mới trong CSDL bảng `users` với trạng thái ban đầu:
+        `status = 'Pending'` và `auth_provider = 'local'`.
+      - Bước 7: Backend lập tức đẩy Email xác nhận đăng ký thành công (chờ duyệt) và phát thông báo cho Admin (Chi tiết xem tại Phần III).
+
+   b) Đăng ký / Đăng nhập qua Google OAuth 2.0 (Google Auth Flow):
+      - Bước 1: Người dùng click nút "Sign in with Google" trên Frontend.
+      - Bước 2: Chuyển hướng tới Google Consent Screen qua Passport.js (`/api/auth/google`). Mã hóa tham số `state` (Base64URL) chứa thông tin domain client gốc.
+      - Bước 3: Sau khi người dùng đồng ý, Google callback về Backend (`/api/auth/google/callback`). Passport.js lấy được Profile từ Google (id, email, displayName).
+      - Bước 4: Backend kiểm tra CSDL:
+        + Trường hợp A (Tài khoản đã tồn tại): Nếu đã có email/google_id trùng khớp trong CSDL $\rightarrow$ Tiến hành Đăng nhập (nếu status = Approved) hoặc báo lỗi 403 (nếu status = Pending/Rejected/Locked).
+        + Trường hợp B (Người dùng Google mới): Backend chưa cho tạo ngay tài khoản mà chuyển hướng (Redirect) về trang Register của Frontend kèm các query params (`email`, `name`, `google_id`).
+      - Bước 5: Người dùng Google bổ sung thêm các thông tin bắt buộc còn thiếu (Username, Mật khẩu, Vai trò, Mã SV/NV, Lớp, Khoa) và submit form đăng ký.
+      - Bước 6: Tài khoản được lưu vào CSDL với `status = 'Pending'` và `auth_provider = 'google'`, `google_id = <ID_Google>`.
+
+2. Luồng Đăng nhập Tài khoản (Login Flow):
+   - Bước 1: Người dùng nhập `login` (Username hoặc Email) và `password` $\rightarrow$ POST tới `/api/auth/login`.
+   - Bước 2: Backend truy vấn CSDL tìm User tương ứng.
+   - Bước 3: So sánh mật khẩu nhập vào với `password_hash` lưu trong CSDL bằng `bcrypt.compare()`.
+   - Bước 4: Kiểm tra trạng thái tài khoản (`status`):
+     + Nếu `status === 'Pending'`: Trả về HTTP 403 (Code: PENDING) — *"Tài khoản của bạn đang chờ Admin phê duyệt"*.
+     + Nếu `status === 'Rejected'`: Trả về HTTP 403 (Code: REJECTED) kèm lý do từ chối.
+     + Nếu `status === 'Locked'`: Trả về HTTP 403 (Code: LOCKED) kèm lý do khóa tài khoản.
+     + Nếu `status === 'Deactivated'`: Trả về HTTP 403 (Code: DEACTIVATED).
+     + Nếu `status === 'Approved'`: Cho phép Đăng nhập thành công $\rightarrow$ Tiến hành tạo JWT Tokens.
+
+--------------------------------------------------------------------------------
+II. CƠ CHẾ TẠO VÀ QUẢN LÝ JWT TOKENS (JWT CREATION & LIFECYCLE)
+--------------------------------------------------------------------------------
+
+Khi người dùng đăng nhập thành công (`status === 'Approved'`), Backend tạo cặp Token:
+
+1. Access Token (JWT Short-lived Token):
+   - Phương thức tạo: Hàm `signAccessToken(user)` trong `authController.js` gọi thư viện `jsonwebtoken.sign()`.
+   - Payload mã hóa: `{ user_id: user.id, role: user.role, full_name: user.full_name }`.
+   - Chữ ký bảo mật: Mã hóa bằng bí danh `process.env.JWT_SECRET`.
+   - Thời gian hết hạn: `15m` (15 phút, cấu hình qua `JWT_EXPIRES_IN`).
+   - Lưu trữ phía Client: Trả về trực tiếp trong JSON Response body $\rightarrow$ Frontend lưu vào `localStorage`.
+   - Cách sử dụng: Frontend đính kèm vào HTTP Header cho mọi request bảo mật:
+     `Authorization: Bearer <access_token>`
+
+2. Refresh Token (Long-lived Opaque Token & Database Hashed):
+   - Phương thức tạo: Hàm `createRefreshToken(userId)` trong `authController.js`.
+   - Cách sinh Token: Sử dụng thư viện gốc `crypto.randomBytes(64).toString('hex')` tạo chuỗi ngẫu nhiên siêu an toàn 64 bytes (128 ký tự hex).
+   - Lưu trữ CSDL: Backend băm chuỗi này bằng thuật toán SHA-256 (`crypto.createHash('sha256')`) và lưu bản băm `token_hash` vào bảng `refresh_tokens` trong CSDL MySQL cùng với `user_id` và `expires_at`.
+   - Thời gian hết hạn: 30 ngày (mặc định cấu hình qua `REFRESH_TOKEN_EXPIRES_DAYS`).
+   - Lưu trữ phía Client: Trả về qua `HTTP-Only Cookie` với tên `refreshToken`:
+     + `httpOnly: true` (Ngăn chặn hoàn toàn JavaScript/XSS đọc cookie).
+     + `secure: true` (Trong môi trường production bắt buộc truyền qua HTTPS).
+     + `sameSite: 'none'` (Hỗ trợ cross-domain cookie giữa Frontend Vercel và Backend Railway).
+   - Cơ chế Cấp lại Access Token mới (Token Refresh Flow):
+     + Khi Access Token 15 phút hết hạn, Axios Interceptor ở Frontend tự động bắt lỗi HTTP 401 và gọi API `/api/auth/refresh`.
+     + Browser tự động gửi kèm Cookie `refreshToken`.
+     + Backend lấy Cookie, băm SHA-256 và so khớp với `token_hash` trong bảng `refresh_tokens`. Nếu token hợp lệ và chưa revoked $\rightarrow$ Tạo mới Access Token 15 phút trả về cho Client mà người dùng KHÔNG BỊ VĂNG RA ngoài trang đăng nhập.
+
+--------------------------------------------------------------------------------
+III. PHÂN ĐỊNH TRÁCH NHIỆM GỬI THÔNG BÁO VÀ ĐẨY EMAIL
+--------------------------------------------------------------------------------
+
+Hệ thống phân chia rõ ràng trách nhiệm giữa việc ĐẨY EMAIL (qua Nodemailer Gmail SMTP) 
+và GỬI THÔNG BÁO (qua Socket.IO Real-time + CSDL Notifications) theo 2 giai đoạn:
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ GIAI ĐOẠN 1: KHI NGƯỜI DÙNG BẤM HOÀN TẤT ĐĂNG KÝ (REGISTER COMPLETED)       │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+Bên thực hiện: Backend xử lý Request Đăng ký (`authController.js`).
+
+1. Đẩy Email về Hòm thư Người dùng (User Email Notification):
+   - Hệ thống tự động gọi `emailService.sendRegistrationEmail(cleanEmail, cleanFullName)`.
+   - Gửi 1 Email chính thức qua Gmail SMTP (`smtp.gmail.com:587`) tới hòm thư cá nhân của sinh viên/nhân viên vừa đăng ký.
+   - Nội dung Email: Thông báo hệ thống đã nhận được đơn đăng ký thành công và tài khoản đang ở trạng thái **Chờ duyệt bởi Quản trị viên (Pending Approval)**.
+
+2. Gửi Thông báo đến Admin (Admin Notification):
+   - Lưu 1 bản ghi thông báo mới vào CSDL bảng `notifications` với `reference_type = 'user'` dành cho tài khoản Admin.
+   - Phát event real-time qua `Socket.IO` tới kênh/room của Admin (`AdminDashboard`) để thông báo cho Admin biết có đơn đăng ký mới vừa nộp lên cần xem xét phê duyệt.
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ GIAI ĐOẠN 2: KHI ADMIN PHÊ DUYỆT / TỪ CHỐI / KHÓA TÀI KHOẢN (ADMIN REVIEW)  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+Bên thực hiện: Backend xử lý Duyệt của Admin (`adminController.updateUserStatus`).
+
+Khi Admin thao tác trên màn hình Quản lý Tài khoản (User Management):
+
+1. Cập nhật CSDL:
+   - Thay đổi trạng thái tài khoản `status` trong MySQL thành `'Approved'`, `'Rejected'`, hoặc `'Locked'`. Nếu bị từ chối hoặc khóa, lưu kèm `reject_reason`.
+
+2. Gửi Thông báo In-App (System Notification):
+   - Backend tạo 1 thông báo mới lưu vào bảng `notifications` dành riêng cho User đó:
+     + Nếu `Approved`: *"Tài khoản của bạn đã được Quản trị viên phê duyệt thành công. Bạn hiện có thể đăng nhập."*
+     + Nếu `Locked`: *"Tài khoản của bạn đã bị khóa. Lý do: [Lý do khóa]"*.
+     + Nếu `Rejected`: *"Đơn đăng ký tài khoản bị từ chối. Lý do: [Lý do từ chối]"*.
+   - Phát thông báo real-time tới đúng User thông qua Socket.IO (`emitToUser(user.id, 'notification', ...)`).
+
+3. Đẩy Email Thông báo Kết quả đến Người dùng (User Result Email):
+   - Backend tự động gọi `emailService.sendStatusUpdateEmail(user.email, user.full_name, status, reject_reason)`.
+   - Gửi Email kết quả xử lý tài khoản qua Gmail SMTP tới người dùng:
+     + Tiêu đề & Nội dung mail tự động thay đổi theo trạng thái (`Approved` / `Locked` / `Rejected`).
+     + Người dùng biết ngay kết quả phê duyệt tài khoản qua hòm thư điện tử mà không cần phải gọi điện hỏi Admin.
+
+================================================================================
+                    BÁO CÁO HOÀN TẤT — ECOSURVEY AUTH FLOW
+================================================================================

@@ -19,4 +19,5 @@ answer*.txt
 *.txt
 !describe_ai.txt
 !thuyettrinh.txt
+!flow.txt
 
