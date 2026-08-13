@@ -1,0 +1,135 @@
+================================================================================
+          BÁO CÁO CHI TIẾT CƠ CHẾ VÀ KIẾN TRÚC TÍNH NĂNG AI TRONG ECOSURVEY
+          (AI FAQ CHATBOT & AI REPORT SUMMARIZATION)
+================================================================================
+
+I. TỔNG QUAN VỀ TÍNH NĂNG AI TRONG DỰ ÁN ECOSURVEY
+--------------------------------------------------------------------------------
+Hệ thống EcoSurvey tích hợp 2 tính năng AI cốt lõi nhằm nâng cao trải nghiệm người dùng 
+và tự động hóa quy trình quản trị:
+
+1. AI Chatbot FAQ (Trợ lý ảo hỗ trợ giải đáp thắc mắc):
+   - Giúp sinh viên và cán bộ giải đáp nhanh các thắc mắc về quy chế, điểm thưởng, 
+     cách thức tham gia khảo sát và nộp báo cáo minh chứng môi trường.
+   - Hoạt động theo cơ chế Trả lời dựa trên ngữ cảnh động (Dynamic In-Context Learning / Lightweight RAG) 
+     từ CSDL FAQ thực tế của nhà trường.
+
+2. AI Summary (Hệ thống tự động tóm tắt báo cáo hoạt động):
+   - Giúp Quản trị viên (Admin) nhanh chóng nắm bắt nội dung cốt lõi của các báo cáo 
+     minh chứng tham gia hoạt động ngoại khóa/môi trường do người dùng nộp lên.
+   - Tự động rút gọn các đoạn mô tả dài thành 2-3 câu súc tích, khách quan và chuyên nghiệp.
+
+--------------------------------------------------------------------------------
+II. TẠI SAO LẠI CHỌN PHƯƠNG PHÁP NÀY? (RATIONALE & LÝ DO THIẾT KẾ)
+--------------------------------------------------------------------------------
+
+1. Lựa chọn Mô hình & Cổng kết nối (OpenRouter API + Google Gemini 2.5 Flash):
+   - Mô hình Google Gemini 2.5 Flash mang lại tốc độ phản hồi cực nhanh (Latency cực thấp < 1s),
+     khả năng hiểu tiếng Việt vượt trội và chi phí vận hành tối ưu.
+   - Cổng OpenRouter API đóng vai trò là một API Gateway trung gian giúp ứng dụng không bị 
+     khóa chặt vào một nhà cung cấp (Vendor Lock-in), dễ dàng quản lý Quota, Rate Limit và Header.
+
+2. Áp dụng Mô hình Hybrid Fallback Pattern (Tăng cường độ tin cậy 100%):
+   - Vấn đề thực tế: Các hệ thống AI Cloud có thể gặp sự cố mất kết nối mạng, hết Quota API, 
+     hoặc khi triển khai dưới môi trường Local Dev/Testing chưa cấu hình API Key.
+   - Giải pháp chọn lựa: Thiết kế kiến trúc "Hybrid Fallback" (AI Cloud kết hợp Thuật toán Local).
+     + Nếu có API Key và kết nối ổn định: Gọi Gemini 2.5 Flash để sinh câu trả lời tự nhiên.
+     + Nếu mất API Key hoặc lỗi mạng API: Hệ thống KHÔNG BỊ CRASH mà tự động fallback về 
+       thuật toán Khớp từ khóa (Rule-based Keyword Matching) cho FAQ và Thuật toán Trích xuất 
+       câu chính (Extractive Text Processing) cho Summary.
+
+3. RAG nhẹ (Strict Dynamic In-Context Learning) đối với Chatbot FAQ:
+   - Vấn đề Hallucination (AI bốc phét/nói dối): LLM thông thường có thể tự bịa ra chính sách 
+     không có thật của nhà trường nếu không được kiểm soát.
+   - Giải pháp: Giới hạn không gian tri thức của AI CHỈ NẰM TRONG CSDL FAQ được nạp động từ MySQL. 
+     Nếu câu hỏi không nằm trong CSDL FAQ, AI bắt buộc phải trả lời thẳng thắn là không có thông tin 
+     và hướng dẫn liên hệ Admin.
+
+--------------------------------------------------------------------------------
+III. Ý TƯỞNG VÀ NGUYÊN LÝ TRIỂN KHAI (CONCEPTUAL DESIGN)
+--------------------------------------------------------------------------------
+
+1. Luồng xử lý của AI Chatbot FAQ:
+   [User đặt câu hỏi] 
+           ↓
+   [Backend truy vấn tất cả FAQ đang active (is_active = true) từ MySQL]
+           ↓
+   [Đóng gói FAQ Context vào System Prompt + Câu hỏi của User]
+           ↓
+   [Kiểm tra kết nối OpenRouter API]
+       ├── (Thành công) ──> [Gọi Gemini 2.5 Flash] ──> [Trả về câu trả lời tự nhiên]
+       └── (Lỗi/Không Key) ──> [Chạy mockFAQAnswer (Khớp từ khóa Local)] ──> [Trả về đáp án gần nhất]
+
+2. Luồng xử lý của AI Summary:
+   [User gửi Báo cáo hoạt động (Event Name + Description)]
+           ↓
+   [Backend tạo Báo cáo Pending]
+           ↓
+   [Tự động kích hoạt aiService.summarizeReport(description, eventName)]
+           ↓
+   [Prompt Yêu cầu AI tóm tắt thành 2-3 câu khách quan, không tựa đề phụ]
+           ↓
+   [Lưu kết quả ai_summary vào CSDL table `participations`]
+           ↓
+   [Admin xem danh sách duyệt báo cáo với phần AI Summary hiển thị sẵn]
+
+--------------------------------------------------------------------------------
+IV. CÁCH TRIỂN KHAI CHI TIẾT TRONG MÃ NGUỒN (IMPLEMENTATION DETAILS)
+--------------------------------------------------------------------------------
+
+1. Cấu trúc Mô-đun trong Backend:
+   - `src/services/aiService.js`: Chứa toàn bộ logic giao tiếp với OpenRouter API, 
+     Prompt Engineering, và các hàm Fallback (mockFAQAnswer, mockSummary).
+   - `src/controllers/aiController.js`: Tiếp nhận HTTP Request `/api/ai/faq`, validate câu hỏi 
+     và truy vấn CSDL FAQ.
+   - `src/controllers/participationController.js`: Tích hợp tự động gọi AI Summarize khi người dùng 
+     tạo báo cáo minh chứng mới.
+
+2. Mã nguồn Chi tiết của `aiService.js`:
+
+   a) Hàm khởi tạo và kết nối API Gateway (`callOpenRouter`):
+      - Đọc biến môi trường `OPENROUTER_API_KEY`.
+      - Gửi HTTP POST tới `https://openrouter.ai/api/v1/chat/completions` với Model `google/gemini-2.5-flash`.
+      - Đính kèm Referer Header từ `primaryClientUrl` và `X-Title: EcoSurvey`.
+
+   b) Prompt Engineering cho AI Chatbot FAQ (`exports.answerFAQ`):
+      ```text
+      You are a helpful assistant for EcoSurvey, an environmental awareness survey portal at an educational institution.
+      Your knowledge is strictly limited to the following FAQ database:
+      ---
+      ${faqContext}
+      ---
+      User's question: "${userQuestion}"
+      Instructions:
+      - Answer ONLY based on the FAQ context above.
+      - If the question is not covered in the FAQs, politely explain that you don't have that information and they should contact Admin. Do this in the same language as the user's question.
+      - Be concise and friendly.
+      - Respond in the same language as the user's question.
+      ```
+
+   c) Prompt Engineering cho AI Summary (`exports.summarizeReport`):
+      ```text
+      Summarize the following environmental activity report in 2-3 concise sentences. Be objective and professional.
+      Event: ${eventName}
+      Report: ${description}
+      Provide only the summary, no introduction or extra text.
+      ```
+
+   d) Thuật toán Fallback Local khi không có API Key (`mockFAQAnswer` & `mockSummary`):
+      - FAQ Matcher: Tách câu hỏi FAQ thành các từ đơn (Length > 3), đếm số lượng từ trùng khớp 
+        với câu hỏi người dùng. Nếu `matchCount >= 2`, chọn đáp án đó. Ngược lại trả về câu từ chối chuẩn.
+      - Summary Matcher: Tách văn bản mô tả theo các dấu chấm/cảm/hỏi, lấy 2 câu đầu tiên và ghép với 
+        chuẩn đánh giá tích cực hoạt động môi trường.
+
+--------------------------------------------------------------------------------
+V. ĐÁNH GIÁ VÀ ƯU ĐIỂM CỦA GIẢI PHÁP
+--------------------------------------------------------------------------------
+1. Tính An toàn Bảo mật: API Key được giấu hoàn toàn ở phía Backend, không bao giờ lộ ra Client/Frontend.
+2. Tính Kháng lỗi (Fault Tolerance): Nhờ cơ chế Hybrid Fallback, ứng dụng chưa bao giờ bị nghẽn hay sập 
+   khi gặp sự cố dịch vụ AI bên thứ ba.
+3. Tính Chính xác (Accuracy): Ép AI trả lời đúng theo dữ liệu FAQ của nhà trường, tránh rủi ro tư vấn sai chính sách.
+4. Trải nghiệm Người dùng mượt mà: Tốc độ phản hồi cực nhanh nhờ sử dụng dòng mô hình Flash chuyên biệt.
+
+================================================================================
+                  BÁO CÁO HOÀN TẤT — ECOSURVEY AI ENGINE
+================================================================================

@@ -17,4 +17,5 @@ Implementation_plan.txt
 interview*.txt
 answer*.txt
 *.txt
+!describe_ai.txt
 
