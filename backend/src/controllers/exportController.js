@@ -159,20 +159,22 @@ exports.exportDashboardPDF = async (req, res) => {
     doc.pipe(res);
 
     // Title
-    doc.font('Roboto-Bold').fontSize(18).fillColor('#1a7f4b').text('EcoSurvey — Báo cáo Thống kê Tổng quan Hệ thống', { align: 'center' });
-    doc.font('Roboto').fontSize(10).fillColor('#666').text(`Thời gian xuất: ${new Date().toLocaleString('vi-VN')}`, { align: 'center' });
+    doc.font('Roboto-Bold').fontSize(18).fillColor('#1a7f4b').text('EcoSurvey — Báo cáo Thống kê Tổng quan Hệ thống', 50, doc.y, { align: 'center', width: 495 });
+    doc.moveDown(0.2);
+    doc.font('Roboto').fontSize(10).fillColor('#666666').text(`Thời gian xuất: ${new Date().toLocaleString('vi-VN')}`, 50, doc.y, { align: 'center', width: 495 });
     doc.moveDown(1.5);
 
     const drawTable = (headers, rows, startX = 50, colWidths = [300, 195]) => {
       let currentY = doc.y;
+      const totalWidth = colWidths.reduce((a, b) => a + b, 0);
       
       // Header row
-      doc.rect(startX, currentY, colWidths.reduce((a, b) => a + b, 0), 22).fill('#1a7f4b');
+      doc.rect(startX, currentY, totalWidth, 22).fill('#1a7f4b');
       doc.font('Roboto-Bold').fontSize(10).fillColor('#ffffff');
       
-      let xOffset = startX + 5;
+      let xOffset = startX;
       headers.forEach((h, i) => {
-        doc.text(h, xOffset, currentY + 6, { width: colWidths[i] - 10, align: i === 0 ? 'left' : 'center' });
+        doc.text(h, xOffset + 5, currentY + 6, { width: colWidths[i] - 10, align: i === 0 ? 'left' : 'center' });
         xOffset += colWidths[i];
       });
       
@@ -181,21 +183,23 @@ exports.exportDashboardPDF = async (req, res) => {
       // Rows
       rows.forEach((row, rIdx) => {
         const bg = rIdx % 2 === 0 ? '#f4f9f5' : '#ffffff';
-        doc.rect(startX, currentY, colWidths.reduce((a, b) => a + b, 0), 20).fill(bg);
+        doc.rect(startX, currentY, totalWidth, 20).fill(bg);
         doc.font('Roboto').fontSize(10).fillColor('#333333');
         
-        let rX = startX + 5;
+        let rX = startX;
         row.forEach((cell, cIdx) => {
-          doc.text(String(cell), rX, currentY + 5, { width: colWidths[cIdx] - 10, align: cIdx === 0 ? 'left' : 'center' });
+          doc.text(String(cell), rX + 5, currentY + 5, { width: colWidths[cIdx] - 10, align: cIdx === 0 ? 'left' : 'center' });
           rX += colWidths[cIdx];
         });
         currentY += 20;
       });
+      
+      doc.x = startX;
       doc.y = currentY + 15;
     };
 
     // 1. System Overview Metrics
-    doc.font('Roboto-Bold').fontSize(12).fillColor('#1a7f4b').text('1. CHỈ SỐ TỔNG QUAN HỆ THỐNG');
+    doc.font('Roboto-Bold').fontSize(12).fillColor('#1a7f4b').text('1. CHỈ SỐ TỔNG QUAN HỆ THỐNG', 50, doc.y);
     doc.moveDown(0.4);
 
     const overviewData = [
@@ -208,7 +212,7 @@ exports.exportDashboardPDF = async (req, res) => {
     drawTable(['Chỉ số hệ thống', 'Giá trị ghi nhận'], overviewData, 50, [310, 185]);
 
     // 2. User Statistics Table
-    doc.font('Roboto-Bold').fontSize(12).fillColor('#1a7f4b').text('2. PHÂN BỔ NGƯỜI DÙNG THEO VAI TRÒ & TRẠNG THÁI');
+    doc.font('Roboto-Bold').fontSize(12).fillColor('#1a7f4b').text('2. PHÂN BỔ NGƯỜI DÙNG THEO VAI TRÒ & TRẠNG THÁI', 50, doc.y);
     doc.moveDown(0.4);
 
     const userStatsData = [];
@@ -221,10 +225,10 @@ exports.exportDashboardPDF = async (req, res) => {
       userStatsData.push([`Trạng thái: ${s.status}`, `${s.count} người`, `${pct}%`]);
     });
 
-    drawTable(['Phân loại Người dùng', 'Số lượng', 'Tỷ lệ (%)'], userStatsData, 50, [230, 140, 125]);
+    drawTable(['Phân loại Người dùng', 'Số lượng', 'Tỷ lệ (%)'], userStatsData, 50, [240, 130, 125]);
 
     // 3. Survey Statistics Table
-    doc.font('Roboto-Bold').fontSize(12).fillColor('#1a7f4b').text('3. PHÂN BỔ KHẢO SÁT THEO TRẠNG THÁI');
+    doc.font('Roboto-Bold').fontSize(12).fillColor('#1a7f4b').text('3. PHÂN BỔ KHẢO SÁT THEO TRẠNG THÁI', 50, doc.y);
     doc.moveDown(0.4);
 
     const surveyStatsData = [];
@@ -233,11 +237,11 @@ exports.exportDashboardPDF = async (req, res) => {
       surveyStatsData.push([`Trạng thái: ${s.status}`, `${s.count} khảo sát`, `${pct}%`]);
     });
 
-    drawTable(['Trạng thái Khảo sát', 'Số lượng', 'Tỷ lệ (%)'], surveyStatsData, 50, [230, 140, 125]);
+    drawTable(['Trạng thái Khảo sát', 'Số lượng', 'Tỷ lệ (%)'], surveyStatsData, 50, [240, 130, 125]);
 
     // 4. Daily Response Trend
     if (chartData && chartData.length > 0) {
-      doc.font('Roboto-Bold').fontSize(12).fillColor('#1a7f4b').text('4. LƯỢT HOÀN THÀNH KHẢO SÁT 7 NGÀY GẦN NHẤT');
+      doc.font('Roboto-Bold').fontSize(12).fillColor('#1a7f4b').text('4. LƯỢT HOÀN THÀNH KHẢO SÁT 7 NGÀY GẦN NHẤT', 50, doc.y);
       doc.moveDown(0.4);
 
       const dailyData = chartData.map((d) => [
