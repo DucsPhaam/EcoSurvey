@@ -18,4 +18,5 @@ interview*.txt
 answer*.txt
 *.txt
 !describe_ai.txt
+!thuyettrinh.txt
 

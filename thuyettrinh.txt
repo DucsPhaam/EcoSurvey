@@ -1,0 +1,725 @@
+================================================================================
+  EcoSurvey — BÀI THUYẾT TRÌNH BẢO VỆ ĐỒ ÁN
+  (Kịch bản trình bày chi tiết — từ tổng quan đến demo chuyên sâu)
+================================================================================
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  SLIDE 1: TITLE — GIỚI THIỆU ĐỀ TÀI                               │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Kính chào quý thầy cô và các bạn. Hôm nay nhóm em xin trình bày đồ án
+tốt nghiệp với đề tài: EcoSurvey — Nền tảng Khảo sát Nhận thức Môi trường
+và Gamification trong Học đường.
+
+Đề tài giải quyết bài toán thực tế: Làm thế nào để thu thập ý kiến của
+sinh viên và nhân viên về các vấn đề môi trường một cách có hệ thống,
+đồng thời khuyến khích họ tham gia các hoạt động xanh thông qua cơ chế
+tích điểm và xếp hạng — biến hành động bảo vệ môi trường thành một
+trải nghiệm tương tác và có tính cạnh tranh."
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  SLIDE 2: GIỚI THIỆU NHÓM & PHÂN CÔNG                              │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Nhóm phát triển gồm các thành viên:
+
+  • Thành viên 1 — Lead Full-Stack Developer: Chịu trách nhiệm kiến trúc
+    Backend, hệ thống Authentication, Security Hardening và API Design.
+
+  • Thành viên 2 — Frontend Developer: Phát triển giao diện người dùng
+    với React, xây dựng Component System, thiết kế UI/UX responsive.
+
+  • Thành viên 3 — Database & QA Specialist: Thiết kế ERD/DFD, viết
+    Migration, Seeder và bộ kiểm thử tự động (Jest Test Suite).
+
+  • Thành viên 4 — DevOps & Integration: Triển khai Docker, CI/CD lên
+    Railway, tích hợp Google OAuth, Cloudinary, Cloudflare Turnstile."
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  SLIDE 3: TỔNG QUAN DỰ ÁN — VẤN ĐỀ VÀ GIẢI PHÁP                   │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Vấn đề đặt ra: Các trường học và tổ chức giáo dục hiện nay đều cần thu
+thập ý kiến sinh viên về nhận thức môi trường, nhưng thường làm thủ công
+bằng form giấy hoặc Google Form — thiếu hệ thống quản lý tập trung,
+không có cơ chế khuyến khích tham gia, và không theo dõi được hoạt động
+thực tế của sinh viên.
+
+EcoSurvey giải quyết bằng một nền tảng web toàn diện với 4 trụ cột chính:
+
+  1. Survey System: Hệ thống khảo sát trực tuyến với đa dạng loại câu hỏi
+     (trắc nghiệm, tự luận, thang đánh giá, có/không), hỗ trợ phân quyền
+     đối tượng khảo sát theo vai trò (Student, Staff, All).
+
+  2. Participation Tracking: Module nộp minh chứng hoạt động môi trường —
+     sinh viên upload hình ảnh, mô tả hoạt động thực tế, Admin duyệt và
+     cấp điểm rèn luyện.
+
+  3. Gamification Engine: Hệ thống Eco-Points, Badges và Leaderboard — mỗi
+     lần hoàn thành khảo sát hoặc được duyệt minh chứng đều được cộng điểm,
+     khi đạt mốc sẽ tự động nhận huy hiệu.
+
+  4. AI Integration: Tích hợp Gemini AI qua OpenRouter API cho hai tính năng:
+     FAQ Chatbot trả lời tự động câu hỏi thường gặp, và Auto-Summarize tóm
+     tắt báo cáo hoạt động giúp Admin duyệt nhanh hơn."
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  SLIDE 4: TECH STACK — LỰA CHỌN CÔNG NGHỆ & LÝ DO                  │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Về lựa chọn công nghệ, nhóm em xin giải thích lý do cho từng thành phần:
+
+── FRONTEND ──────────────────────────────────────────────────────────
+
+  • React.js: Được chọn vì kiến trúc Component-Based, cho phép tái sử dụng
+    UI components (FeatureCard, SurveyCard, StepCard...) trên nhiều màn hình.
+    Virtual DOM (Document Object Model) đảm bảo hiệu năng khi render 
+    danh sách khảo sát lớn.
+
+  • Vite: Build tool thế hệ mới, Hot Module Replacement (HMR) gần như tức
+    thì — tăng tốc trải nghiệm lập trình gấp nhiều lần so với Webpack.
+
+  • TailwindCSS: Utility-first CSS framework, cho phép xây dựng giao diện
+    responsive nhanh chóng mà không cần viết file CSS riêng, đảm bảo thiết
+    kế nhất quán giữa các thành viên.
+
+── BACKEND ───────────────────────────────────────────────────────────
+
+  • Node.js + Express.js: Nhóm chọn kiến trúc RESTful API với Express vì
+    hệ sinh thái middleware phong phú (Helmet, CORS, express-rate-limit),
+    phù hợp với mô hình I/O-bound của ứng dụng khảo sát (nhiều request
+    đọc/ghi nhẹ, ít tính toán nặng).
+
+  • Socket.IO: Cần real-time notification — khi Admin duyệt minh chứng hoặc
+    có khảo sát mới, user nhận thông báo tức thì mà không cần F5 lại trang.
+
+── DATABASE ──────────────────────────────────────────────────────────
+
+  • MySQL: Đây là lựa chọn có chủ đích. Hệ thống EcoSurvey đòi hỏi tính
+    TOÀN VẸN DỮ LIỆU cao — dữ liệu khảo sát, điểm rèn luyện, minh chứng
+    hoạt động đều có quan hệ chặt chẽ và không được phép mất mát hay bất
+    nhất quán.
+
+    Database được thiết kế theo chuẩn hóa 3NF với 14 bảng dữ liệu, sử dụng
+    Foreign Key Constraints quản lý chặt chẽ các quan hệ giữa các bảng.
+    Ví dụ: Một SurveyAnswer PHẢI thuộc về đúng một SurveyResponse, và
+    SurveyResponse PHẢI thuộc về một Survey hợp lệ — nếu vi phạm, database
+    sẽ từ chối thao tác ngay lập tức.
+
+    ★ NẾU THẦY HỎI: 'Tại sao không dùng NoSQL (MongoDB)?'
+
+    → Trả lời: NoSQL phù hợp với dữ liệu phi cấu trúc, schema linh hoạt,
+    scale-out ngang. Nhưng EcoSurvey cần ACID transactions (ví dụ: khi cộng
+    điểm cho user, phải đảm bảo cả PointLog VÀ cập nhật trạng thái
+    Participation đều thành công hoặc đều rollback). MongoDB không hỗ trợ
+    multi-document transactions mạnh mẽ bằng MySQL. Thêm nữa, dữ liệu
+    khảo sát có cấu trúc rõ ràng (Survey → Question → Answer), quan hệ
+    nhiều tầng, JOIN phức tạp — đây chính là thế mạnh của Relational Database.
+
+  • Sequelize ORM: Giúp định nghĩa Model bằng JavaScript (code-first),
+    không cần viết SQL thủ công cho từng bảng. Hỗ trợ sync() đồng bộ schema
+    (đã loại bỏ alter: true để ngăn việc tự động sinh trùng lặp các chỉ mục
+    UNIQUE/INDEX gây vượt quá hạn ngạch 64 keys của MySQL "Too many keys specified").
+    Đồng thời hỗ trợ Migration và Seeder để quản lý phiên bản database trong team.
+
+── THIRD-PARTY SERVICES ──────────────────────────────────────────────
+
+  • Google OAuth 2.0: Single Sign-On cho phép user đăng nhập bằng tài khoản
+    Google — tiện lợi trong môi trường học đường (Gmail).
+
+  • Cloudflare Turnstile: CAPTCHA thế hệ mới, bảo vệ form đăng ký/đăng nhập
+    khỏi bot spam mà không gây phiền hà cho user (privacy-preserving).
+
+  • Cloudinary: Cloud storage cho file upload — ảnh minh chứng và avatar
+    được lưu trữ trên CDN, giảm tải cho server chính.
+
+  • OpenRouter + Gemini AI: Tích hợp AI để trả lời FAQ tự động và tóm tắt
+    báo cáo hoạt động — giảm tải công việc cho Admin.
+
+  • ExcelJS & PDFKit: Đọc/ghi file Excel (.xlsx) xử lý Import tài khoản hàng loạt & Export khảo sát; render file PDF (PDFKit + font Roboto tiếng Việt) xuất báo cáo hoạt động."
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  SLIDE 5: DATA FLOW DIAGRAM (DFD) — LUỒNG DỮ LIỆU                  │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Về luồng dữ liệu tổng quan, hệ thống hoạt động theo 4 luồng chính:
+
+  Luồng 1 — Authentication Flow:
+  User gửi thông tin đăng ký/đăng nhập → Backend xác thực qua CAPTCHA →
+  Kiểm tra credentials → Tạo cặp Access Token (JWT 15 phút) + Refresh
+  Token (Cookie 30 ngày) → Trả về cho Frontend.
+  Hoặc: User chọn Đăng nhập Google → Passport.js xử lý OAuth flow →
+  Google trả profile → Backend match/tạo user → Redirect kèm token.
+
+  Luồng 2 — Survey Flow:
+  Admin tạo Survey (Draft) → Publish → Cron job tự động đóng khi hết hạn.
+  Student/Staff mở Survey Board → Chọn khảo sát → Trả lời → Submit →
+  Backend lưu SurveyResponse + SurveyAnswers → Cộng Eco-Points → Gửi
+  Notification real-time qua Socket.IO.
+
+  Luồng 3 — Participation Flow:
+  User nộp minh chứng hoạt động môi trường (mô tả + upload ảnh) →
+  AI tự động tóm tắt (ai_summary) → Admin xem và duyệt/từ chối →
+  Nếu duyệt: Cộng điểm + gửi thông báo. Nếu từ chối: Gửi lý do.
+
+  Luồng 4 — Gamification Flow:
+  Mỗi hành động cộng điểm → PointLog ghi lại → Badge Service kiểm tra
+  điều kiện (SURVEY_COUNT, PARTICIPATION_COUNT, TOTAL_POINTS,
+  LEADERBOARD_RANK...) → Tự động cấp Badge → Cron job chạy mỗi giờ
+  kiểm tra Top 10 Leaderboard Badge."
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  SLIDE 6: ERD — SƠ ĐỒ QUAN HỆ THỰC THỂ                             │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Database gồm 14 bảng, thiết kế theo chuẩn hóa 3NF. Em xin trình bày
+các nhóm quan hệ chính:
+
+  ── Nhóm Authentication (3 bảng) ──────────────────────────────────
+  • users: Bảng trung tâm, lưu thông tin cá nhân, role (Student/Staff/Admin),
+    status (Pending/Approved/Rejected/Locked/Deactivated), hỗ trợ cả local auth
+    (password_hash) và Google OAuth (google_id).
+  • refresh_tokens: Lưu SHA-256 hash của refresh token, liên kết user_id,
+    có cơ chế revoked flag + expires_at.
+  • 1 User → N RefreshTokens (hỗ trợ đăng nhập multi-device).
+
+  ── Nhóm Survey (4 bảng) ─────────────────────────────────────────
+  • surveys: Tiêu đề, mô tả, target_role, start_date, end_date, status.
+  • questions: Thuộc 1 survey, có type (multiple_choice, text, rating, yes_no).
+  • survey_responses: Ghi nhận lượt trả lời của user cho survey.
+  • survey_answers: Câu trả lời cụ thể cho từng question trong response.
+  • Quan hệ: Survey (1) → (N) Question → (N) SurveyAnswer.
+              Survey (1) → (N) SurveyResponse → (N) SurveyAnswer.
+
+  ── Nhóm Participation (2 bảng) ──────────────────────────────────
+  • participations: Minh chứng hoạt động (event_name, location, description,
+    status, ai_summary, reviewed_by).
+  • participation_files: File ảnh đính kèm (Cloudinary URL).
+  • 1 Participation → N ParticipationFiles.
+
+  ── Nhóm Gamification (3 bảng) ───────────────────────────────────
+  • point_logs: Ghi lại mọi giao dịch điểm (action_type: Survey_Completion,
+    Event_Report, Bonus, Deduction). Append-only — không sửa/xóa.
+  • badges: Định nghĩa huy hiệu (condition_type + condition_value).
+  • user_badges: Bảng trung gian N-N giữa User và Badge.
+
+  ── Nhóm Support (2 bảng) ────────────────────────────────────────
+  • notifications: Thông báo real-time cho từng user.
+  • faqs: Câu hỏi thường gặp, làm ngữ liệu cho AI Chatbot.
+
+  Tại sao point_logs dùng mô hình Append-only (chỉ INSERT, không UPDATE/DELETE)?
+  → Để đảm bảo tính minh bạch và kiểm toán: mọi biến động điểm đều có
+  dấu vết, không ai có thể sửa lịch sử điểm, Admin có thể truy vết
+  từng giao dịch khi cần."
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  SLIDE 7: SYSTEM ARCHITECTURE — KIẾN TRÚC HỆ THỐNG                  │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Kiến trúc hệ thống theo mô hình Client-Server tách biệt:
+
+  ┌──────────────┐     HTTPS/REST API      ┌──────────────────────┐
+  │   Frontend   │ ◄──────────────────────► │      Backend         │
+  │  React + Vite│     + Socket.IO          │  Express + Socket.IO │
+  │  Port 3000   │                          │  Port 5000           │
+  └──────────────┘                          └──────────┬───────────┘
+                                                       │
+                                            ┌──────────▼───────────┐
+                                            │     MySQL Database   │
+                                            │     14 Tables (3NF)  │
+                                            └──────────────────────┘
+                                                       │
+                                            ┌──────────▼───────────┐
+                                            │   External Services  │
+                                            │  • Cloudinary (CDN)  │
+                                            │  • Google OAuth 2.0  │
+                                            │  • Cloudflare CAPTCHA│
+                                            │  • OpenRouter AI     │
+                                            └──────────────────────┘
+
+  Backend được tổ chức theo kiến trúc MVC:
+  • Routes → Controllers → Services → Models (Sequelize) → MySQL.
+  • Middleware pipeline: Helmet → CORS → Rate Limiter → Body Parser →
+    Cookie Parser → Passport → Route Handlers → Error Handler."
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  SLIDE 8: SECURITY — BẢO MẬT HỆ THỐNG                               │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Bảo mật là một trong những trọng tâm đầu tư lớn nhất của dự án. Hệ thống
+áp dụng mô hình Defense-in-Depth (bảo vệ nhiều lớp):
+
+  Lớp 1 — Transport Layer:
+  • HSTS (2 năm) ép trình duyệt luôn dùng HTTPS.
+  • Helmet CSP chặn XSS, clickjacking, plugin injection.
+
+  Lớp 2 — Authentication & Multi-Domain Session:
+  • JWT Access Token (15 phút, lưu localStorage) + Refresh Token Cookie (30 ngày, SHA-256 hashed).
+  • Khôi phục phiên đăng nhập thông minh bằng Bearer Token từ localStorage 
+    ở AuthContext (duy trì trạng thái đăng nhập ổn định khi reload trang 
+    ngay cả khi browser chặn Cookie 3rd-party cross-domain giữa Vercel & Railway).
+  • Google OAuth 2.0 qua Passport.js tích hợp mã hóa `state` (Base64URL) 
+    để điều hướng động chính xác về từng client domain Vercel (multi-domain client support).
+  • Cloudflare Turnstile CAPTCHA bảo vệ form đăng ký/đăng nhập.
+  • Email Service sử dụng Nodemailer tối ưu tự động cho `service: 'gmail'`, 
+    tự động làm sạch App Password (strip spaces) và đồng bộ Header 'From' trùng khớp 
+    SMTP_USER để chống bị đưa vào Spam/Junk.
+
+  Lớp 3 — Authorization Layer:
+  • Role-Based Access Control (RBAC): Student, Staff, Admin.
+  • ProtectedRoute component ở Frontend kiểm tra role trước khi render page.
+  • Backend middleware kiểm tra req.user.role cho mỗi API endpoint.
+
+  Lớp 4 — Rate Limiting & DoS Protection:
+  • generalLimiter: 300 req/phút mount toàn cục trên Express.
+  • loginLimiter: 10 req/phút chống brute-force.
+  • aiLimiter: 10 req/phút kiểm soát chi phí AI API.
+  • surveySubmitLimiter: 5 req/phút chống spam nộp bài.
+  • Pagination cap: Giới hạn limit tối đa 100 bản ghi/request chống
+    Memory Exhaustion DoS.
+
+  Lớp 5 — Production Safeguards & DB Integrity:
+  • Fail-Fast startup: Server dừng ngay nếu thiếu JWT_SECRET, DB credentials,
+    OAuth keys hoặc CAPTCHA secret key ở production.
+  • CAPTCHA Fail-Closed: Trả HTTP 500 nếu thiếu TURNSTILE_SECRET_KEY ở
+    production thay vì bypass.
+  • Loại bỏ `sequelize.sync({ alter: true })` chuyển sang `sequelize.sync()` để bảo vệ DB khỏi lỗi cạn kiệt index key (MySQL max 64 keys limit).
+  • Loại bỏ hoàn toàn việc đọc JWT từ URL query string để tránh rò rỉ
+    token qua Server Logs, Browser History, và HTTP Referer Header."
+
+
+════════════════════════════════════════════════════════════════════════
+  BẮT ĐẦU DEMO SẢN PHẨM — GIỚI THIỆU CÁC MÀN HÌNH
+════════════════════════════════════════════════════════════════════════
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  MÀN HÌNH 1: LANDING PAGE — TRANG CHỦ GIỚI THIỆU                    │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Đây là trang đầu tiên user nhìn thấy khi truy cập hệ thống. Trang được
+thiết kế theo phong cách Neo-Brutalism với giao diện hiện đại, responsive, gồm các section:
+
+  • Hero Section: Slogan chính, nút Call-to-Action 'Get Started', thống kê
+    real-time (tổng user, surveys, submissions, eco-points) được load
+    từ API /api/homepage/stats.
+
+  • Features Grid: 6 tính năng nổi bật — Online Surveys, Live Dashboard,
+    Leaderboard, AI Assistant, Secure & Private, Instant Points.
+
+  • How It Works: 3 bước đơn giản — Register → Participate → Earn & Lead.
+
+  • Trending Surveys: Danh sách khảo sát đang hot, load từ API, hiển thị
+    deadline, số lượt tham gia.
+
+  • FAQ Section: Câu hỏi thường gặp, load từ database.
+
+  • AI Chatbot Widget: Nổi ở góc phải dưới, user có thể hỏi bất kỳ câu
+    hỏi nào — AI sẽ trả lời dựa trên ngữ liệu FAQ trong database.
+
+  • Newsletter: Form đăng ký nhận thông tin — email validation.
+
+  Đặc biệt, Landing Page có hiệu ứng Scroll Animation (useInView hook)
+  và hỗ trợ đa ngôn ngữ (i18n: Tiếng Việt / English)."
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  MÀN HÌNH 2: ĐĂNG KÝ & ĐĂNG NHẬP                                    │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Hệ thống hỗ trợ 2 phương thức đăng ký/đăng nhập:
+
+  ── Đăng ký bằng Form (Local Auth) ──────────────────────────────
+  • Nhập: Họ tên, Username, Email, Mật khẩu, Vai trò (Student/Staff),
+    Mã sinh viên/nhân viên, Lớp, Khoa.
+  • Cloudflare Turnstile CAPTCHA bắt buộc phải hoàn thành.
+  • Sau đăng ký → status = 'Pending' → Admin phải duyệt trước khi
+    tài khoản được kích hoạt.
+  • Hệ thống gửi email xác thực (Email Verification) qua SMTP.
+
+  ── Đăng nhập bằng Google OAuth ─────────────────────────────────
+  • Click 'Sign in with Google' → Chuyển đến Google Consent Screen →
+    Chọn tài khoản → Backend tạo user nếu chưa có → Redirect về
+    Frontend kèm Access Token.
+  • Nếu là user Google mới → redirect đến trang Register để bổ sung
+    thông tin (mã SV, lớp, khoa).
+
+  ── Quên mật khẩu ───────────────────────────────────────────────
+  • Nhập email → Backend sinh reset token (crypto.randomBytes) →
+    Gửi link reset qua email → User click link → Đặt mật khẩu mới.
+  • Token có thời hạn, sử dụng 1 lần."
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  MÀN HÌNH 3: DASHBOARD CÁ NHÂN (Student/Staff)                      │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Sau khi đăng nhập, user được chuyển đến Dashboard cá nhân hiển thị:
+
+  • Số khảo sát đã hoàn thành (Surveys Completed).
+  • Số khảo sát đang mở (Available Surveys).
+  • Tổng Eco-Points đã tích lũy.
+  • Thứ hạng hiện tại trên Leaderboard (tính bằng raw SQL query).
+  • Thống kê minh chứng: Pending / Approved / Rejected.
+  • Lịch sử hoạt động gần đây (5 giao dịch điểm mới nhất).
+
+  Dashboard được render dựa trên vai trò — Student và Staff nhìn thấy
+  số liệu cá nhân, Admin nhìn thấy tổng quan toàn hệ thống."
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  MÀN HÌNH 4: SURVEY BOARD — DANH SÁCH KHẢO SÁT                      │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Trang Survey Board hiển thị tất cả khảo sát đang Published và còn trong
+thời hạn, được lọc theo target_role của user (Student chỉ thấy khảo sát
+cho Student và All, Staff tương tự).
+
+  • Mỗi survey card hiển thị: Tiêu đề, mô tả ngắn, deadline, số câu hỏi.
+  • Phân trang với helper pagination.js — giới hạn tối đa 100 items/page.
+  • Click vào survey → chuyển đến trang Survey Detail để làm bài."
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  MÀN HÌNH 5: SURVEY DETAIL — LÀM KHẢO SÁT                          │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Trang làm khảo sát render danh sách câu hỏi theo 4 loại:
+
+  • multiple_choice: Radio buttons cho các lựa chọn.
+  • text: Textarea cho câu trả lời tự luận.
+  • yes_no: 2 lựa chọn Có/Không.
+
+  Khi user bấm Submit:
+  → Backend tạo SurveyResponse + các SurveyAnswer tương ứng.
+  → Cộng Eco-Points (PointLog action_type = 'Survey_Completion').
+  → Badge Service kiểm tra điều kiện SURVEY_COUNT → tự động cấp badge nếu đạt.
+  → Gửi Notification real-time qua Socket.IO.
+  → surveySubmitLimiter giới hạn 5 lần nộp/phút chống spam."
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  MÀN HÌNH 6: PARTICIPATION — NỘP MINH CHỨNG HOẠT ĐỘNG               │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Đây là tính năng độc đáo của EcoSurvey — cho phép user nộp minh chứng
+về hoạt động môi trường thực tế mà họ đã tham gia:
+
+  ── Submit Participation ────────────────────────────────────────
+  • Nhập: Tên sự kiện, Địa điểm, Số người tham gia, Mô tả chi tiết.
+  • Upload ảnh minh chứng (tối đa 5 file, mỗi file ≤ 5MB).
+  • File được upload lên Cloudinary → lưu URL vào ParticipationFile.
+  • Upload middleware kiểm tra CẢ file extension VÀ MIME (Mutiperpose internet mail extension) type để chống
+    tấn công giả mạo file.
+
+  ── AI Auto-Summarize ───────────────────────────────────────────
+  • Ngay khi nộp, Backend gọi Gemini AI tóm tắt báo cáo thành 2-3 câu
+    (trường ai_summary trong Participation) → Admin đọc nhanh hơn.
+
+  ── My Participations ───────────────────────────────────────────
+  • User xem danh sách minh chứng đã nộp, trạng thái (Pending/Approved/
+    Rejected), lý do từ chối (nếu có)."
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  MÀN HÌNH 7: LEADERBOARD — BẢNG XẾP HẠNG                            │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Leaderboard hiển thị bảng xếp hạng toàn hệ thống dựa trên tổng
+Eco-Points. Được tính bằng cách SUM tất cả point_logs của mỗi user.
+
+  • Top 3 được highlight đặc biệt (medal icon).
+  • Hiển thị: Avatar, Tên, Tổng điểm, Badges đã đạt.
+  • Cron job chạy mỗi giờ kiểm tra Top 10 → cấp badge LEADERBOARD_RANK
+    tự động cho những user trong top."
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  MÀN HÌNH 8: PROFILE — TRANG CÁ NHÂN                                │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Trang Profile cho phép user:
+
+  • Xem và chỉnh sửa thông tin cá nhân (Họ tên, Lớp, Khoa, Mã SV).
+  • Upload avatar (Cloudinary).
+  • Chuyển đổi giao diện Sáng/Tối (Light/Dark theme — lưu vào DB
+    trường ui_theme để giữ trạng thái giữa các thiết bị).
+  • Đổi mật khẩu (ChangePasswordModal — yêu cầu nhập mật khẩu cũ).
+  • Xem danh sách Badges đã đạt được."
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  MÀN HÌNH 9: ADMIN DASHBOARD — TỔNG QUAN QUẢN TRỊ                   │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Admin Dashboard hiển thị tổng quan toàn bộ hệ thống:
+
+  • Tổng số users, phân bổ theo Role (Student/Staff/Admin).
+  • Phân bổ theo Status (Pending/Approved/Rejected/Deactivated).
+  • Tổng surveys, phân bổ theo Status (Draft/Published/Closed).
+  • Số lượt trả lời khảo sát 7 ngày gần nhất (biểu đồ Daily Responses).
+  • Số minh chứng đang chờ duyệt (Pending Participations).
+
+  • Export PDF & Export Analytics: Tích hợp nút xuất báo cáo tổng quan hệ thống ra định dạng PDF chính thức và xuất kết quả phân tích chi tiết khảo sát ra file Excel (.xlsx) với định dạng cột chỉn chu.
+
+  Tất cả số liệu được tính bằng Promise.all() song song để tối ưu
+  thời gian phản hồi API."
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  MÀN HÌNH 10: USER MANAGEMENT — QUẢN LÝ TÀI KHOẢN                   │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Admin quản lý toàn bộ danh sách user:
+
+  • Phê duyệt tài khoản mới (Pending → Approved) với thông báo rõ ràng, hoặc Từ chối đơn đăng ký (Pending → Rejected kèm lý do).
+  • Khóa / Mở khóa tài khoản linh hoạt (Approved ↔ Locked) thay vì dùng chung trạng thái Rejected.
+  • Thay đổi Role (Student ↔ Staff ↔ Admin).
+  • Deactivate tài khoản (soft-delete).
+  • Tìm kiếm, lọc theo role/status.
+  • Phân trang giới hạn tối đa 100 users/page.
+
+  ── Import Excel (Thêm tài khoản hàng loạt) ───────────────────
+  • Admin chọn file Excel (.xlsx) danh sách người dùng gồm các cột: Họ tên, Username, Email, Mật khẩu, Role, Mã SV/NV, Lớp, Khoa.
+  • Backend sử dụng `Multer` nhận file buffer + `ExcelJS` đọc nội dung từng dòng.
+  • Tự động kiểm tra tính hợp lệ dữ liệu, mã hóa mật khẩu bằng `bcrypt`, gán status mặc định là 'Approved' và email_verified = true.
+  • Trả về phản hồi chi tiết số lượng bản ghi tạo thành công/thất bại kèm danh sách dòng bị lỗi cụ thể (trùng email, thiếu trường bắt buộc)."
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  MÀN HÌNH 11: SURVEY MANAGEMENT — QUẢN LÝ KHẢO SÁT                  │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Admin quản lý vòng đời khảo sát:
+
+  ── Survey Editor (Tạo/Sửa khảo sát) ───────────────────────────
+  • Nhập: Tiêu đề, Mô tả, Đối tượng (All/Student/Staff), Thời gian.
+  • Thêm câu hỏi: Kéo thả loại câu hỏi (multiple_choice, text, rating,
+    yes_no), tùy chỉnh options, đánh dấu required.
+  • Lưu Draft → Review → Publish.
+
+  ── Survey Analytics ────────────────────────────────────────────
+  • Xem thống kê chi tiết từng survey: Tổng responses, phân bổ câu trả lời.
+
+  ── Survey Grading ──────────────────────────────────────────────
+  • Admin chấm điểm chi tiết cho từng response (nếu có câu tự luận).
+
+  ── Auto-Close Cron Job ─────────────────────────────────────────
+  • Cron chạy mỗi giờ: Tự động chuyển status Published → Closed cho
+    các survey đã qua end_date."
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  MÀN HÌNH 12: PARTICIPATION REVIEW — DUYỆT MINH CHỨNG               │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Admin duyệt minh chứng hoạt động:
+
+  • Danh sách tất cả Participation đang Pending.
+  • Xem chi tiết: Thông tin sự kiện, ảnh minh chứng, AI summary.
+  • AI Summary giúp Admin đọc nhanh nội dung báo cáo dài.
+  • Approve → Cộng điểm (PointLog action_type = 'Event_Report') +
+    Notification real-time tới user.
+  • Reject → Nhập lý do → Notification tới user.
+
+  ── Export PDF Báo cáo Hoạt động ────────────────────────────────
+  • Admin click nút 'Export PDF' để xuất toàn bộ minh chứng hoạt động môi trường đã được phê duyệt (`Approved`).
+  • Backend sử dụng `PDFDocument` (`pdfkit`) đăng ký font Tiếng Việt Unicode (Roboto-Bold, Roboto-Regular, Roboto-Italic).
+  • File PDF bao gồm tiêu đề trang trọng, thời gian xuất bản, danh sách sự kiện, thông tin người nộp, địa điểm, số người tham gia, tóm tắt AI (ai_summary) và tên Admin phê duyệt."
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  MÀN HÌNH 13: FAQ MANAGEMENT & AI CHATBOT                           │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Admin quản lý bộ câu hỏi FAQ:
+
+  • CRUD: Thêm, sửa, xóa câu hỏi thường gặp.
+  • FAQ này chính là ngữ liệu (context) cho AI Chatbot.
+  • Khi user hỏi trên Landing Page hoặc trong app, AI Gemini sẽ chỉ trả
+    lời dựa trên ngữ liệu FAQ — không bịa thông tin.
+  • Nếu câu hỏi nằm ngoài FAQ → AI lịch sự từ chối và hướng dẫn
+    liên hệ Admin."
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  MÀN HÌNH 14: REAL-TIME NOTIFICATION                                 │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Hệ thống thông báo real-time sử dụng Socket.IO:
+
+  • Mỗi user khi đăng nhập tự động kết nối WebSocket, join vào room
+    user_{userId}.
+  • Socket.IO xác thực bằng JWT token trong handshake.
+  • Khi có sự kiện (duyệt minh chứng, badge mới, survey mới...) →
+    Backend emit event tới room tương ứng → Frontend nhận và hiển thị
+    notification badge trên Navbar tức thì.
+  • Hỗ trợ multi-tab: Cùng 1 user mở nhiều tab trình duyệt đều nhận
+    được notification."
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  SLIDE 9: TESTING & QUALITY ASSURANCE                                │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Nhóm áp dụng bộ kiểm thử tự động bằng Jest:
+
+  • 5 bộ test suite: auth, admin, survey, leaderboard, cors.
+  • 20 test cases: Kiểm tra đăng ký, đăng nhập, CRUD survey,
+    multi-origin CORS, rate limiting.
+  • Kết quả: 20/20 PASSED, 100% pass rate.
+  • CI có thể chạy npm test trước mỗi lần deploy để đảm bảo không
+    có regression."
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  SLIDE 10: DEPLOYMENT — TRIỂN KHAI                                   │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Hệ thống được triển khai trên Railway với Docker:
+
+  • Backend: Node.js container + MySQL database trên Railway.
+  • Frontend: Build static → deploy lên hosting.
+  • Docker Compose cho môi trường local development và production.
+  • Environment Variables được quản lý tập trung trên Railway Dashboard.
+  • Health Check endpoint: GET /api/health → { status: 'OK' }."
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  SLIDE 11: KẾT LUẬN & HƯỚNG PHÁT TRIỂN                              │
+└─────────────────────────────────────────────────────────────────────┘
+
+"Tổng kết, nhóm đã xây dựng thành công một nền tảng web full-stack
+hoàn chỉnh với:
+
+  ✓ Hệ thống khảo sát linh hoạt với 4 loại câu hỏi.
+  ✓ Module nộp minh chứng hoạt động môi trường kèm AI tóm tắt.
+  ✓ Gamification: Eco-Points, Badges (6 loại điều kiện), Leaderboard.
+  ✓ Authentication đa phương thức: Local + Google OAuth + Email Verification.
+  ✓ Bảo mật nhiều lớp: JWT, CAPTCHA, Rate Limiting, CORS, Helmet, HSTS.
+  ✓ Real-time Notification qua Socket.IO.
+  ✓ AI Chatbot trả lời FAQ tự động.
+  ✓ Đa ngôn ngữ (i18n: Tiếng Việt / English).
+  ✓ Dark/Light Theme.
+  ✓ Automated Test Suite: 20/20 passed.
+
+  Hướng phát triển tương lai:
+  • Ứng dụng di động (React Native) để user nộp minh chứng ngoài hiện trường.
+  • AI predictive analytics: Phân tích xu hướng nhận thức môi trường theo
+    thời gian từ dữ liệu khảo sát.
+  • Mở rộng báo cáo: Export kết quả khảo sát ra Excel/PDF.
+  • Tích hợp CAS/LDAP cho hệ thống trường học lớn.
+
+  Em xin cảm ơn quý thầy cô đã lắng nghe. Nhóm sẵn sàng trả lời câu hỏi ạ."
+
+
+════════════════════════════════════════════════════════════════════════
+  PHỤ LỤC: DỰ ĐOÁN CÂU HỎI PHẢN BIỆN & CÁCH TRẢ LỜI
+════════════════════════════════════════════════════════════════════════
+
+
+Q1: "Tại sao không dùng MongoDB (NoSQL) thay vì MySQL?"
+────────────────────────────────────────────────────────
+→ "Dạ thưa thầy, hệ thống EcoSurvey có dữ liệu quan hệ chặt chẽ — một
+   Survey chứa nhiều Question, mỗi Question có nhiều Answer, mỗi Answer
+   thuộc một Response. Chuỗi quan hệ này cần được ràng buộc bằng Foreign
+   Key để đảm bảo toàn vẹn.
+
+   Ngoài ra, khi cộng điểm cho user, hệ thống cần ACID transaction —
+   phải đảm bảo cả việc tạo PointLog VÀ cập nhật trạng thái Participation
+   đều thành công hoặc đều rollback. MySQL hỗ trợ transaction gốc mạnh mẽ,
+   trong khi MongoDB chỉ hỗ trợ multi-document transaction từ bản 4.0 và
+   hiệu năng kém hơn đáng kể.
+
+   Cuối cùng, dữ liệu khảo sát có cấu trúc rõ ràng, không cần schema
+   linh hoạt — đây chính là thế mạnh của Relational Database."
+
+
+Q2: "Sequelize ORM có chậm hơn viết raw SQL không?"
+────────────────────────────────────────────────────
+→ "Dạ đúng là Sequelize có overhead so với raw SQL — mỗi query phải qua
+   lớp abstraction để build SQL. Tuy nhiên overhead này rất nhỏ (vài ms)
+   và được đánh đổi bằng:
+   - Tốc độ phát triển nhanh hơn nhiều (code-first, auto-sync schema).
+   - Chống SQL Injection tự động qua parameterized queries.
+   - Dễ maintain khi team nhiều người.
+   Với những query phức tạp (như tính rank Leaderboard), em vẫn dùng
+   sequelize.query() viết raw SQL trực tiếp để tối ưu."
+
+
+Q3: "Tại sao dùng localStorage cho Access Token mà không dùng Cookie?"
+──────────────────────────────────────────────────────────────────────
+→ "Access Token cần được gửi trong Authorization Header cho mọi API request.
+   Nếu lưu trong Cookie, browser sẽ tự động gửi kèm → dễ bị tấn công CSRF.
+   localStorage cho phép Frontend chủ động kiểm soát khi nào gửi token.
+   Để giảm thiểu rủi ro XSS, Access Token có thời hạn rất ngắn (15 phút)
+   và hệ thống có Helmet CSP chặn inline script injection."
+
+
+Q4: "Socket.IO có scale được khi có nhiều server không?"
+────────────────────────────────────────────────────────
+→ "Hiện tại với single server, Socket.IO hoạt động tốt vì lưu danh sách
+   socket connections trong memory (Map). Nếu cần scale ra nhiều server,
+   em sẽ dùng @socket.io/redis-adapter — Redis pub/sub làm message broker
+   giữa các server instances, đảm bảo event được broadcast tới đúng user
+   dù họ đang kết nối ở server nào."
+
+
+Q5: "Nếu AI API (OpenRouter) bị lỗi thì hệ thống xử lý thế nào?"
+──────────────────────────────────────────────────────────────────
+→ "Hệ thống có cơ chế Graceful Degradation. Trong aiService.js, nếu
+   OPENROUTER_API_KEY không được cấu hình hoặc API call thất bại, hệ thống
+   tự động fallback sang mock functions — trả về câu trả lời cơ bản bằng
+   cách matching keywords từ FAQ database. Tính năng AI bị giảm chất lượng
+   nhưng hệ thống KHÔNG bị crash hay từ chối phục vụ."
+
+
+Q6: "Điểm (Eco-Points) có thể bị gian lận không?"
+──────────────────────────────────────────────────
+→ "Nhóm em đã áp dụng nhiều biện pháp chống gian lận:
+   - surveySubmitLimiter: Giới hạn 5 lần nộp/phút.
+   - Backend kiểm tra user đã nộp survey chưa trước khi cho phép submit.
+   - Minh chứng hoạt động phải qua Admin duyệt thủ công mới được cộng điểm.
+   - point_logs là append-only — không ai sửa/xóa lịch sử điểm được.
+   - Tài khoản phải được Admin Approve mới được sử dụng → chống tạo
+     nhiều tài khoản fake để farm điểm."
+
+
+Q7: "Hệ thống xử lý user đăng nhập trên nhiều thiết bị thế nào?"
+────────────────────────────────────────────────────────────────
+→ "Hệ thống hỗ trợ multi-device login. Mỗi lần đăng nhập tạo một
+   Refresh Token mới, KHÔNG revoke token cũ. Mỗi thiết bị có cookie
+   refreshToken riêng, tất cả đều hợp lệ song song. Nếu muốn chuyển
+   sang single-device, chỉ cần revoke tất cả token cũ khi tạo token mới."
+
+
+Q8: "Tại sao user đăng ký phải chờ Admin duyệt? Có phiền không?"
+────────────────────────────────────────────────────────────────
+→ "Đây là thiết kế có chủ đích cho môi trường giáo dục. Hệ thống cần
+   đảm bảo chỉ sinh viên và nhân viên thật của trường mới được tham gia.
+   Admin xác minh Mã sinh viên / Mã nhân viên trước khi Approve. Điều này
+   ngăn chặn người ngoài tạo tài khoản giả để ảnh hưởng kết quả khảo sát.
+   Ngoài ra, Email Verification cũng giúp xác nhận email hợp lệ."
+
+
+Q9: "Hệ thống có hỗ trợ export dữ liệu không?"
+──────────────────────────────────────────────
+→ "Có ạ. Backend có module exportRoutes.js cho phép Admin export kết quả
+   khảo sát. Hiện tại hỗ trợ export qua API, tương lai sẽ mở rộng thêm
+   định dạng Excel và PDF."
+
+
+Q10: "Cron job nếu bị lỗi thì sao? Có log không?"
+──────────────────────────────────────────────────
+→ "Cron job được bọc trong try/catch. Nếu lỗi, logger.error ghi lại
+   chi tiết lỗi vào Winston log (console + file). Cron chạy mỗi giờ
+   nên nếu 1 lần lỗi, lần chạy sau sẽ bắt lại các survey chưa được
+   close. Không ảnh hưởng đến hoạt động chính của server."
