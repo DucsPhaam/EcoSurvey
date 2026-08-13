@@ -76,7 +76,7 @@ export default function AdminDashboard() {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => downloadFile(() => exportService.exportParticipationsPDF(), 'participations_report.pdf', t)}
+            onClick={() => downloadFile(() => exportService.exportDashboardPDF(), 'admin_dashboard_report.pdf', t)}
             className="btn-secondary text-sm">
             <Download className="w-4 h-4" /> {t('dashboard.exportPdf')}
           </button>

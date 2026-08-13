@@ -8,5 +8,6 @@ const isAdmin = [authenticate, authorize('Admin')];
 
 router.get('/surveys/:id/excel',    ...isAdmin, exportCtrl.exportSurveyExcel);
 router.get('/participations/pdf',   ...isAdmin, exportCtrl.exportParticipationsPDF);
+router.get('/dashboard/pdf',        ...isAdmin, exportCtrl.exportDashboardPDF);
 
 module.exports = router;

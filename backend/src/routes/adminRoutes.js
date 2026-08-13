@@ -50,5 +50,6 @@ router.delete('/faqs/:id', ...isAdmin, adminCtrl.deleteFAQ);
 // ── Export Reports ─────────────────────────────
 router.get('/export/surveys/:id/excel', ...isAdmin, exportCtrl.exportSurveyExcel);
 router.get('/export/participations/pdf', ...isAdmin, exportCtrl.exportParticipationsPDF);
+router.get('/export/dashboard/pdf', ...isAdmin, exportCtrl.exportDashboardPDF);
 
 module.exports = router;
