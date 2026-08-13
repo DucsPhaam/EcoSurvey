@@ -116,3 +116,74 @@ Khi Admin thao tác trên màn hình Quản lý Tài khoản (User Management):
 ================================================================================
                     BÁO CÁO HOÀN TẤT — ECOSURVEY AUTH FLOW
 ================================================================================
+
+--------------------------------------------------------------------------------
+IV. CƠ CHẾ FALLBACK VÀ CÁCH HOẠT ĐỘNG TRONG DỰ ÁN (FALLBACK MECHANISMS)
+--------------------------------------------------------------------------------
+
+Cơ chế Fallback (Phương án dự phòng tự động) là thiết kế quan trọng giúp hệ thống 
+EcoSurvey duy trì độ sẵn sàng 100% (High Availability), không bao giờ bị crash hay sập 
+khi gặp sự cố với các dịch vụ bên thứ ba (mất mạng, hết Quota API, chặn cổng mạng, v.v.).
+
+Dưới đây là 5 cơ chế Fallback chính đang được triển khai trong dự án:
+
+1. Fallback Dịch vụ Email (SMTP / Gmail Port Fallback):
+   - File xử lý: `backend/src/services/emailService.js`
+   - Vấn đề thực tế: Một số hạ tầng Cloud (như Railway/Vercel) chặn hoặc gây nghẽn 
+     cổng SMTP 587 (STARTTLS) khi gửi mail qua `smtp.gmail.com`.
+   - Cơ chế hoạt động:
+     + Luồng chính (Primary): Kết nối trực tiếp Nodemailer qua SMTP Port 587.
+     + Luồng dự phòng (Fallback): Nếu kết nối Port 587 gặp sự cố Timeout (`ETIMEDOUT`), 
+       hệ thống tự động chuyển sang `getTransporter(true)` dùng `service: 'gmail'` của 
+       Nodemailer (chạy qua cổng 465 SSL bảo mật).
+     + Nếu chưa cấu hình SMTP: Hệ thống ghi log Winston an toàn và bỏ qua việc gửi mail 
+       mà KHÔNG LÀM CRASH request chính của người dùng.
+
+2. Fallback Dịch vụ AI (Hybrid Fallback cho Chatbot & Summary):
+   - File xử lý: `backend/src/services/aiService.js`
+   - Vấn đề thực tế: Khi hết hạn ngạch API (API Quota Limit), không có `OPENROUTER_API_KEY`, 
+     hoặc dịch vụ OpenRouter Cloud bị gián đoạn kết nối.
+   - Cơ chế hoạt động:
+     + AI Chatbot FAQ:
+       * Luồng chính (Cloud AI): Gửi request tới OpenRouter API gọi mô hình `google/gemini-2.5-flash`.
+       * Luồng dự phòng (Local Keyword Matching): Nếu gọi AI lỗi hoặc không có Key, 
+         hệ thống tự động kích hoạt hàm `mockFAQAnswer()`. Hàm này tách câu hỏi của người dùng 
+         thành các từ đơn và so khớp từ khóa với CSDL FAQ trong MySQL để tìm ra câu trả lời gần nhất.
+     + AI Tóm tắt Báo cáo (Summary):
+       * Luồng chính (Cloud AI): Đẩy nội dung báo cáo minh chứng tới Gemini 2.5 Flash để tóm tắt 2-3 câu.
+       * Luồng dự phòng (Extractive Text Processing): Nếu AI lỗi, tự động kích hoạt `mockSummary()`. 
+         Hàm này trích xuất 2 câu đầu tiên của mô tả báo cáo và tự động ghép thêm câu đánh giá hoạt động chuẩn.
+
+3. Fallback Khôi phục Phiên Đăng nhập (Auth Session Fallback):
+   - File xử lý: `frontend/src/contexts/AuthContext.jsx` & `backend/src/controllers/authController.js`
+   - Vấn đề thực tế: Trình duyệt Safari hoặc các chế độ chặn 3rd-party cookie cross-domain 
+     (Vercel Frontend ↔ Railway Backend) ngăn cản việc đọc HTTP-Only Cookie.
+   - Cơ chế hoạt động:
+     + Khi F5/Reload lại trang (`/me` request): `AuthContext` thử đọc phiên làm việc qua HTTP-Only Cookie.
+     + Nếu Cookie bị trình duyệt chặn: Hệ thống tự động fallback sang lấy Access Token lưu trong `localStorage` 
+       để gửi qua HTTP Header `Authorization: Bearer <access_token>`, giữ cho người dùng không bị văng đăng xuất.
+     + Khi Access Token 15 phút hết hạn: Axios Interceptor tự động bắt lỗi 401 và gọi `/api/auth/refresh` 
+       đổi token mới. Nếu Refresh Token hết hạn hoàn toàn, hệ thống dọn dẹp `localStorage` và chuyển về trang Login mượt mà.
+
+4. Fallback Bảo vệ CAPTCHA (Turnstile Captcha Protection):
+   - File xử lý: `backend/src/middleware/captchaMiddleware.js`
+   - Vấn đề thực tế: Môi trường Lập trình Local (Development) hoặc Testing chưa được cấp 
+     Secret Key từ Cloudflare Turnstile.
+   - Cơ chế hoạt động:
+     + Môi trường Production: Ép buộc xác thực nghiêm ngặt (Fail-Closed) — bắt buộc có Turnstile Secret Key.
+     + Môi trường Development/Test: Nếu không tìm thấy `TURNSTILE_SECRET_KEY`, middleware 
+       tự động log cảnh báo và bypass qua CAPTCHA để lập trình viên có thể test form Đăng ký/Đăng nhập dễ dàng.
+
+5. Fallback Đồng bộ CSDL An toàn (Database Schema Safeguard):
+   - File xử lý: `backend/src/server.js` & `database/init.sql`
+   - Vấn đề thực tế: Việc sử dụng `sequelize.sync({ alter: true })` trong Sequelize dễ gây lỗi 
+     "Too many keys specified" do MySQL giới hạn tối đa 64 chìa khóa/chỉ mục (Index Keys).
+   - Cơ chế hoạt động:
+     + Loại bỏ hoàn toàn `{ alter: true }` nguy hiểm, chỉ sử dụng `sequelize.sync()`.
+     + Kết hợp câu lệnh `ALTER TABLE` thủ công an toàn ngay khi khởi chạy Server để thêm các giá trị ENUM mới 
+       (như trạng thái `'Locked'`) mà không sinh trùng lặp các chỉ mục UNIQUE/INDEX trong MySQL.
+
+================================================================================
+                    BÁO CÁO HOÀN TẤT — ECOSURVEY AUTH & FALLBACK FLOW
+================================================================================
+
